@@ -8,14 +8,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" >
-    <meta name="author" content="John Doe">
+    <meta name="author" content="cjwei">
     <meta name="renderer" content="webkit">
-    <meta name="copyright" content="John Doe">
-    <meta name="keywords" content="Hexo | John Doe">
+    <meta name="copyright" content="cjwei">
+    <meta name="keywords" content="Focusss | cjwei">
     <meta name="description" content="">
     <meta name="Cache-Control" content="no-cache">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
-    <title>hello hexo blog · fi3ework&#39;s Studio</title>
+    <title>Linux环境变量 · Focusss</title>
     <style type="text/css">
     @font-face {
         font-family: 'Oswald-Regular';
@@ -180,7 +180,7 @@
 }( typeof global !== "undefined" ? global : this ) );
 </script>
 
-    <link rel="icon" href= "/assets/favicon.ico" />
+    <link rel="icon" href= "/assets/eyes.ico" />
     <link rel="preload" href="https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js" as="script" />
     <link rel="preload" href="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js" as="script" />
     <link rel="preload" href="/scripts/main.js" as="script" />
@@ -205,14 +205,14 @@
     
     <div class="banner">
             <div class="blog-title">
-                <a href="/" >fi3ework&#39;s Studio.</a>
+                <a href="/" >Focusss&#39;s Blog</a>
             </div>
             <div class="post-title">
-                <a href="#" class="post-name">hello hexo blog</a>
+                <a href="#" class="post-name">Linux环境变量</a>
             </div>
     </div>
     
-    <a class="home-link" href=/>fi3ework's Studio.</a>
+    <a class="home-link" href=/>Focusss's Blog</a>
 </header>
     <div class="wrapper">
         <div class="site-intro" style=
@@ -234,13 +234,13 @@ height:50vh;
     <!-- 404页  -->
             
     <div class="site-intro-placeholder"></div>
-    <div class="site-intro-img" style="background-image: url(/intro/post-bg.jpg)"></div>
+    <div class="site-intro-img" style="background-image: url(/intro/fr.jpg)"></div>
     <div class="site-intro-meta">
         <!-- 标题  -->
         <h1 class="intro-title">
             <!-- 主页  -->
             
-            hello hexo blog
+            Linux环境变量
             <!-- 404 -->
             
         </h1>
@@ -257,14 +257,20 @@ height:50vh;
             <div class="post-intros">
                 <!-- 文章页标签  -->
                 
+                    <div class= post-intro-tags >
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "Linux">Linux</a>
+    
+</div>
+                
                 
                     <div class="post-intro-read">
-                        <span>Word count: <span class="post-count">0</span> / Reading time: <span class="post-count">1 min</span></span>
+                        <span>Word count: <span class="post-count">340</span> / Reading time: <span class="post-count">1 min</span></span>
                     </div>
                 
                 <div class="post-intro-meta">
                     <span class="post-intro-calander iconfont-archer">&#xe676;</span>
-                    <span class="post-intro-time">2018/06/10</span>
+                    <span class="post-intro-time">2018/08/29</span>
                     
                     <span id="busuanzi_container_page_pv" class="busuanzi-pv">
                         <span class="iconfont-archer">&#xe602;</span>
@@ -388,16 +394,27 @@ height:50vh;
         <div class="container container-unloaded">
             <main class="main post-page">
     <article class="article-entry">
-        
+        <blockquote>
+<p>&ensp;&ensp;&ensp;&ensp;在Linux系统下，安装完新的软件，在命令行中输入启动程序的命令，有时候会出现<code>command  not found</code> 的提示内容。这是因为在当前的目录下找不到对应的启动文件，所以需要进入到改程序所在的目录才能执行启动程序命令。如果想在任何目录下都能执行该程序命令，只需要在Linux的环境变量<strong>PATH</strong>中加上该程序所在目录的<strong>绝对路径</strong>。<br> &ensp;&ensp;&ensp;&ensp;可以通过<code>echo $PATH</code>显示当前<strong>PATH</strong>环境变量，该变量的值由一系列以冒号分隔的目录名组成。如：/usr/local/bin:/bin:/usr/bin。当我们执行程序命令时，shell自动根据PATH变量的值去搜索对应目录下的程序。</p>
+</blockquote>
+<h2 id="Linux下环境变量设置的3种方法"><a href="#Linux下环境变量设置的3种方法" class="headerlink" title="Linux下环境变量设置的3种方法"></a>Linux下环境变量设置的3种方法</h2><ul>
+<li><strong>在控制台中设置,关闭控制台后就会失效</strong></li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PATH=$PATH:/NEW_PATH</span><br></pre></td></tr></table></figure>
+<p>添加<strong>/NEW_PATH</strong>到<strong>PATH</strong>环境变量</p>
+<ul>
+<li><strong>修改 /etc/profile 文件，对所有用户都生效</strong><br>执行下面命令打开profile文件</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi /etc/profile</span><br></pre></td></tr></table></figure>
+<p>在<code>/etc/profile</code>的最下面添加：<code>export  PATH=&quot;$PATH:/NEW_PATH&quot;</code></p>
+<ul>
+<li><strong>修改bashrc文件，只针对某个特定用户生效</strong><br>执行下面命令打开.bashrc文件</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi ~/.bashrc</span><br></pre></td></tr></table></figure>
+<p>在<code>.bashrc</code>文件的最下面添加：<code>export  PATH=&quot;$PATH:/NEW_PATH&quot;</code><br><code>~/</code>表示当前用户名目录下，如：<code>/home/cjwei/</code></p>
+
     </article>
     <!-- license  -->
-    
-        <div class="license-wrapper">
-            <p>原文作者: <a href="http://yoursite.com">John Doe</a>
-            <p>原文链接: <a href="http://yoursite.com/2018/06/10/hello-hexo-blog/">http://yoursite.com/2018/06/10/hello-hexo-blog/</a>
-            <p>发表日期: <a href="http://yoursite.com/2018/06/10/hello-hexo-blog/">June 10th 2018, 5:53:56</a>
-            <p>版权声明: 本文采用<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">知识共享署名-非商业性使用 4.0 国际许可协议</a>进行许可</p>
-        </div>
     
     <!-- paginator  -->
     <ul class="post-paginator">
@@ -407,8 +424,8 @@ height:50vh;
         <li class="previous">
             
                 <div class="prevSlogan">Previous Post</div>
-                <a href= "/2018/06/10/hello-world/" title= Hello World >
-                    <div class="prevTitle">Hello World</div>
+                <a href= "/2018/08/27/Github+Hexo搭建个人博客/" title= Github+Hexo搭建个人博客 >
+                    <div class="prevTitle">Github+Hexo搭建个人博客</div>
                 </a>
             
         </li>
@@ -438,23 +455,16 @@ height:50vh;
     
         
             
-                <a href="mailto:12345@qq.com" class="iconfont-archer email" title=email ></a>
+                <a href="mailto:446193412@qq.com" class="iconfont-archer email" title=email ></a>
             
         
     
         
             
-                <a href="//github.com/fi3ework" class="iconfont-archer github" target="_blank" title=github></a>
+                <a href="//github.com/Focusss" class="iconfont-archer github" target="_blank" title=github></a>
             
         
     
-        
-            
-                <span class="iconfont-archer wechat" title=wechat>
-                  
-                  <img class="profile-qr" src="/assets/example_qr.png" />
-                </span>
-            
         
     
         
@@ -518,7 +528,7 @@ top:50vh;
         <div class="toc-catalog">
             <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
         </div>
-        
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Linux下环境变量设置的3种方法"><span class="toc-number">1.</span> <span class="toc-text">Linux下环境变量设置的3种方法</span></a></li></ol>
     </div>
     
     <div class="back-top iconfont-archer">&#xe639;</div>
@@ -564,32 +574,31 @@ top:50vh;
     
     
     
-    <div class="archive-year"> Invalid date </div>
-    <ul class="year-list">
-    
-    
-        <li class="archive-post-item">
-            <span class="archive-post-date">Invalid date</span><a class="archive-post-title" href= "/2018/06/10/hello-world/" >Hello World</a>
-        </li>
-    
-    
-    
-    
-    
-        </ul>
-    
     <div class="archive-year"> 2018 </div>
     <ul class="year-list">
     
     
         <li class="archive-post-item">
-            <span class="archive-post-date">06/10</span><a class="archive-post-title" href= "/2018/06/10/hello-hexo-blog/" >hello hexo blog</a>
+            <span class="archive-post-date">08/29</span><a class="archive-post-title" href= "/2018/08/29/Linux环境变量/" >Linux环境变量</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/27</span><a class="archive-post-title" href= "/2018/08/27/Github+Hexo搭建个人博客/" >Github+Hexo搭建个人博客</a>
         </li>
     
     </div>
   </div>
         <div class="sidebar-panel-tags">
     <div class="sidebar-tags-name">
+    
+        <span class="sidebar-tag-name" data-tags="github"><span class="iconfont-archer">&#xe606;</span>github</span>
+    
+        <span class="sidebar-tag-name" data-tags="hexo"><span class="iconfont-archer">&#xe606;</span>hexo</span>
+    
+        <span class="sidebar-tag-name" data-tags="博客"><span class="iconfont-archer">&#xe606;</span>博客</span>
+    
+        <span class="sidebar-tag-name" data-tags="Linux"><span class="iconfont-archer">&#xe606;</span>Linux</span>
     
     </div>
     <div class="iconfont-archer sidebar-tags-empty">&#xe678;</div>
@@ -624,6 +633,10 @@ jsonContent:
         <div class="sidebar-panel-categories">
     <div class="sidebar-categories-name">
     
+        <span class="sidebar-category-name" data-categories="Github"><span class="iconfont-archer">&#xe60a;</span>Github</span>
+    
+        <span class="sidebar-category-name" data-categories="Linux"><span class="iconfont-archer">&#xe60a;</span>Linux</span>
+    
     </div>
     <div class="iconfont-archer sidebar-categories-empty">&#xe678;</div>
     <div class="sidebar-categories-list"></div>
@@ -633,7 +646,7 @@ jsonContent:
     <script>
     var siteMeta = {
         root: "/",
-        author: "John Doe"
+        author: "cjwei"
     }
 </script>
     <!-- CDN failover -->
