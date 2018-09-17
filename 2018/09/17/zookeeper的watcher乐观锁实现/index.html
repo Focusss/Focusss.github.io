@@ -15,7 +15,7 @@
     <meta name="description" content="">
     <meta name="Cache-Control" content="no-cache">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
-    <title>Focusss</title>
+    <title>zookeeper的watcher乐观锁实现 · Focusss</title>
     <style type="text/css">
     @font-face {
         font-family: 'Oswald-Regular';
@@ -70,6 +70,8 @@
 
     <link rel="preload" href= /css/style.css?v=20180604 as="style" onload="this.onload=null;this.rel='stylesheet'" />
     <link rel="stylesheet" href= /css/mobile.css?v=20180604 media="(max-width: 980px)">
+    
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
     
     <!-- /*! loadCSS. [c]2017 Filament Group, Inc. MIT License */
 /* This file is meant as a standalone workflow for
@@ -192,12 +194,23 @@
 </head>
 
     
+        <body class="post-body">
+    
     
 <header class="header">
 
     <div class="read-progress"></div>
     <div class="header-sidebar-menu">&#xe775;</div>
     <!-- post页的toggle banner  -->
+    
+    <div class="banner">
+            <div class="blog-title">
+                <a href="/" >Focusss&#39;s Blog</a>
+            </div>
+            <div class="post-title">
+                <a href="#" class="post-name">zookeeper的watcher乐观锁实现</a>
+            </div>
+    </div>
     
     <a class="home-link" href=/>Focusss's Blog</a>
 </header>
@@ -211,24 +224,76 @@
 
 
 
+height:50vh;
+
 >
     
     <!-- 主页  -->
+    
+    
+    <!-- 404页  -->
             
     <div class="site-intro-placeholder"></div>
-    <div class="site-intro-img" style="background-image: url(/)"></div>
+    <div class="site-intro-img" style="background-image: url(/intro/fr.jpg)"></div>
     <div class="site-intro-meta">
         <!-- 标题  -->
         <h1 class="intro-title">
             <!-- 主页  -->
+            
+            zookeeper的watcher乐观锁实现
+            <!-- 404 -->
             
         </h1>
         <!-- 副标题 -->
         <p class="intro-subtitle">
             <!-- 主页副标题  -->
             
+            
+            <!-- 404 -->
+            
         </p>
         <!-- 文章页meta -->
+        
+            <div class="post-intros">
+                <!-- 文章页标签  -->
+                
+                    <div class= post-intro-tags >
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "zookeeper">zookeeper</a>
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "乐观锁">乐观锁</a>
+    
+</div>
+                
+                
+                    <div class="post-intro-read">
+                        <span>Word count: <span class="post-count">373</span> / Reading time: <span class="post-count">1 min</span></span>
+                    </div>
+                
+                <div class="post-intro-meta">
+                    <span class="post-intro-calander iconfont-archer">&#xe676;</span>
+                    <span class="post-intro-time">2018/09/17</span>
+                    
+                    <span id="busuanzi_container_page_pv" class="busuanzi-pv">
+                        <span class="iconfont-archer">&#xe602;</span>
+                        <span id="busuanzi_value_page_pv"></span>
+                    </span>
+                    
+                    <span class="shareWrapper">
+                        <span class="iconfont-archer shareIcon">&#xe71d;</span>
+                        <span class="shareText">Share</span>
+                        <ul class="shareList">
+                            <li class="iconfont-archer share-qr" data-type="qr">&#xe75b;
+                                <div class="share-qrcode"></div>
+                            </li>
+                            <li class="iconfont-archer" data-type="weibo">&#xe619;</li>
+                            <li class="iconfont-archer" data-type="qzone">&#xe62e;</li>
+                            <li class="iconfont-archer" data-type="twitter">&#xe634;</li>
+                            <li class="iconfont-archer" data-type="facebook">&#xe67a;</li>
+                        </ul>
+                    </span>
+                </div>
+            </div>
         
     </div>
 </div>
@@ -329,130 +394,43 @@
 </script>        
         <img class="loading" src="/assets/loading.svg" style="display: block; margin: 6rem auto 0 auto; width: 6rem; height: 6rem;" />
         <div class="container container-unloaded">
-            <main class="main index-page">
-    
-    
-    
-    
-    
-    
-    <article class="index-post">
-        <a class="abstract-title" href = "/2018/08/30/阿里云上使用redis集群的一些问题/" >
-            
-                <span>阿里云上使用redis集群的一些问题</span>
-        </a>
-        <div class="abstract-content">
-            在阿里云上使用redis集群的一些问题： 1、Cannot assign requested address；2、Could not get a resource from the pool
-        </div>
-        <div class="abstract-post-meta">
-            <!-- date  -->
-            <div class="abstract-date">
-                <span class="abstract-calander iconfont-archer">&#xe676;</span><span class="abstract-time">2018/08/30</span>
-            </div>
-            <!-- tags  -->
-            
-            <div class= abstract-tags >
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "redis">redis</a>
-    
-</div>
-            
-        </div>
+            <main class="main post-page">
+    <article class="article-entry">
+        <h2 id="乐观锁简单介"><a href="#乐观锁简单介" class="headerlink" title="乐观锁简单介"></a>乐观锁简单介</h2><h3 id="实现过程"><a href="#实现过程" class="headerlink" title="实现过程"></a>实现过程</h3><p>乐观锁对事务的控制分为<strong>数据读取、写入校验、数据写入</strong>，JDK中最典型的乐观锁实现就是CAS。</p>
+<h3 id="适用场景"><a href="#适用场景" class="headerlink" title="适用场景"></a>适用场景</h3><p>乐观锁适合使用在<strong>并发量不高，数据竞争不大、事务冲突较少，多读，写操作不频繁</strong>的应用场景。这是因为如果事务经常产生冲突，上层应用会不断的进行retry，进行频繁的上下文切换，这样反倒是降低了性能。另外当应用并发量高的时候，version值在频繁变化，会对数据库产生很大的写压力。</p>
+<h2 id="在zookeeper中的实际应用"><a href="#在zookeeper中的实际应用" class="headerlink" title="在zookeeper中的实际应用"></a>在zookeeper中的实际应用</h2><p>在zookeeper中是使用<code>version</code>属性来实现乐观锁的<strong>写入校验</strong>。在zookeeper服务器的<code>PreRequestProcessor</code>处理器类中，在处理每一个数据更新（<code>setDataRequest</code>）请求时，会进行版本检查。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">version = setDataRequest.getVersion();</span><br><span class="line"><span class="keyword">int</span> currentVersion = nodeRecord.stat.getVersion();</span><br><span class="line"><span class="keyword">if</span>(version != -<span class="number">1</span> &amp;&amp; version != currentVersion)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> KeeperException.BadVersionException(path);</span><br><span class="line">&#125;</span><br><span class="line">version = currentVersion + <span class="number">1</span>;</span><br></pre></td></tr></table></figure></p>
+<p>在进行一次<code>setDataRequest</code>请求处理时，首先进行了版本检查：zookeeper会从<code>setDataRequest</code>请求中获取当前请求的版本<code>version</code>，同时从数据记录<code>noderecord</code>中获取到当前服务器上该数据的最新版本<code>currentversion</code>。如果<code>version</code>为-1，那么说明客户端并不要求使用乐观锁，可以忽略版本对比；如果<code>version</code>不是-1，那么就对比<code>version</code>和<code>currentversion</code>，如果两个版本不匹配，那么就会抛出<code>BadVersionException</code>异常。</p>
+
     </article>
-    
-    
-    
-    
-    
-    
-    <article class="index-post">
-        <a class="abstract-title" href = "/2018/08/29/redis cluster集群-ruby安装/" >
-            
-                <span>redis cluster集群-ruby及相关依赖安装</span>
-        </a>
-        <div class="abstract-content">
-            我觉得安装redis cluster集群的主要难点在于ruby及相关依赖安装
-        </div>
-        <div class="abstract-post-meta">
-            <!-- date  -->
-            <div class="abstract-date">
-                <span class="abstract-calander iconfont-archer">&#xe676;</span><span class="abstract-time">2018/08/29</span>
-            </div>
-            <!-- tags  -->
-            
-            <div class= abstract-tags >
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "redis">redis</a>
-    
-</div>
-            
-        </div>
-    </article>
-    
-    
-    
-    
-    
-    
-    <article class="index-post">
-        <a class="abstract-title" href = "/2018/08/29/Linux环境变量/" >
-            
-                <span>Linux环境变量</span>
-        </a>
-        <div class="abstract-content">
-            在命令行中输入启动程序的命令，有时候会出现`command  not found ` 的提示内容
-        </div>
-        <div class="abstract-post-meta">
-            <!-- date  -->
-            <div class="abstract-date">
-                <span class="abstract-calander iconfont-archer">&#xe676;</span><span class="abstract-time">2018/08/29</span>
-            </div>
-            <!-- tags  -->
-            
-            <div class= abstract-tags >
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "Linux">Linux</a>
-    
-</div>
-            
-        </div>
-    </article>
-    
-    
-    
-    
-    
-    
-    <article class="index-post">
-        <a class="abstract-title" href = "/2018/08/27/Github+Hexo搭建个人博客/" >
-            
-                <span>Github+Hexo搭建个人博客</span>
-        </a>
-        <div class="abstract-content">
-            文章列出利用Github、Hexo搭建个人博客的详细步骤及如何创建新文章
-        </div>
-        <div class="abstract-post-meta">
-            <!-- date  -->
-            <div class="abstract-date">
-                <span class="abstract-calander iconfont-archer">&#xe676;</span><span class="abstract-time">2018/08/27</span>
-            </div>
-            <!-- tags  -->
-            
-            <div class= abstract-tags >
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "github">github</a>
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "hexo">hexo</a>
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "博客">博客</a>
-    
-</div>
-            
-        </div>
-    </article>
+    <!-- license  -->
     
     <!-- paginator  -->
+    <ul class="post-paginator">
+        <li class="next">
+            
+        </li>
+        <li class="previous">
+            
+                <div class="prevSlogan">Previous Post</div>
+                <a href= "/2018/09/17/vi编辑模式下的查找替换/" title= vi编辑模式下的查找替换 >
+                    <div class="prevTitle">vi编辑模式下的查找替换</div>
+                </a>
+            
+        </li>
+    </ul>
+    <!-- 评论插件 -->
+    <!-- 来必力City版安装代码 -->
+
+<!-- City版安装代码已完成 -->
     
+    
+    <!--PC版-->
+
+    <!--PC版-->
+
+
+    
+    <!-- 评论 -->
 </main>
             <!-- profile -->
             
@@ -522,6 +500,24 @@
 </footer>
     </div>
     <!-- toc -->
+    
+    <div class="toc-wrapper" style=
+    
+
+
+
+
+
+
+
+top:50vh;
+
+    >
+        <div class="toc-catalog">
+            <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
+        </div>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#乐观锁简单介"><span class="toc-number">1.</span> <span class="toc-text">乐观锁简单介</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#实现过程"><span class="toc-number">1.1.</span> <span class="toc-text">实现过程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#适用场景"><span class="toc-number">1.2.</span> <span class="toc-text">适用场景</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#在zookeeper中的实际应用"><span class="toc-number">2.</span> <span class="toc-text">在zookeeper中的实际应用</span></a></li></ol>
+    </div>
     
     <div class="back-top iconfont-archer">&#xe639;</div>
     <div class="sidebar sidebar-hide">
@@ -763,6 +759,8 @@ jsonContent:
     
     </div>
     <!-- async load share.js -->
+    
+        <script src="/scripts/share.js" async></script>    
      
     </body>
 </html>
