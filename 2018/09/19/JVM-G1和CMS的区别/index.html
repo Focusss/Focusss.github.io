@@ -15,7 +15,7 @@
     <meta name="description" content="">
     <meta name="Cache-Control" content="no-cache">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
-    <title>Focusss</title>
+    <title>JVM-G1和CMS的区别 · Focusss</title>
     <style type="text/css">
     @font-face {
         font-family: 'Oswald-Regular';
@@ -70,6 +70,8 @@
 
     <link rel="preload" href= /css/style.css?v=20180604 as="style" onload="this.onload=null;this.rel='stylesheet'" />
     <link rel="stylesheet" href= /css/mobile.css?v=20180604 media="(max-width: 980px)">
+    
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
     
     <!-- /*! loadCSS. [c]2017 Filament Group, Inc. MIT License */
 /* This file is meant as a standalone workflow for
@@ -192,12 +194,23 @@
 </head>
 
     
+        <body class="post-body">
+    
     
 <header class="header">
 
     <div class="read-progress"></div>
     <div class="header-sidebar-menu">&#xe775;</div>
     <!-- post页的toggle banner  -->
+    
+    <div class="banner">
+            <div class="blog-title">
+                <a href="/" >Focusss&#39;s Blog</a>
+            </div>
+            <div class="post-title">
+                <a href="#" class="post-name">JVM-G1和CMS的区别</a>
+            </div>
+    </div>
     
     <a class="home-link" href=/>Focusss's Blog</a>
 </header>
@@ -211,24 +224,78 @@
 
 
 
+height:50vh;
+
 >
     
     <!-- 主页  -->
+    
+    
+    <!-- 404页  -->
             
     <div class="site-intro-placeholder"></div>
-    <div class="site-intro-img" style="background-image: url(/)"></div>
+    <div class="site-intro-img" style="background-image: url(/intro/fr.jpg)"></div>
     <div class="site-intro-meta">
         <!-- 标题  -->
         <h1 class="intro-title">
             <!-- 主页  -->
+            
+            JVM-G1和CMS的区别
+            <!-- 404 -->
             
         </h1>
         <!-- 副标题 -->
         <p class="intro-subtitle">
             <!-- 主页副标题  -->
             
+            
+            <!-- 404 -->
+            
         </p>
         <!-- 文章页meta -->
+        
+            <div class="post-intros">
+                <!-- 文章页标签  -->
+                
+                    <div class= post-intro-tags >
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "JVM">JVM</a>
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "CMS">CMS</a>
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "G1">G1</a>
+    
+</div>
+                
+                
+                    <div class="post-intro-read">
+                        <span>Word count: <span class="post-count">837</span> / Reading time: <span class="post-count">3 min</span></span>
+                    </div>
+                
+                <div class="post-intro-meta">
+                    <span class="post-intro-calander iconfont-archer">&#xe676;</span>
+                    <span class="post-intro-time">2018/09/19</span>
+                    
+                    <span id="busuanzi_container_page_pv" class="busuanzi-pv">
+                        <span class="iconfont-archer">&#xe602;</span>
+                        <span id="busuanzi_value_page_pv"></span>
+                    </span>
+                    
+                    <span class="shareWrapper">
+                        <span class="iconfont-archer shareIcon">&#xe71d;</span>
+                        <span class="shareText">Share</span>
+                        <ul class="shareList">
+                            <li class="iconfont-archer share-qr" data-type="qr">&#xe75b;
+                                <div class="share-qrcode"></div>
+                            </li>
+                            <li class="iconfont-archer" data-type="weibo">&#xe619;</li>
+                            <li class="iconfont-archer" data-type="qzone">&#xe62e;</li>
+                            <li class="iconfont-archer" data-type="twitter">&#xe634;</li>
+                            <li class="iconfont-archer" data-type="facebook">&#xe67a;</li>
+                        </ul>
+                    </span>
+                </div>
+            </div>
         
     </div>
 </div>
@@ -329,105 +396,49 @@
 </script>        
         <img class="loading" src="/assets/loading.svg" style="display: block; margin: 6rem auto 0 auto; width: 6rem; height: 6rem;" />
         <div class="container container-unloaded">
-            <main class="main index-page">
-    
-    
-    
-    
-    
-    
-    <article class="index-post">
-        <a class="abstract-title" href = "/2018/09/19/JVM-G1和CMS的区别/" >
-            
-                <span>JVM-G1和CMS的区别</span>
-        </a>
-        <div class="abstract-content">
-            全称Garbage First-垃圾优先收集器，G1在回收垃圾的时候同时完成了堆的部分内存压缩，相对于CMS的优势而言就是内存碎片的产生率大大降低
-        </div>
-        <div class="abstract-post-meta">
-            <!-- date  -->
-            <div class="abstract-date">
-                <span class="abstract-calander iconfont-archer">&#xe676;</span><span class="abstract-time">2018/09/19</span>
-            </div>
-            <!-- tags  -->
-            
-            <div class= abstract-tags >
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "JVM">JVM</a>
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "CMS">CMS</a>
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "G1">G1</a>
-    
-</div>
-            
-        </div>
+            <main class="main post-page">
+    <article class="article-entry">
+        <h2 id="堆-Heap-空间分配不同"><a href="#堆-Heap-空间分配不同" class="headerlink" title="堆(Heap)空间分配不同"></a>堆(Heap)空间分配不同</h2><p>&ensp;&ensp;&ensp;&ensp;CMS 将堆逻辑上分成<strong>[Eden，Survivor(S0，S1)，Old]</strong>，并且他们是固定大小JVM启动的时候就已经设定不能改变，并且是连续的内存块。<br>G1 将堆分成多个大小相同的Region(区域)，默认2048个，在1Mb到32Mb之间大小，逻辑上分成<strong>[Eden，Survivor，Old，巨型，空闲]</strong>，他们不是固定大小，会根据每次GC的信息做出调整。</p>
+<h2 id="并发标记阶段三色标记算法处理结果不同"><a href="#并发标记阶段三色标记算法处理结果不同" class="headerlink" title="并发标记阶段三色标记算法处理结果不同"></a>并发标记阶段三色标记算法处理结果不同</h2><p>&ensp;&ensp;&ensp;&ensp;CMS 在三色标记算法阶段，如果将白色对象重新分配给黑色对象时，在分配期间采用增量更新方式(写屏障中发现白色对象引用被分配给黑色对象时，分配过程中将白色重新设置为灰色，即插入的时候就记录修改)。<br>G1 在三色标记算法阶段，如果将白色对象重新分配给黑色对象时，采用SATB，并发标记阶段，所有被改变的对象入队，在写屏障中统一处理为灰色。</p>
+<h2 id="压缩策略不同"><a href="#压缩策略不同" class="headerlink" title="压缩策略不同"></a>压缩策略不同</h2><p>&ensp;&ensp;&ensp;&ensp;CMS中不启用压缩会产生很多内存碎片，当产生很多内存碎片的时候，找不到空间来分配剩余的对象，或者设定参数，使它合并相邻的的空闲内存，当合并超过一定次数后触发Full GC，进行压缩。<br>G1中每次回收过程中，将多个Region拷贝到空闲Region的时候都会进行压缩。</p>
+<h2 id="可预测停顿"><a href="#可预测停顿" class="headerlink" title="可预测停顿"></a>可预测停顿</h2><p>&ensp;&ensp;&ensp;&ensp;相比CMS，G1可以设定每次GC的时间，从而让GC在规定时间内回收效益最大的内存。</p>
+<h2 id="GC策略不同"><a href="#GC策略不同" class="headerlink" title="GC策略不同"></a>GC策略不同</h2><p>&ensp;&ensp;&ensp;&ensp;CMS中，GC的策略分为：Young GC，Old GC，Full GC<br>&ensp;&ensp;&ensp;&ensp;G1中，GC的策略分为：Young GC，Mixed GC，Full GC</p>
+<h2 id="Young-GC不同"><a href="#Young-GC不同" class="headerlink" title="Young GC不同"></a>Young GC不同</h2><p>&ensp;&ensp;&ensp;&ensp;CMS的Young GC就是依赖并行GC(ParNew)去完成的，需要STW。而只有老年代中使用CMS GC(也就是Old GC)。</p>
+<p><strong>CMS Young GC大致过程</strong>:</p>
+<p>&ensp;&ensp;&ensp;&ensp;年轻代分成了Eden，Survivor(S0，S1)，当Eden区域满了就触发Young GC，将Eden中存活的数据复制到S0或者S1中的一个中去。如果对象太大，Survivor中无法分配就直接存到Old去，然后回收垃圾的数据。这时Eden被清空了，Survivor其中一个被填了数据等到Eden再次满了，就会再次存入之前的Survivor中去。如果Survivor也满了，就会将将Eden和Survivor中存活的对象复制到另外一个Survivor区域中，每次GC一次依然存活的对象的age都+1，默认当age=15的时候(经历了多次Young GC)那么就会晋升到Old去，然后清空Eden和Survivor。</p>
+<p><strong>G1 Young GC大致过程</strong>:  </p>
+<p>&ensp;&ensp;&ensp;&ensp;G1 Young GC是自己去清理的，而不是并行GC处理。Eden区域数据满了，将Eden区域中存活的复制到Survivor中去，其中符合条件的晋升。如果Survivor空间不够，那么将Survivor和Eden中存活的数据一起复制到一个新的区域中去，这时这个新的区域就是Survivor，然后回收掉之前的Eden和Survivor。每次Young GC之后，根据之前一次GC的信息调整Eden和Survivor的大小，因为G1中这两个区域并不是物理上连续的内存，而只是逻辑上的，因此可以动态分配。</p>
+
     </article>
-    
-    
-    
-    
-    
-    
-    <article class="index-post">
-        <a class="abstract-title" href = "/2018/09/19/JVM-G1垃圾收集器/" >
-            
-                <span>JVM-G1垃圾收集器</span>
-        </a>
-        <div class="abstract-content">
-            全称Garbage First-垃圾优先收集器，G1在回收垃圾的时候同时完成了堆的部分内存压缩，相对于CMS的优势而言就是内存碎片的产生率大大降低
-        </div>
-        <div class="abstract-post-meta">
-            <!-- date  -->
-            <div class="abstract-date">
-                <span class="abstract-calander iconfont-archer">&#xe676;</span><span class="abstract-time">2018/09/19</span>
-            </div>
-            <!-- tags  -->
-            
-            <div class= abstract-tags >
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "JVM">JVM</a>
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "G1">G1</a>
-    
-</div>
-            
-        </div>
-    </article>
-    
-    
-    
-    
-    
-    
-    <article class="index-post">
-        <a class="abstract-title" href = "/2018/09/18/JVM-CMS垃圾收集器/" >
-            
-                <span>JVM-CMS垃圾收集器</span>
-        </a>
-        <div class="abstract-content">
-            全称Concurrent Mark Sweep，以牺牲吞吐量为代价来获得最短停顿时间的垃圾收集器，适用于对响应时间的侧重性大于吞吐量的场景
-        </div>
-        <div class="abstract-post-meta">
-            <!-- date  -->
-            <div class="abstract-date">
-                <span class="abstract-calander iconfont-archer">&#xe676;</span><span class="abstract-time">2018/09/18</span>
-            </div>
-            <!-- tags  -->
-            
-            <div class= abstract-tags >
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "JVM">JVM</a>
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "CMS">CMS</a>
-    
-</div>
-            
-        </div>
-    </article>
+    <!-- license  -->
     
     <!-- paginator  -->
+    <ul class="post-paginator">
+        <li class="next">
+            
+        </li>
+        <li class="previous">
+            
+                <div class="prevSlogan">Previous Post</div>
+                <a href= "/2018/09/19/JVM-G1垃圾收集器/" title= JVM-G1垃圾收集器 >
+                    <div class="prevTitle">JVM-G1垃圾收集器</div>
+                </a>
+            
+        </li>
+    </ul>
+    <!-- 评论插件 -->
+    <!-- 来必力City版安装代码 -->
+
+<!-- City版安装代码已完成 -->
     
+    
+    <!--PC版-->
+
+    <!--PC版-->
+
+
+    
+    <!-- 评论 -->
 </main>
             <!-- profile -->
             
@@ -497,6 +508,24 @@
 </footer>
     </div>
     <!-- toc -->
+    
+    <div class="toc-wrapper" style=
+    
+
+
+
+
+
+
+
+top:50vh;
+
+    >
+        <div class="toc-catalog">
+            <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
+        </div>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#堆-Heap-空间分配不同"><span class="toc-number">1.</span> <span class="toc-text">堆(Heap)空间分配不同</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#并发标记阶段三色标记算法处理结果不同"><span class="toc-number">2.</span> <span class="toc-text">并发标记阶段三色标记算法处理结果不同</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#压缩策略不同"><span class="toc-number">3.</span> <span class="toc-text">压缩策略不同</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#可预测停顿"><span class="toc-number">4.</span> <span class="toc-text">可预测停顿</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#GC策略不同"><span class="toc-number">5.</span> <span class="toc-text">GC策略不同</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Young-GC不同"><span class="toc-number">6.</span> <span class="toc-text">Young GC不同</span></a></li></ol>
+    </div>
     
     <div class="back-top iconfont-archer">&#xe639;</div>
     <div class="sidebar sidebar-hide">
@@ -808,6 +837,8 @@ jsonContent:
     
     </div>
     <!-- async load share.js -->
+    
+        <script src="/scripts/share.js" async></script>    
      
     </body>
 </html>
