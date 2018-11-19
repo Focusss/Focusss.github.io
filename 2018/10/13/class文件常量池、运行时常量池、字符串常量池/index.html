@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html>
+    <!-- title -->
+
+
+
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" >
+    <meta name="author" content="cjwei">
+    <meta name="renderer" content="webkit">
+    <meta name="copyright" content="cjwei">
+    <meta name="keywords" content="Focusss | cjwei">
+    <meta name="description" content="">
+    <meta name="Cache-Control" content="no-cache">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <title>class文件常量池、运行时常量池、字符串常量池 · Focusss</title>
+    <style type="text/css">
+    @font-face {
+        font-family: 'Oswald-Regular';
+        src: url("/font/Oswald-Regular.ttf");
+    }
+
+    body {
+        margin: 0;
+    }
+
+    header,
+    footer,
+    .back-top,
+    .sidebar,
+    .container,
+    .site-intro-meta,
+    .toc-wrapper {
+        display: none;
+    }
+
+    .site-intro {
+        position: relative;
+        z-index: 3;
+        width: 100%;
+        /* height: 50vh; */
+        overflow: hidden;
+    }
+
+    .site-intro-placeholder {
+        position: absolute;
+        z-index: -2;
+        top: 0;
+        left: 0;
+        width: calc(100% + 300px);
+        height: 100%;
+        background: repeating-linear-gradient(-45deg, #444 0, #444 80px, #333 80px, #333 160px);
+        background-position: center center;
+        transform: translate3d(-226px, 0, 0);
+        animation: gradient-move 2.5s ease-out 0s 1;
+    }
+
+    @keyframes gradient-move {
+        0% {
+            transform: translate3d(-226px, 0, 0);
+        }
+        100% {
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+</style>
+
+    <link rel="preload" href= /css/style.css?v=20180604 as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="stylesheet" href= /css/mobile.css?v=20180604 media="(max-width: 980px)">
+    
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    
+    <!-- /*! loadCSS. [c]2017 Filament Group, Inc. MIT License */
+/* This file is meant as a standalone workflow for
+- testing support for link[rel=preload]
+- enabling async CSS loading in browsers that do not support rel=preload
+- applying rel preload css once loaded, whether supported or not.
+*/ -->
+<script>
+(function( w ){
+	"use strict";
+	// rel=preload support test
+	if( !w.loadCSS ){
+		w.loadCSS = function(){};
+	}
+	// define on the loadCSS obj
+	var rp = loadCSS.relpreload = {};
+	// rel=preload feature support test
+	// runs once and returns a function for compat purposes
+	rp.support = (function(){
+		var ret;
+		try {
+			ret = w.document.createElement( "link" ).relList.supports( "preload" );
+		} catch (e) {
+			ret = false;
+		}
+		return function(){
+			return ret;
+		};
+	})();
+
+	// if preload isn't supported, get an asynchronous load by using a non-matching media attribute
+	// then change that media back to its intended value on load
+	rp.bindMediaToggle = function( link ){
+		// remember existing media attr for ultimate state, or default to 'all'
+		var finalMedia = link.media || "all";
+
+		function enableStylesheet(){
+			link.media = finalMedia;
+		}
+
+		// bind load handlers to enable media
+		if( link.addEventListener ){
+			link.addEventListener( "load", enableStylesheet );
+		} else if( link.attachEvent ){
+			link.attachEvent( "onload", enableStylesheet );
+		}
+
+		// Set rel and non-applicable media type to start an async request
+		// note: timeout allows this to happen async to let rendering continue in IE
+		setTimeout(function(){
+			link.rel = "stylesheet";
+			link.media = "only x";
+		});
+		// also enable media after 3 seconds,
+		// which will catch very old browsers (android 2.x, old firefox) that don't support onload on link
+		setTimeout( enableStylesheet, 3000 );
+	};
+
+	// loop through link elements in DOM
+	rp.poly = function(){
+		// double check this to prevent external calls from running
+		if( rp.support() ){
+			return;
+		}
+		var links = w.document.getElementsByTagName( "link" );
+		for( var i = 0; i < links.length; i++ ){
+			var link = links[ i ];
+			// qualify links to those with rel=preload and as=style attrs
+			if( link.rel === "preload" && link.getAttribute( "as" ) === "style" && !link.getAttribute( "data-loadcss" ) ){
+				// prevent rerunning on link
+				link.setAttribute( "data-loadcss", true );
+				// bind listeners to toggle media back
+				rp.bindMediaToggle( link );
+			}
+		}
+	};
+
+	// if unsupported, run the polyfill
+	if( !rp.support() ){
+		// run once at least
+		rp.poly();
+
+		// rerun poly on an interval until onload
+		var run = w.setInterval( rp.poly, 500 );
+		if( w.addEventListener ){
+			w.addEventListener( "load", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		} else if( w.attachEvent ){
+			w.attachEvent( "onload", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		}
+	}
+
+
+	// commonjs
+	if( typeof exports !== "undefined" ){
+		exports.loadCSS = loadCSS;
+	}
+	else {
+		w.loadCSS = loadCSS;
+	}
+}( typeof global !== "undefined" ? global : this ) );
+</script>
+
+    <link rel="icon" href= "/assets/eyes.ico" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js" as="script" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js" as="script" />
+    <link rel="preload" href="/scripts/main.js" as="script" />
+    <link rel="preload" as="font" href="/font/Oswald-Regular.ttf" crossorigin>
+    <link rel="preload" as="font" href="https://at.alicdn.com/t/font_327081_1dta1rlogw17zaor.woff" crossorigin>
+    
+    <!-- 百度统计  -->
+    
+    <!-- 谷歌统计  -->
+    
+</head>
+
+    
+        <body class="post-body">
+    
+    
+<header class="header">
+
+    <div class="read-progress"></div>
+    <div class="header-sidebar-menu">&#xe775;</div>
+    <!-- post页的toggle banner  -->
+    
+    <div class="banner">
+            <div class="blog-title">
+                <a href="/" >Focusss&#39;s Blog</a>
+            </div>
+            <div class="post-title">
+                <a href="#" class="post-name">class文件常量池、运行时常量池、字符串常量池</a>
+            </div>
+    </div>
+    
+    <a class="home-link" href=/>Focusss's Blog</a>
+</header>
+    <div class="wrapper">
+        <div class="site-intro" style=
+
+
+
+
+
+
+
+
+height:50vh;
+
+>
+    
+    <!-- 主页  -->
+    
+    
+    <!-- 404页  -->
+            
+    <div class="site-intro-placeholder"></div>
+    <div class="site-intro-img" style="background-image: url(/intro/fr.jpg)"></div>
+    <div class="site-intro-meta">
+        <!-- 标题  -->
+        <h1 class="intro-title">
+            <!-- 主页  -->
+            
+            class文件常量池、运行时常量池、字符串常量池
+            <!-- 404 -->
+            
+        </h1>
+        <!-- 副标题 -->
+        <p class="intro-subtitle">
+            <!-- 主页副标题  -->
+            
+            
+            <!-- 404 -->
+            
+        </p>
+        <!-- 文章页meta -->
+        
+            <div class="post-intros">
+                <!-- 文章页标签  -->
+                
+                    <div class= post-intro-tags >
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "JVM">JVM</a>
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "常量池">常量池</a>
+    
+</div>
+                
+                
+                    <div class="post-intro-read">
+                        <span>Word count: <span class="post-count">2,729</span> / Reading time: <span class="post-count">10 min</span></span>
+                    </div>
+                
+                <div class="post-intro-meta">
+                    <span class="post-intro-calander iconfont-archer">&#xe676;</span>
+                    <span class="post-intro-time">2018/10/13</span>
+                    
+                    <span id="busuanzi_container_page_pv" class="busuanzi-pv">
+                        <span class="iconfont-archer">&#xe602;</span>
+                        <span id="busuanzi_value_page_pv"></span>
+                    </span>
+                    
+                    <span class="shareWrapper">
+                        <span class="iconfont-archer shareIcon">&#xe71d;</span>
+                        <span class="shareText">Share</span>
+                        <ul class="shareList">
+                            <li class="iconfont-archer share-qr" data-type="qr">&#xe75b;
+                                <div class="share-qrcode"></div>
+                            </li>
+                            <li class="iconfont-archer" data-type="weibo">&#xe619;</li>
+                            <li class="iconfont-archer" data-type="qzone">&#xe62e;</li>
+                            <li class="iconfont-archer" data-type="twitter">&#xe634;</li>
+                            <li class="iconfont-archer" data-type="facebook">&#xe67a;</li>
+                        </ul>
+                    </span>
+                </div>
+            </div>
+        
+    </div>
+</div>
+        <script>
+ 
+  // get user agent
+  var browser = {
+    versions: function () {
+      var u = window.navigator.userAgent;
+      return {
+        userAgent: u,
+        trident: u.indexOf('Trident') > -1, //IE内核
+        presto: u.indexOf('Presto') > -1, //opera内核
+        webKit: u.indexOf('AppleWebKit') > -1, //苹果、谷歌内核
+        gecko: u.indexOf('Gecko') > -1 && u.indexOf('KHTML') == -1, //火狐内核
+        mobile: !!u.match(/AppleWebKit.*Mobile.*/), //是否为移动终端
+        ios: !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/), //ios终端
+        android: u.indexOf('Android') > -1 || u.indexOf('Linux') > -1, //android终端或者uc浏览器
+        iPhone: u.indexOf('iPhone') > -1 || u.indexOf('Mac') > -1, //是否为iPhone或者安卓QQ浏览器
+        iPad: u.indexOf('iPad') > -1, //是否为iPad
+        webApp: u.indexOf('Safari') == -1, //是否为web应用程序，没有头部与底部
+        weixin: u.indexOf('MicroMessenger') == -1, //是否为微信浏览器
+        uc: u.indexOf('UCBrowser') > -1 //是否为android下的UC浏览器
+      };
+    }()
+  }
+  console.log("userAgent:" + browser.versions.userAgent);
+
+  // callback
+  function fontLoaded() {
+    console.log('font loaded');
+    if (document.getElementsByClassName('site-intro-meta')) {
+      document.getElementsByClassName('intro-title')[0].classList.add('intro-fade-in');
+      document.getElementsByClassName('intro-subtitle')[0].classList.add('intro-fade-in');
+      var postIntros = document.getElementsByClassName('post-intros')[0]
+      if (postIntros) {
+        postIntros.classList.add('post-fade-in');
+      }
+    }
+  }
+
+  // UC不支持跨域，所以直接显示
+  function asyncCb(){
+    if (browser.versions.uc) {
+      console.log("UCBrowser");
+      fontLoaded();
+    } else {
+      WebFont.load({
+        custom: {
+          families: ['Oswald-Regular']
+        },
+        loading: function () {  //所有字体开始加载
+          // console.log('loading');
+        },
+        active: function () {  //所有字体已渲染
+          fontLoaded();
+        },
+        inactive: function () { //字体预加载失败，无效字体或浏览器不支持加载
+          console.log('inactive: timeout');
+          fontLoaded();
+        },
+        timeout: 5000 // Set the timeout to two seconds
+      });
+    }
+  }
+
+  function asyncErr(){
+    console.warn('script load from CDN failed, will load local script')
+  }
+
+  // load webfont-loader async, and add callback function
+  function async(u, cb, err) {
+    var d = document, t = 'script',
+      o = d.createElement(t),
+      s = d.getElementsByTagName(t)[0];
+    o.src = u;
+    if (cb) { o.addEventListener('load', function (e) { cb(null, e); }, false); }
+    if (err) { o.addEventListener('error', function (e) { err(null, e); }, false); }
+    s.parentNode.insertBefore(o, s);
+  }
+
+  var asyncLoadWithFallBack = function(arr, success, reject) {
+      var currReject = function(){
+        reject()
+        arr.shift()
+        if(arr.length)
+          async(arr[0], success, currReject)
+        }
+
+      async(arr[0], success, currReject)
+  }
+
+  asyncLoadWithFallBack([
+    "https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js", 
+    "https://cdn.bootcss.com/webfont/1.6.28/webfontloader.js",
+    "/lib/webfontloader.min.js"
+  ], asyncCb, asyncErr)
+</script>        
+        <img class="loading" src="/assets/loading.svg" style="display: block; margin: 6rem auto 0 auto; width: 6rem; height: 6rem;" />
+        <div class="container container-unloaded">
+            <main class="main post-page">
+    <article class="article-entry">
+        <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>常量池是为了避免频繁的创建和销毁对象而影响系统性能，其实现了对象的共享。例如字符串常量池，在编译阶段就把所有的字符串文字放到一个常量池中。</p>
+<blockquote>
+<p>节省内存空间：常量池中所有相同的字符串常量被合并，只占用一个空间。<br>节省运行时间：比较字符串时，==比equals()快。对于两个引用变量，只用==判断引用是否相等，也就可以判断实际值是否相等。</p>
+</blockquote>
+<h2 id="class文件常量池（静态常量池）"><a href="#class文件常量池（静态常量池）" class="headerlink" title="class文件常量池（静态常量池）"></a>class文件常量池（静态常量池）</h2><p>class文件常量池是指编译生成的class字节码文件结构中的一个常量池（Constant Pool Table），用于存放编译期间生成的各种字面量和符号引用，这部分内容将在类加载后，存放于方法区的运行时常量池。</p>
+<blockquote>
+<ul>
+<li>字面量指的是<strong>字符串字面量和声明为final的常量值（基本数据类型）</strong>。</li>
+<li>&ensp;&ensp;字符串字面量除了类中所有双引号括起来的字符串（包括方法体内的），还包括所有用到的类名、方法名和这些类与方法的字符串描述、字段（成员变量）的名称和描述符</li>
+<li>&ensp;&ensp;声明为final的常量值指的是成员变量，不包含本地变量，本地变量是属于方法的。</li>
+<li>符号引用包括类和接口的全限定名（包括包路径的完整名）、字段的名称和描述符、方法的名称和描述。只不过是以一组符号来描述所引用的目标，和内存并无关，所以称为符号引用，直接指向内存中某一地址的引用称为直接引用  </li>
+</ul>
+</blockquote>
+<h3 id="常量池结构"><a href="#常量池结构" class="headerlink" title="常量池结构"></a>常量池结构</h3><p>前端的两个字节占有的位置叫做常量池计数器(constant_pool_count)，它记录着常量池的组成元素-常量池项(cp_info)的个数（从１开始，将０表示不引用任何常量）。紧接着会排列着constant_pool_count-1个常量池项(cp_info)。每个常量池项(cp_info) 都会对应记录着class文件中的某中类型的字面量。cp_info项的结构如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cp_info&#123;</span><br><span class="line">	u1 tag;</span><br><span class="line">	u1 info[];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>JVM会根据tag的值来确定当前常量池项表示什么类型的字面量。  </p>
+<table>
+<thead>
+<tr>
+<th>Tag</th>
+<th style="text-align:right">类型</th>
+<th style="text-align:center">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td style="text-align:right">CONSTANT_utf8_info</td>
+<td style="text-align:center">UTF-8编码的字符串字面量</td>
+</tr>
+<tr>
+<td>3</td>
+<td style="text-align:right">CONSTANT_Integer_info</td>
+<td style="text-align:center">整型字面量</td>
+</tr>
+<tr>
+<td>4</td>
+<td style="text-align:right">CONSTANT_Float_info</td>
+<td style="text-align:center">浮点型字面量</td>
+</tr>
+<tr>
+<td>5</td>
+<td style="text-align:right">CONSTANT_Long_info</td>
+<td style="text-align:center">长整型字面量</td>
+</tr>
+<tr>
+<td>6</td>
+<td style="text-align:right">CONSTANT_Double_info</td>
+<td style="text-align:center">双精度浮点型字面量</td>
+</tr>
+<tr>
+<td>7</td>
+<td style="text-align:right">CONSTANT_Class_info</td>
+<td style="text-align:center">类或接口的符号引用</td>
+</tr>
+<tr>
+<td>8</td>
+<td style="text-align:right">CONSTANT_String_info</td>
+<td style="text-align:center">字符串类型字面量</td>
+</tr>
+<tr>
+<td>9</td>
+<td style="text-align:right">CONSTANT_Fieldref_info</td>
+<td style="text-align:center">字段的符号引用</td>
+</tr>
+<tr>
+<td>10</td>
+<td style="text-align:right">CONSTANT_Methodref_info</td>
+<td style="text-align:center">类中方法的符号引用</td>
+</tr>
+<tr>
+<td>11</td>
+<td style="text-align:right">CONSTANT_InterfaceMethodref_info</td>
+<td style="text-align:center">接口中方法的符号引用</td>
+</tr>
+<tr>
+<td>12</td>
+<td style="text-align:right">CONSTANT_NameAndType_info</td>
+<td style="text-align:center">字段或方法的符号引用</td>
+</tr>
+<tr>
+<td>15</td>
+<td style="text-align:right">CONSTANT_MethodHandle_info</td>
+<td style="text-align:center">表示方法句柄</td>
+</tr>
+<tr>
+<td>16</td>
+<td style="text-align:right">CONSTANT_MothodType_info</td>
+<td style="text-align:center">表示方法类型</td>
+</tr>
+<tr>
+<td>18</td>
+<td style="text-align:right">CONSTANT_InvokeDynamic_info</td>
+<td style="text-align:center">表示一个动态方法调用点</td>
+</tr>
+</tbody>
+</table>
+<h3 id="基本数据类型常量在常量池存储"><a href="#基本数据类型常量在常量池存储" class="headerlink" title="基本数据类型常量在常量池存储"></a>基本数据类型常量在常量池存储</h3><p>通过下面的例子来讲解下<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;  </span><br><span class="line">      </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> a = <span class="number">10</span>;  </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> b = <span class="number">10</span>;  </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">float</span> c = <span class="number">11f</span>;  </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">float</span> d = <span class="number">11f</span>;  </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">float</span> e = <span class="number">11f</span>;  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String s1 = <span class="string">"JVM原理"</span>;  </span><br><span class="line">    <span class="keyword">private</span> String s2 = <span class="string">"JVM原理"</span>;  </span><br><span class="line">      </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>创建完上面的java文件后，执行<code>javac Test.java</code>Test.class文件，再执行<code>javap -v Test</code> 查看class文件。<br><img src="/2018/10/13/class文件常量池、运行时常量池、字符串常量池/class常量池1.png" alt="class常量池"><br>从上面的结果我们可以看到在常量池中，只有一个常量10 、一个常量11f、一个常量JVM原理。代码中所有用到 int 类型 10 的地方，会使用指向常量池的指针值#16（符号引用）定位到第#16个常量池项(cp_info)，即值为 10的结构体CONSTANT_Integer_info，而用到float类型的11f时，也会指向常量池的指针值#4来定位到第#4个常量池项(cp_info) 即值为11f的结构体CONSTANT_Float_info。我们可以看到CONSTANT_String_info结构体位于常量池的第#8个索引位置，且该结构体直接存储了指针值#37，用来指向第#37个常量池项。而存放”JVM原理”字符串的UTF-8编码格式的字节数组被放到CONSTANT_Utf8_info结构体中，该结构体位于常量池的第#37个索引位置。</p>
+<h3 id="类文件中定义的类名和类中使用到的类常量在常量池存储"><a href="#类文件中定义的类名和类中使用到的类常量在常量池存储" class="headerlink" title="类文件中定义的类名和类中使用到的类常量在常量池存储"></a>类文件中定义的类名和类中使用到的类常量在常量池存储</h3><p>CONSTANT_Class_info结构体中，存在一个索引值，用于指向存储了[类二进制形式的完全限定名称]字符串的CONSTANT_String_info结构体。该索引值占两个字节大小，所以它能表示的最大索引是65535（2的16次方-1），也就是说常量池中最多能容纳65535个常量项。所在在定义类时要注意类的大小。  </p>
+<blockquote>
+<p>假设我们定义了一个 ClassTest的类，并把它放到com.focus.jvm 包下，则 ClassTest类的完全限定名为com.focus.jvm.ClassTest，将JVM编译器将类编译成class文件后，此完全限定名在class文件中，是以二进制形式的完全限定名存储的，即它会把完全限定符的”.”换成”/“ ，即在class文件中存储的 ClassTest类的完全限定名称是”com/focus/jvm/ClassTest”。因为这种形式的完全限定名是放在了class二进制形式的字节码文件中，所以就称之为二进制形式的完全限定名。  </p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.focus.jvm;  </span><br><span class="line"><span class="keyword">import</span>  java.util.Date;  </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ClassTest</span> </span>&#123;  </span><br><span class="line">    <span class="keyword">private</span> Date date1 =<span class="keyword">new</span> Date();  </span><br><span class="line">    <span class="keyword">private</span> Date date2;  </span><br><span class="line">    <span class="keyword">private</span> Date date3;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ClassTest</span><span class="params">()</span></span>&#123;  </span><br><span class="line">        date2  = <span class="keyword">new</span> Date();  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="/2018/10/13/class文件常量池、运行时常量池、字符串常量池/class常量池2.png" alt="class常量池2"><br>由上图可以看到，在ClassTest.class文件的常量池中，共有3个CONSTANT_Class_info结构体，表示ClassTest中用到的Class信息。一个java/util/Date的CONSTANT_Class_info结构体，它在常量池中的位置是#2，存储的指针值为#19，它指向了常量池的第19个常量池项；一个com/focus/ClassTest的CONSTANT_Class_info结构体，它在常量池中的位置是#6，存储的指针值为#22，它指向了常量池的第22个常量池项；另外一个java/lang/Object的CONSTANT_Class_info结构体，它在常量池中的位置是#7，存储的指针值为#23，它指向了常量池的第23个常量池项。</p>
+<blockquote>
+<p>Java中规定所有的类都要继承java.lang.Object类，即所有类都是java.lang.Object的子类。JVM在编译类的时候，即使我们没有显示地继承Object，JVM编译器在编译的时候会自动帮我们加上去。所以对于某个类而言，其class文件中至少会有两个CONSTANT_Class_info常量池项，用来表示自己的类信息和其父类信息。如果类声明实现了某些接口，那么接口的信息也会生成对应的CONSTANT_Class_info常量池项。  </p>
+</blockquote>
+<p>如果在类中使用到了其他的类，只有真正使用到了相应的类，JDK编译器才会将类的信息组成CONSTANT_Class_info常量池项放置到常量池中。如下面的代码：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.focus.jvm;  </span><br><span class="line"><span class="keyword">import</span>  java.util.Date;  </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ClassTest</span> </span>&#123;  </span><br><span class="line">     </span><br><span class="line">    <span class="keyword">private</span> Date date3;</span><br><span class="line"></span><br><span class="line">   </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>编译后结果<br><img src="/2018/10/13/class文件常量池、运行时常量池、字符串常量池/class常量池3.png" alt="class常量池3"><br>在JDK将其编译成class文件时，常量池中并没有java.util.Date对应的CONSTANT_Class_info常量池项。它认为你只是声明了“Ljava/util/Date”类型的变量，并没有实际使用到Ljava/util/Date类。</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><blockquote>
+<ul>
+<li>对于某个类或接口而言，其自身、父类和继承或实现的接口的信息会被直接组装成CONSTANT_Class_info常量池项放置到常量池中；  </li>
+</ul>
+</blockquote>
+<blockquote>
+<ul>
+<li>类中或接口中使用到了其他的类，只有在类中实际使用到了该类时，该类的信息才会在常量池中有对应的CONSTANT_Class_info常量池项；</li>
+</ul>
+</blockquote>
+<blockquote>
+<ul>
+<li>类中或接口中仅仅定义某种类型的变量，JDK只会将变量的类型描述信息以UTF-8字符串组成CONSTANT_Utf8_info常量池项放置到常量池中。</li>
+</ul>
+</blockquote>
+<h2 id="运行时常量池"><a href="#运行时常量池" class="headerlink" title="运行时常量池"></a>运行时常量池</h2><p>运行时常量池是方法区的一部分，是一块内存区域。class文件常量池将在类加载后进入方法区的运行时常量池中存放。<strong>一个类加载到JVM中后对应一个运行时常量池</strong>，运行时常量池相对于class文件常量池来说具备动态性，<strong>即字面量可以动态的添加</strong>。Java语言并不要求常量一定只能在编译期产生，运行期间也可能产生新的常量（基本类型包装类和String），这些常量被放在运行时常量池中。class文件常量池只是一个静态存储结构，里面的引用都是符号引用。而运行时常量池可以在运行期间将符号引用解析为直接引用。可以说运行时常量池就是用来索引、查找字段和方法名称和描述符的。给定任意一个字段或方法的索引，最终可得到该字段或方法所属的类型信息和名称及描述符信息。</p>
+<h3 id="基本类型"><a href="#基本类型" class="headerlink" title="基本类型"></a>基本类型</h3><p>java中基本类型的包装类的大部分都实现了常量池技术，即Byte,Short,Integer,Long,Character,Boolean。这5种包装类默认创建了数值[-128，127]的相应类型的缓存数据，但是超出此范围仍然会去创建新的对象。两种浮点数类型的包装类Float,Double并没有实现缓存池技术。</p>
+<h2 id="字符串常量池"><a href="#字符串常量池" class="headerlink" title="字符串常量池"></a>字符串常量池</h2><p>字符串常量池是<strong>全局的</strong>，JVM中独此一份，因此也称为全局字符串常量池。运行时常量池中的字符串字面量若是成员的，则在类加载初始化阶段就使用到了字符串常量池；若是本地的，则在使用到的时候才会使用字符串常量池。其实，“使用常量池”对应的字节码是一个ldc指令，在给String类型的引用赋值的时候会先执行这个指令，看常量池中是否存在这个字符串对象的引用，若有就直接返回这个引用，若没有，就在堆里创建这个字符串对象并在字符串常量池中记录下这个引用。String类的intern()方法还可以在运行期间把字符串放到字符串常量池中。</p>
+<ul>
+<li>在 jdk1.6（含）之前也是方法区的一部分，并且其中存放的是字符串的实例；</li>
+<li>在 jdk1.7（含）之后是在堆内存之中，存储的是字符串对象的引用，字符串实例是在堆中；</li>
+<li>jdk1.8 已移除永久代，字符串常量池是在本地内存当中，存储的也只是引用</li>
+</ul>
+<blockquote>
+<ul>
+<li>JVM中除了字符串常量池，8种基本数据类型中除了两种浮点类型外，其它的6种基本数据类型的包装类都使用了缓冲池，但是Byte、Short、Integer、Long、Character这几个包装类只有对应值在[-128,127]时才会使用缓冲池，超出此范围仍会去创建新的对象。</li>
+</ul>
+</blockquote>
+
+    </article>
+    <!-- license  -->
+    
+    <!-- paginator  -->
+    <ul class="post-paginator">
+        <li class="next">
+            
+                <div class="nextSlogan">Next Post</div>
+                <a href= "/2018/10/16/Java并发编程-辅助类：CountDownLatch、CyclicBarrier和Semaphore/" title= Java并发编程-辅助类：CountDownLatch、CyclicBarrier和Semaphore >
+                    <div class="nextTitle">Java并发编程-辅助类：CountDownLatch、CyclicBarrier和Semaphore</div>
+                </a>
+            
+        </li>
+        <li class="previous">
+            
+                <div class="prevSlogan">Previous Post</div>
+                <a href= "/2018/09/28/JVM垃圾回收/" title= JVM垃圾回收 >
+                    <div class="prevTitle">JVM垃圾回收</div>
+                </a>
+            
+        </li>
+    </ul>
+    <!-- 评论插件 -->
+    <!-- 来必力City版安装代码 -->
+
+<!-- City版安装代码已完成 -->
+    
+    
+    <!--PC版-->
+
+    <!--PC版-->
+
+
+    
+    <!-- 评论 -->
+</main>
+            <!-- profile -->
+            
+        </div>
+        <footer class="footer footer-unloaded">
+    <!-- social  -->
+    
+    <div class="social">
+        
+    
+        
+            
+                <a href="mailto:446193412@qq.com" class="iconfont-archer email" title=email ></a>
+            
+        
+    
+        
+            
+                <a href="//github.com/Focusss" class="iconfont-archer github" target="_blank" title=github></a>
+            
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+    </div>
+    
+    <!-- powered by Hexo  -->
+    <div class="copyright">
+        <span id="hexo-power">Powered by <a href="https://hexo.io/" target="_blank">Hexo</a></span><span class="iconfont-archer power">&#xe635;</span><span id="theme-info">theme <a href="https://github.com/fi3ework/hexo-theme-archer" target="_blank">Archer</a></span>
+    </div>
+    <!-- 不蒜子  -->
+    
+    <div class="busuanzi-container">
+    
+     
+    <span id="busuanzi_container_site_pv">PV: <span id="busuanzi_value_site_pv"></span> :)</span>
+    
+    </div>
+    
+</footer>
+    </div>
+    <!-- toc -->
+    
+    <div class="toc-wrapper" style=
+    
+
+
+
+
+
+
+
+top:50vh;
+
+    >
+        <div class="toc-catalog">
+            <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
+        </div>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#简介"><span class="toc-number">1.</span> <span class="toc-text">简介</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#class文件常量池（静态常量池）"><span class="toc-number">2.</span> <span class="toc-text">class文件常量池（静态常量池）</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#常量池结构"><span class="toc-number">2.1.</span> <span class="toc-text">常量池结构</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#基本数据类型常量在常量池存储"><span class="toc-number">2.2.</span> <span class="toc-text">基本数据类型常量在常量池存储</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#类文件中定义的类名和类中使用到的类常量在常量池存储"><span class="toc-number">2.3.</span> <span class="toc-text">类文件中定义的类名和类中使用到的类常量在常量池存储</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#总结"><span class="toc-number">2.4.</span> <span class="toc-text">总结</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#运行时常量池"><span class="toc-number">3.</span> <span class="toc-text">运行时常量池</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#基本类型"><span class="toc-number">3.1.</span> <span class="toc-text">基本类型</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#字符串常量池"><span class="toc-number">4.</span> <span class="toc-text">字符串常量池</span></a></li></ol>
+    </div>
+    
+    <div class="back-top iconfont-archer">&#xe639;</div>
+    <div class="sidebar sidebar-hide">
+    <ul class="sidebar-tabs sidebar-tabs-active-0">
+        <li class="sidebar-tab-archives"><span class="iconfont-archer">&#xe67d;</span><span class="tab-name">Archive</span></li>
+        <li class="sidebar-tab-tags"><span class="iconfont-archer">&#xe61b;</span><span class="tab-name">Tag</span></li>
+        <li class="sidebar-tab-categories"><span class="iconfont-archer">&#xe666;</span><span class="tab-name">Cate</span></li>
+    </ul>
+    <div class="sidebar-content sidebar-content-show-archive">
+          <div class="sidebar-panel-archives">
+    <!-- 在ejs中将archive按照时间排序 -->
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <div class="total-and-search">
+        <div class="total-archive">
+        Total : 16
+        <!-- search  -->
+        </div>
+            <div class="site-search popup-trigger">
+                <span class="iconfont-archer search-icon">&#xe627;</span>
+            </div>
+    </div>
+    
+    <div class="post-archive">
+    
+    
+    
+    
+    <div class="archive-year"> 2018 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/23</span><a class="archive-post-title" href= "/2018/10/23/偏向锁、自旋锁、轻量级锁、重量级锁/" >偏向锁、自旋锁、轻量级锁、重量级锁</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/16</span><a class="archive-post-title" href= "/2018/10/16/Java并发编程-Callable与Runnable/" >Java并发编程-Callable与Runnable</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/16</span><a class="archive-post-title" href= "/2018/10/16/Java并发编程-辅助类：CountDownLatch、CyclicBarrier和Semaphore/" >Java并发编程-辅助类：CountDownLatch、CyclicBarrier和Semaphore</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/13</span><a class="archive-post-title" href= "/2018/10/13/class文件常量池、运行时常量池、字符串常量池/" >class文件常量池、运行时常量池、字符串常量池</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/28</span><a class="archive-post-title" href= "/2018/09/28/JVM垃圾回收/" >JVM垃圾回收</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/28</span><a class="archive-post-title" href= "/2018/09/28/JVM-内存模型结构/" >JVM-内存模型结构</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/19</span><a class="archive-post-title" href= "/2018/09/19/JVM-G1和CMS的区别/" >JVM-G1和CMS的区别</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/19</span><a class="archive-post-title" href= "/2018/09/19/JVM-G1垃圾收集器/" >JVM-G1垃圾收集器</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/18</span><a class="archive-post-title" href= "/2018/09/18/JVM-CMS垃圾收集器/" >JVM-CMS垃圾收集器</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/17</span><a class="archive-post-title" href= "/2018/09/17/zookeeper的watcher乐观锁实现/" >zookeeper的watcher乐观锁实现</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/17</span><a class="archive-post-title" href= "/2018/09/17/vi编辑模式下的查找替换/" >vi编辑模式下的查找替换</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/14</span><a class="archive-post-title" href= "/2018/09/14/openOffice和swftools安装及环境配置过程/" >openOffice和swftools安装及环境配置过程</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/30</span><a class="archive-post-title" href= "/2018/08/30/阿里云上使用redis集群的一些问题/" >阿里云上使用redis集群的一些问题</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/29</span><a class="archive-post-title" href= "/2018/08/29/Linux环境变量/" >Linux环境变量</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/29</span><a class="archive-post-title" href= "/2018/08/29/redis cluster集群-ruby安装/" >redis cluster集群-ruby及相关依赖安装</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/27</span><a class="archive-post-title" href= "/2018/08/27/Github+Hexo搭建个人博客/" >Github+Hexo搭建个人博客</a>
+        </li>
+    
+    </div>
+  </div>
+        <div class="sidebar-panel-tags">
+    <div class="sidebar-tags-name">
+    
+        <span class="sidebar-tag-name" data-tags="github"><span class="iconfont-archer">&#xe606;</span>github</span>
+    
+        <span class="sidebar-tag-name" data-tags="hexo"><span class="iconfont-archer">&#xe606;</span>hexo</span>
+    
+        <span class="sidebar-tag-name" data-tags="博客"><span class="iconfont-archer">&#xe606;</span>博客</span>
+    
+        <span class="sidebar-tag-name" data-tags="JVM"><span class="iconfont-archer">&#xe606;</span>JVM</span>
+    
+        <span class="sidebar-tag-name" data-tags="CMS"><span class="iconfont-archer">&#xe606;</span>CMS</span>
+    
+        <span class="sidebar-tag-name" data-tags="G1"><span class="iconfont-archer">&#xe606;</span>G1</span>
+    
+        <span class="sidebar-tag-name" data-tags="Linux"><span class="iconfont-archer">&#xe606;</span>Linux</span>
+    
+        <span class="sidebar-tag-name" data-tags="java"><span class="iconfont-archer">&#xe606;</span>java</span>
+    
+        <span class="sidebar-tag-name" data-tags="redis"><span class="iconfont-archer">&#xe606;</span>redis</span>
+    
+        <span class="sidebar-tag-name" data-tags="zookeeper"><span class="iconfont-archer">&#xe606;</span>zookeeper</span>
+    
+        <span class="sidebar-tag-name" data-tags="乐观锁"><span class="iconfont-archer">&#xe606;</span>乐观锁</span>
+    
+        <span class="sidebar-tag-name" data-tags="GC"><span class="iconfont-archer">&#xe606;</span>GC</span>
+    
+        <span class="sidebar-tag-name" data-tags="Java并发编程"><span class="iconfont-archer">&#xe606;</span>Java并发编程</span>
+    
+        <span class="sidebar-tag-name" data-tags="CountDownLatch"><span class="iconfont-archer">&#xe606;</span>CountDownLatch</span>
+    
+        <span class="sidebar-tag-name" data-tags="CyclicBarrier"><span class="iconfont-archer">&#xe606;</span>CyclicBarrier</span>
+    
+        <span class="sidebar-tag-name" data-tags="Semaphore"><span class="iconfont-archer">&#xe606;</span>Semaphore</span>
+    
+        <span class="sidebar-tag-name" data-tags="常量池"><span class="iconfont-archer">&#xe606;</span>常量池</span>
+    
+        <span class="sidebar-tag-name" data-tags="Callable"><span class="iconfont-archer">&#xe606;</span>Callable</span>
+    
+        <span class="sidebar-tag-name" data-tags="Runnable"><span class="iconfont-archer">&#xe606;</span>Runnable</span>
+    
+        <span class="sidebar-tag-name" data-tags="锁机制"><span class="iconfont-archer">&#xe606;</span>锁机制</span>
+    
+        <span class="sidebar-tag-name" data-tags="内存模型"><span class="iconfont-archer">&#xe606;</span>内存模型</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-tags-empty">&#xe678;</div>
+    <div class="tag-load-fail" style="display: none; color: #ccc; font-size: 0.6rem;">
+    缺失模块。<br/>
+    1、请确保node版本大于6.2<br/>
+    2、在博客根目录（注意不是archer根目录）执行以下命令：<br/>
+    <span style="color: #f75357; font-size: 1rem; line-height: 2rem;">npm i hexo-generator-json-content --save</span><br/>
+    3、在根目录_config.yml里添加配置：
+    <pre style="color: #787878; font-size: 0.6rem;">
+jsonContent:
+  meta: false
+  pages: false
+  posts:
+    title: true
+    date: true
+    path: true
+    text: false
+    raw: false
+    content: false
+    slug: false
+    updated: false
+    comments: false
+    link: false
+    permalink: false
+    excerpt: false
+    categories: true
+    tags: true</pre>
+    </div> 
+    <div class="sidebar-tags-list"></div>
+</div>
+        <div class="sidebar-panel-categories">
+    <div class="sidebar-categories-name">
+    
+        <span class="sidebar-category-name" data-categories="Github"><span class="iconfont-archer">&#xe60a;</span>Github</span>
+    
+        <span class="sidebar-category-name" data-categories="JVM"><span class="iconfont-archer">&#xe60a;</span>JVM</span>
+    
+        <span class="sidebar-category-name" data-categories="Linux"><span class="iconfont-archer">&#xe60a;</span>Linux</span>
+    
+        <span class="sidebar-category-name" data-categories="java"><span class="iconfont-archer">&#xe60a;</span>java</span>
+    
+        <span class="sidebar-category-name" data-categories="redis"><span class="iconfont-archer">&#xe60a;</span>redis</span>
+    
+        <span class="sidebar-category-name" data-categories="zookeeper"><span class="iconfont-archer">&#xe60a;</span>zookeeper</span>
+    
+        <span class="sidebar-category-name" data-categories="redis"><span class="iconfont-archer">&#xe60a;</span>redis</span>
+    
+        <span class="sidebar-category-name" data-categories="Java并发编程"><span class="iconfont-archer">&#xe60a;</span>Java并发编程</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-categories-empty">&#xe678;</div>
+    <div class="sidebar-categories-list"></div>
+</div>
+    </div>
+</div> 
+    <script>
+    var siteMeta = {
+        root: "/",
+        author: "cjwei"
+    }
+</script>
+    <!-- CDN failover -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+    <script type="text/javascript">
+        if (typeof window.$ === 'undefined')
+        {
+            console.warn('jquery load from jsdelivr failed, will load local script')
+            document.write('<script src="/lib/jquery.min.js">\x3C/script>')
+        }
+    </script>
+    <script src="/scripts/main.js"></script>
+    <!-- algolia -->
+    
+    <!-- busuanzi  -->
+    
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+    <!-- CNZZ  -->
+    
+    </div>
+    <!-- async load share.js -->
+    
+        <script src="/scripts/share.js" async></script>    
+     
+    </body>
+</html>
+
+

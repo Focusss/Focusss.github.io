@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html>
+    <!-- title -->
+
+
+
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" >
+    <meta name="author" content="cjwei">
+    <meta name="renderer" content="webkit">
+    <meta name="copyright" content="cjwei">
+    <meta name="keywords" content="Focusss | cjwei">
+    <meta name="description" content="">
+    <meta name="Cache-Control" content="no-cache">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <title>JVM-内存模型结构 · Focusss</title>
+    <style type="text/css">
+    @font-face {
+        font-family: 'Oswald-Regular';
+        src: url("/font/Oswald-Regular.ttf");
+    }
+
+    body {
+        margin: 0;
+    }
+
+    header,
+    footer,
+    .back-top,
+    .sidebar,
+    .container,
+    .site-intro-meta,
+    .toc-wrapper {
+        display: none;
+    }
+
+    .site-intro {
+        position: relative;
+        z-index: 3;
+        width: 100%;
+        /* height: 50vh; */
+        overflow: hidden;
+    }
+
+    .site-intro-placeholder {
+        position: absolute;
+        z-index: -2;
+        top: 0;
+        left: 0;
+        width: calc(100% + 300px);
+        height: 100%;
+        background: repeating-linear-gradient(-45deg, #444 0, #444 80px, #333 80px, #333 160px);
+        background-position: center center;
+        transform: translate3d(-226px, 0, 0);
+        animation: gradient-move 2.5s ease-out 0s 1;
+    }
+
+    @keyframes gradient-move {
+        0% {
+            transform: translate3d(-226px, 0, 0);
+        }
+        100% {
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+</style>
+
+    <link rel="preload" href= /css/style.css?v=20180604 as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="stylesheet" href= /css/mobile.css?v=20180604 media="(max-width: 980px)">
+    
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    
+    <!-- /*! loadCSS. [c]2017 Filament Group, Inc. MIT License */
+/* This file is meant as a standalone workflow for
+- testing support for link[rel=preload]
+- enabling async CSS loading in browsers that do not support rel=preload
+- applying rel preload css once loaded, whether supported or not.
+*/ -->
+<script>
+(function( w ){
+	"use strict";
+	// rel=preload support test
+	if( !w.loadCSS ){
+		w.loadCSS = function(){};
+	}
+	// define on the loadCSS obj
+	var rp = loadCSS.relpreload = {};
+	// rel=preload feature support test
+	// runs once and returns a function for compat purposes
+	rp.support = (function(){
+		var ret;
+		try {
+			ret = w.document.createElement( "link" ).relList.supports( "preload" );
+		} catch (e) {
+			ret = false;
+		}
+		return function(){
+			return ret;
+		};
+	})();
+
+	// if preload isn't supported, get an asynchronous load by using a non-matching media attribute
+	// then change that media back to its intended value on load
+	rp.bindMediaToggle = function( link ){
+		// remember existing media attr for ultimate state, or default to 'all'
+		var finalMedia = link.media || "all";
+
+		function enableStylesheet(){
+			link.media = finalMedia;
+		}
+
+		// bind load handlers to enable media
+		if( link.addEventListener ){
+			link.addEventListener( "load", enableStylesheet );
+		} else if( link.attachEvent ){
+			link.attachEvent( "onload", enableStylesheet );
+		}
+
+		// Set rel and non-applicable media type to start an async request
+		// note: timeout allows this to happen async to let rendering continue in IE
+		setTimeout(function(){
+			link.rel = "stylesheet";
+			link.media = "only x";
+		});
+		// also enable media after 3 seconds,
+		// which will catch very old browsers (android 2.x, old firefox) that don't support onload on link
+		setTimeout( enableStylesheet, 3000 );
+	};
+
+	// loop through link elements in DOM
+	rp.poly = function(){
+		// double check this to prevent external calls from running
+		if( rp.support() ){
+			return;
+		}
+		var links = w.document.getElementsByTagName( "link" );
+		for( var i = 0; i < links.length; i++ ){
+			var link = links[ i ];
+			// qualify links to those with rel=preload and as=style attrs
+			if( link.rel === "preload" && link.getAttribute( "as" ) === "style" && !link.getAttribute( "data-loadcss" ) ){
+				// prevent rerunning on link
+				link.setAttribute( "data-loadcss", true );
+				// bind listeners to toggle media back
+				rp.bindMediaToggle( link );
+			}
+		}
+	};
+
+	// if unsupported, run the polyfill
+	if( !rp.support() ){
+		// run once at least
+		rp.poly();
+
+		// rerun poly on an interval until onload
+		var run = w.setInterval( rp.poly, 500 );
+		if( w.addEventListener ){
+			w.addEventListener( "load", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		} else if( w.attachEvent ){
+			w.attachEvent( "onload", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		}
+	}
+
+
+	// commonjs
+	if( typeof exports !== "undefined" ){
+		exports.loadCSS = loadCSS;
+	}
+	else {
+		w.loadCSS = loadCSS;
+	}
+}( typeof global !== "undefined" ? global : this ) );
+</script>
+
+    <link rel="icon" href= "/assets/eyes.ico" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js" as="script" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js" as="script" />
+    <link rel="preload" href="/scripts/main.js" as="script" />
+    <link rel="preload" as="font" href="/font/Oswald-Regular.ttf" crossorigin>
+    <link rel="preload" as="font" href="https://at.alicdn.com/t/font_327081_1dta1rlogw17zaor.woff" crossorigin>
+    
+    <!-- 百度统计  -->
+    
+    <!-- 谷歌统计  -->
+    
+</head>
+
+    
+        <body class="post-body">
+    
+    
+<header class="header">
+
+    <div class="read-progress"></div>
+    <div class="header-sidebar-menu">&#xe775;</div>
+    <!-- post页的toggle banner  -->
+    
+    <div class="banner">
+            <div class="blog-title">
+                <a href="/" >Focusss&#39;s Blog</a>
+            </div>
+            <div class="post-title">
+                <a href="#" class="post-name">JVM-内存模型结构</a>
+            </div>
+    </div>
+    
+    <a class="home-link" href=/>Focusss's Blog</a>
+</header>
+    <div class="wrapper">
+        <div class="site-intro" style=
+
+
+
+
+
+
+
+
+height:50vh;
+
+>
+    
+    <!-- 主页  -->
+    
+    
+    <!-- 404页  -->
+            
+    <div class="site-intro-placeholder"></div>
+    <div class="site-intro-img" style="background-image: url(/intro/fr.jpg)"></div>
+    <div class="site-intro-meta">
+        <!-- 标题  -->
+        <h1 class="intro-title">
+            <!-- 主页  -->
+            
+            JVM-内存模型结构
+            <!-- 404 -->
+            
+        </h1>
+        <!-- 副标题 -->
+        <p class="intro-subtitle">
+            <!-- 主页副标题  -->
+            
+            
+            <!-- 404 -->
+            
+        </p>
+        <!-- 文章页meta -->
+        
+            <div class="post-intros">
+                <!-- 文章页标签  -->
+                
+                    <div class= post-intro-tags >
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "JVM">JVM</a>
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "内存模型">内存模型</a>
+    
+</div>
+                
+                
+                    <div class="post-intro-read">
+                        <span>Word count: <span class="post-count">6,675</span> / Reading time: <span class="post-count">24 min</span></span>
+                    </div>
+                
+                <div class="post-intro-meta">
+                    <span class="post-intro-calander iconfont-archer">&#xe676;</span>
+                    <span class="post-intro-time">2018/09/28</span>
+                    
+                    <span id="busuanzi_container_page_pv" class="busuanzi-pv">
+                        <span class="iconfont-archer">&#xe602;</span>
+                        <span id="busuanzi_value_page_pv"></span>
+                    </span>
+                    
+                    <span class="shareWrapper">
+                        <span class="iconfont-archer shareIcon">&#xe71d;</span>
+                        <span class="shareText">Share</span>
+                        <ul class="shareList">
+                            <li class="iconfont-archer share-qr" data-type="qr">&#xe75b;
+                                <div class="share-qrcode"></div>
+                            </li>
+                            <li class="iconfont-archer" data-type="weibo">&#xe619;</li>
+                            <li class="iconfont-archer" data-type="qzone">&#xe62e;</li>
+                            <li class="iconfont-archer" data-type="twitter">&#xe634;</li>
+                            <li class="iconfont-archer" data-type="facebook">&#xe67a;</li>
+                        </ul>
+                    </span>
+                </div>
+            </div>
+        
+    </div>
+</div>
+        <script>
+ 
+  // get user agent
+  var browser = {
+    versions: function () {
+      var u = window.navigator.userAgent;
+      return {
+        userAgent: u,
+        trident: u.indexOf('Trident') > -1, //IE内核
+        presto: u.indexOf('Presto') > -1, //opera内核
+        webKit: u.indexOf('AppleWebKit') > -1, //苹果、谷歌内核
+        gecko: u.indexOf('Gecko') > -1 && u.indexOf('KHTML') == -1, //火狐内核
+        mobile: !!u.match(/AppleWebKit.*Mobile.*/), //是否为移动终端
+        ios: !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/), //ios终端
+        android: u.indexOf('Android') > -1 || u.indexOf('Linux') > -1, //android终端或者uc浏览器
+        iPhone: u.indexOf('iPhone') > -1 || u.indexOf('Mac') > -1, //是否为iPhone或者安卓QQ浏览器
+        iPad: u.indexOf('iPad') > -1, //是否为iPad
+        webApp: u.indexOf('Safari') == -1, //是否为web应用程序，没有头部与底部
+        weixin: u.indexOf('MicroMessenger') == -1, //是否为微信浏览器
+        uc: u.indexOf('UCBrowser') > -1 //是否为android下的UC浏览器
+      };
+    }()
+  }
+  console.log("userAgent:" + browser.versions.userAgent);
+
+  // callback
+  function fontLoaded() {
+    console.log('font loaded');
+    if (document.getElementsByClassName('site-intro-meta')) {
+      document.getElementsByClassName('intro-title')[0].classList.add('intro-fade-in');
+      document.getElementsByClassName('intro-subtitle')[0].classList.add('intro-fade-in');
+      var postIntros = document.getElementsByClassName('post-intros')[0]
+      if (postIntros) {
+        postIntros.classList.add('post-fade-in');
+      }
+    }
+  }
+
+  // UC不支持跨域，所以直接显示
+  function asyncCb(){
+    if (browser.versions.uc) {
+      console.log("UCBrowser");
+      fontLoaded();
+    } else {
+      WebFont.load({
+        custom: {
+          families: ['Oswald-Regular']
+        },
+        loading: function () {  //所有字体开始加载
+          // console.log('loading');
+        },
+        active: function () {  //所有字体已渲染
+          fontLoaded();
+        },
+        inactive: function () { //字体预加载失败，无效字体或浏览器不支持加载
+          console.log('inactive: timeout');
+          fontLoaded();
+        },
+        timeout: 5000 // Set the timeout to two seconds
+      });
+    }
+  }
+
+  function asyncErr(){
+    console.warn('script load from CDN failed, will load local script')
+  }
+
+  // load webfont-loader async, and add callback function
+  function async(u, cb, err) {
+    var d = document, t = 'script',
+      o = d.createElement(t),
+      s = d.getElementsByTagName(t)[0];
+    o.src = u;
+    if (cb) { o.addEventListener('load', function (e) { cb(null, e); }, false); }
+    if (err) { o.addEventListener('error', function (e) { err(null, e); }, false); }
+    s.parentNode.insertBefore(o, s);
+  }
+
+  var asyncLoadWithFallBack = function(arr, success, reject) {
+      var currReject = function(){
+        reject()
+        arr.shift()
+        if(arr.length)
+          async(arr[0], success, currReject)
+        }
+
+      async(arr[0], success, currReject)
+  }
+
+  asyncLoadWithFallBack([
+    "https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js", 
+    "https://cdn.bootcss.com/webfont/1.6.28/webfontloader.js",
+    "/lib/webfontloader.min.js"
+  ], asyncCb, asyncErr)
+</script>        
+        <img class="loading" src="/assets/loading.svg" style="display: block; margin: 6rem auto 0 auto; width: 6rem; height: 6rem;" />
+        <div class="container container-unloaded">
+            <main class="main post-page">
+    <article class="article-entry">
+        <h2 id="JVM简介"><a href="#JVM简介" class="headerlink" title="JVM简介"></a>JVM简介</h2><h3 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h3><ul>
+<li>JVM是一种用于计算设备的规范，它是一个虚构出来的机器，是通过在实际的计算机上仿真模拟各种功能实现的。</li>
+<li>JVM是JRE的一部分，屏蔽了与具体操作系统平台相关的信息，使Java程序只需生成在Java虚拟机上运行的目标代码（字节码），就可以在多种平台上不加修改地运行。  </li>
+</ul>
+<p>JVM在执行字节码时，实际上最终还是把字节码解释成具体平台上的机器指令执行。JVM在整个jdk中处于最底层，负责于操作系统的交互，用来屏蔽操作系统环境，提供一个完整的Java运行环境。  </p>
+<p>我们可以通过java.exe或者javaw.exe来启动一个虚拟机实例。只要启动了几个java应用，相对应地也启动了几个java虚拟机实例。</p>
+<h3 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h3><ul>
+<li>JVM是Java的核心和基础，在Java编译器和os平台之间的虚拟处理器，可在上面执行字节码程序。</li>
+<li>Java编译器只面向JVM，生成JVM能理解的字节码文件。Java源文件经编译成字节码程序，通过JVM将每条指令翻译成不同的机器码，通过特定平台运行。<br><img src="/2018/09/28/JVM-内存模型结构/JVM原理.png" alt="JVM原理">  </li>
+</ul>
+<h3 id="生命周期"><a href="#生命周期" class="headerlink" title="生命周期"></a>生命周期</h3><p>1、 JVM实例对应了一个独立运行的Java程序，它是进程级别的。 </p>
+<blockquote>
+<ul>
+<li><strong>启动：</strong>启动一个Java程序时，一个JVM实例就产生了，任何一个拥有public static void<br>main(String[] args)函数的class都可以作为JVM实例运行的起点。</li>
+<li><strong>运行：</strong>main()作为该程序初始线程的起点，任何其他线程均由该线程启动。JVM内部有两种线程：<strong>守护线程和非守护线程</strong>。main()属于非守护线程，守护线程通常由JVM自己使用，Java程序也可以表明自己创建的线程是守护线程。 </li>
+<li><strong>消亡：</strong>当程序中的所有非守护线程都终止时，JVM才退出；若安全管理器允许，程序也可以使用Runtime类或者System.exit()来退出。  </li>
+</ul>
+</blockquote>
+<p>2、JVM执行引擎实例则对应了属于用户运行程序的线程，它是线程级别的。  </p>
+<h3 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h3><p>JVM架构图如下：<br><img src="/2018/09/28/JVM-内存模型结构/JVM体系.png" alt="JVM体系"> </p>
+<p>JVM分为三个主要子系统：</p>
+<ul>
+<li>类加载器子系统（Class Loader Subsystem）</li>
+<li>运行时数据区（Runtime Data Area）</li>
+<li>执行引擎（Execution Engine）  </li>
+</ul>
+<h4 id="类加载器子系统"><a href="#类加载器子系统" class="headerlink" title="类加载器子系统"></a>类加载器子系统</h4><p>Java的动态类加载功能由类加载器子系统处理，处理过程包括加载和链接，并在类文件运行时，首次引用类时就开始实例化类文件，而不是在编译时进行。</p>
+<h5 id="加载"><a href="#加载" class="headerlink" title="加载"></a>加载</h5><p><strong>Bootstrap类加载器</strong>、<strong>Extension类加载器</strong>和<strong>Application类加载器</strong>是实现类加载过程的三个类加载器。</p>
+<blockquote>
+<ul>
+<li><strong>Bootstrap类加载器：</strong>负责从引导类路径加载类，除了rt.jar，它具有最高优先级</li>
+<li><strong>Extension类加载器：</strong>负责加载ext文件夹（jre\lib）中的类</li>
+<li><strong>Application类加载器：</strong>负责加载应用程序级类路径、环境变量中指定的路径等信息<br>上面的类加载器在加载类文件时遵循委托层次算法</li>
+</ul>
+</blockquote>
+<h5 id="链接"><a href="#链接" class="headerlink" title="链接"></a>链接</h5><blockquote>
+<ul>
+<li><strong>验证（Verify）：</strong> 字节码验证器将验证生成的字节码是否正确，如果验证失败，将提示验证错误</li>
+<li><strong>准备（Prepare）：</strong>对所有静态变量，内存将会以默认值进行分配</li>
+<li><strong>解释（Resolve）：</strong>有符号存储器的引用都将被替换为来自方法区（Method Area）的原始引用</li>
+</ul>
+</blockquote>
+<h5 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h5><p>这是类加载的最后阶段，所有的静态变量都将被赋予原始值，并且静态区块将被执行。  </p>
+<h4 id="运行时数据区"><a href="#运行时数据区" class="headerlink" title="运行时数据区"></a>运行时数据区</h4><p>运行时数据区可分为5个主要组件：方法区堆、虚拟机栈、本地方法栈、程序计数器。各个组件的详细内容会在后面讲到。</p>
+<h4 id="执行引擎"><a href="#执行引擎" class="headerlink" title="执行引擎"></a>执行引擎</h4><p>分配给运行时数据区的字节码将由执行引擎执行，执行引擎读取字节码并逐个执行。  </p>
+<blockquote>
+<ul>
+<li><strong>解释器：</strong>解释器可以更快地解释字节码，但执行缓慢。解释器的缺点是当一个方法被调用多次时，每次都需要一个新的解释。</li>
+<li><strong>JIT编译器：</strong>JIT编译器消除了解释器的缺点。执行引擎将在转换字节码时使用解释器的帮助，但是当它发现重复代码时，将使用JIT编译器编译整个字节码并将其更改为本地代码。这个本地代码将直接用于重复的方法调用，这提高了系统的性能。<br><strong>JIT的构成组件有：</strong><br>&ensp;&ensp;&ensp;&ensp; <strong>1、中间代码生成器（Intermediate Code Generator）：</strong>生成中间代码<br>&ensp;&ensp;&ensp;&ensp; <strong>2、代码优化器（Code Optimizer）：</strong>负责优化上面生成的中间代码<br>&ensp;&ensp;&ensp;&ensp; <strong>3、目标代码生成器（Target Code Generator）：</strong>负责生成机器代码或本地代码<br>&ensp;&ensp;&ensp;&ensp; <strong>4、分析器（Profiler）：</strong>一个特殊组件，负责查找热点，即该方法是否被多次调用</li>
+<li><strong>垃圾收集器：</strong>收集和删除未引用的对象。</li>
+</ul>
+</blockquote>
+<h4 id="本地库接口（JNI）"><a href="#本地库接口（JNI）" class="headerlink" title="本地库接口（JNI）"></a>本地库接口（JNI）</h4><p>JNI将与本机方法库进行交互，并提供执行引擎所需的本机库。</p>
+<h4 id="本地方法库（Native-Method-Libraries）"><a href="#本地方法库（Native-Method-Libraries）" class="headerlink" title="本地方法库（Native Method Libraries）"></a>本地方法库（Native Method Libraries）</h4><p>它是执行引擎所需的本机库的集合。</p>
+<h3 id="执行程序过程"><a href="#执行程序过程" class="headerlink" title="执行程序过程"></a>执行程序过程</h3><p>当一个程序启动之前，它的class文件会被类加载器装入方法区（包括类信息、静态变量），执行引擎读取方法区的字节码自适应解析运行。执行引擎可以通过解释器和JIT编译器把字节码转换成可以直接被JVM执行的语言。然后pc寄存器指向了main函数所在位置，虚拟机开始为main函数在java栈中预留一个栈帧（每个方法都对应一个栈帧），然后开始执行main函数，main函数里的代码被执行引擎映射成本地操作系统里相应的实现，然后调用本地方法接口，本地方法运行的时候，操纵系统会为本地方法分配本地方法栈，用来储存一些临时变量，然后运行本地方法，调用操作系统API等等。  </p>
+<h2 id="内存结构划分"><a href="#内存结构划分" class="headerlink" title="内存结构划分"></a>内存结构划分</h2><p>Java程序在运行时，需要在内存中的分配空间。为了提高运算效率，就需要对数据进行了不同空间的划分，因为每一片区域都有特定的处理数据方式和内存管理方式。  </p>
+<p>JVM内存结构指的是JVM架构中的运行时数据区，整个JVM内存结构图如下表示：<br><img src="/2018/09/28/JVM-内存模型结构/内存模型结构.png" alt="内存模型结构"></p>
+<h3 id="各结构的作用"><a href="#各结构的作用" class="headerlink" title="各结构的作用"></a>各结构的作用</h3><h4 id="程序计数器"><a href="#程序计数器" class="headerlink" title="程序计数器"></a>程序计数器</h4><p>程序计数器（Program Counter Register）是一块较小的内存空间，它的作用可以看做是当前线程所执行的字节码的行号指示器。在字节码解释器工作时就是通过改变这个计数器的值来选取下一条需要执行的字节码指令，分支、循环、跳转、异常处理、线程恢复等基础功能都需要依赖这个计数器来完成。</p>
+<p>由于Java 虚拟机的多线程是通过线程轮流切换并分配处理器执行时间的方式来实现的，在任何一个确定的时刻，一个处理器（对于多核处理器来说是一个内核）只会执行一条线程中的指令。因此，为了线程切换后能恢复到正确的执行位置，每条线程都需要有一个独立的程序计数器，各条线程之间的计数器互不影响，独立存储，我们称这类内存区域为<strong>“线程私有”</strong>的内存。</p>
+<p>如果线程正在执行的是一个Java方法，这个计数器记录的是正在执行的虚拟机字节码指令的地址；如果正在执行的是Natvie 方法，这个计数器值则为空（Undefined）。由于程序计数器中存储的数据所占空间的大小不会随程序的执行而发生改变，<strong>此内存区域是唯一一个在Java 虚拟机规范中没有规定任何OutOfMemoryError 情况的区域</strong>。</p>
+<h4 id="虚拟机栈"><a href="#虚拟机栈" class="headerlink" title="虚拟机栈"></a>虚拟机栈</h4><p>虚拟机栈（VM Stack）也是<strong>线程私有</strong>的。每个线程在创建的时候都会创建一个虚拟机栈，其生命周期与线程一致，线程退出时，线程的虚拟机栈也会被回收。线程执行的基本行为是函数调用，每次函数调用的数据都是通过虚拟机栈传递的。 虚拟机栈内部保持一个个的栈帧，<strong>每个栈帧用于存储局部变量表、操作数栈、动态链接（当前方法所属的类的运行时常量池的引用）、方法返回地址</strong>。每次方法调用都会进行压栈，JVM对栈帧的操作只有出栈和压栈两种。当函数返回时，栈帧从Java栈中被弹出。</p>
+<blockquote>
+<p>Java方法区有两种返回函数的方式，一种是正常的函数返回，使用return指令，另一种是抛出异常。不管使用哪种方式，都会导致栈帧被弹出。 </p>
+</blockquote>
+<p><strong>局部变量表用于保存函数的参数以及局部变量，即方法运行期间所需要的数据</strong>。局部变量表中的变量只在当前函数调用中有效，当函数调用结束，随着函数栈帧的弹出销毁，局部变量表也会随之销毁。局部变量表可保存有编译期可知的各种基本数据类型（boolean、byte、char、short、int、float、long、double）、对象引用（reference类型，它不等同于对象本身，根据不同的虚拟机实现，它可能是一个指向对象起始地址的引用指针，也可能指向一个代表对象的句柄或者其他与此对象相关的位置）和returnAddress 类型（指向了一条字节码指令的地址）。其中64 位长度的long 和double 类型的数据会占用2 个局部变量空间（Slot），其余的数据类型只占用1 个。局部变量表所需的内存空间在编译期间完成分配，当进入一个方法时，这个方法需要在帧中分配多大的局部变量空间是完全确定的，在方法运行期间不会改变局部变量表的大小。  </p>
+<p>由于局部变量表在栈帧之中，因此，如果函数的参数和局部变量很多，会使得局部变量表膨胀，从而每一次函数调用就会占用更多的栈空间，最终导致函数的嵌套调用次数减少。在相同的栈容量下，局部变量少的函数可以支持更深的函数调用。通过jclasslib工具可以查看函数的局部变量表。局部变量表中的变量也是垃圾回收根节点，只要被局部变量表中直接或者间接引用的对象都是不会被回收的。  </p>
+<p>操作数栈用于计算时，临时数据的存储区域。操作数栈的长度由编译期间确定，操作数栈初始时为空，每一个操作数栈的成员(Entry)可以保存JVM定义的任意数据类型的值。long和double占用2个栈深单位，其它数据类型占用一个栈深单位。可以通过入栈和出栈来访问操作数栈。其访问过程如下图：<br><img src="/2018/09/28/JVM-内存模型结构/操作数栈.png" alt="操作数栈"><br>上述表示两个数100和98相加的过程。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LocalvarGC</span> </span>&#123;</span><br><span class="line">　　<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">localvarGc1</span><span class="params">()</span></span>&#123;</span><br><span class="line">　　　　<span class="keyword">byte</span>[] a = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">6</span>*<span class="number">1024</span>*<span class="number">1024</span>];<span class="comment">//6M</span></span><br><span class="line">　　　　System.gc();</span><br><span class="line">　　&#125;</span><br><span class="line">　</span><br><span class="line">　　<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">localvarGc2</span><span class="params">()</span></span>&#123;</span><br><span class="line">　　　　localvarGc1();</span><br><span class="line">　　　　System.gc();</span><br><span class="line">　　&#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在localvarGc1()中，在申请空间后，立即进行垃圾回收，很明显由于byte数组被变量a引用，因此无法回收这块空间。</p>
+<p>对于localvarGc5()，它首先调用了localvarGc1()，很明显，在localvarGc1()中并没有释放byte数组，但在localvarGc1()返回后，它的栈帧被销毁，自然也包含了栈帧中的所有局部变量，故byte数组失去了引用，在localvarGc5()的垃圾回收中被回收。</p>
+<p>在Java 虚拟机规范中，对虚拟机栈规定了两种异常状况：</p>
+<blockquote>
+<ul>
+<li>如果线程请求的栈深度大于虚拟机所允许的深度，将抛出StackOverflowError 异常；</li>
+<li>如果虚拟机栈可以动态扩展（当前大部分的Java 虚拟机都可动态扩展，只不过Java虚拟机规范中也允许固定长度的<br>虚拟机栈），当扩展时无法申请到足够的内存时会抛出OutOfMemoryError 异常。  </li>
+</ul>
+</blockquote>
+<h4 id="本地方法栈"><a href="#本地方法栈" class="headerlink" title="本地方法栈"></a>本地方法栈</h4><p>本地方法栈（Native Method Stacks）是<strong>线程私有</strong>的区域，与虚拟机栈所发挥的作用是非常相似的，其区别不过是虚拟机栈为虚拟机执行Java 方法（也就是字节码）服务，而本地方法栈则是为虚拟机使用到的Native方法服务。与虚拟机栈一样，本地方法栈区域也会抛出StackOverflowError 和OutOfMemoryError异常。</p>
+<h4 id="方法区"><a href="#方法区" class="headerlink" title="方法区"></a>方法区</h4><p>方法区(Method Area)与堆一样，是<strong>所有的线程共享的</strong>，存储被虚拟机加载的元数据(Meta)，包括<strong>类信息、常量、静态变量、即时编译器(JIT)编译后的代码</strong>等数据。Java虚拟机规范对这个区域的限制非常宽松，除了和Java堆一样不需要连续的内存和可以选择规定大小或者可扩展外，还可以选择不实现垃圾收集。相对而言，垃圾收集行为在这个区域很少出现，<strong>这个区域垃圾回收的主要目标是针对常量池的回收和类型的卸载</strong>。当方法区无法满足内存分配需求时，将抛出OutOfMemoryError:PermGen space异常。由于早期HotSpot JVM的实现，将GC分代收集拓展到方法区，因此很多人将<em>方法区称为永久代</em>。</p>
+<h4 id="运行时常量池"><a href="#运行时常量池" class="headerlink" title="运行时常量池"></a>运行时常量池</h4><p>运行时常量池（Run-Time Constant Pool)，这是方法区的一部分，受到方法区内存的限制，当常量池无法再申请到内存时，会抛出OutOfMemoryError:PermGen space异常。在class文件中，除了有类的版本、方法、字段、接口等描述信息外，还有一项描述信息是常量池。每个class文件的头四字节称为Magic Number，它的作用是确定这是否是一个可以被虚拟机接受的文件，接着的四个字节存储的是class文件的版本号。在版本号后面的就是常量池入口了。常量池主要存放两大类常量：  </p>
+<blockquote>
+<ul>
+<li>字面量(Literal)，如文本字符串、final常量值</li>
+<li>符号引用，存放了与编译相关的一些常量，因为Java不像C++那样有连接的过程，因此字段方法这些符号引用在运行期就需要进行转换，以便得到真正的内存入口地址  </li>
+</ul>
+</blockquote>
+<p>class文件中的常量池，也称为静态常量池，JVM虚拟机完成类装载操作后，会把静态常量池加载到内存中，存放在运行时常量池。运行时常量池相对于class文件常量池的另外一个重要特征是具备动态性，Java语言并不要求常量一定只能在编译期产生，也就是并非预置入class文件中常量池的内容才能进入方法区运行时常量池，运行期间也可能将新的常量放入池中，这种特性被开发人员利用得比较多的便是String类的intern() 方法。 </p>
+<h4 id="堆"><a href="#堆" class="headerlink" title="堆"></a>堆</h4><p>Java 堆（Java Heap）是Java虚拟机所管理的内存中最大的一块。Java 堆是被所有线程共享的一块内存区域，在虚拟机启动时创建，并且是<strong>完全自动化管理</strong>的。Java堆可以处于物理上不连续的内存空间中，只要逻辑上是连续的即可。如果在堆中没有内存完成对象实例的分配，并且堆无法再扩展时，将抛出OutOfMemoryError异常，抛出的错误信息是“Java.lang.OutOfMemoryError:Java heap space”。可以通过-Xmx和-Xms来控制堆内存的大小，发生堆上OOM的可能是存在内存泄露，也可能是堆大小分配不合理。  </p>
+<p>从内存回收的角度看，由于现在垃圾收集器基本都是采用的分代收集算法，所以Java 堆中还可以细分为：新生代和老年代；再细致一点新生代可以分为Eden 空间、From Survivor 空间、To Survivor 空间等。如果从内存分配的角度看，线程共享的Java 堆中可能划分出多个线程私有的分配缓冲区（Thread Local Allocation Buffer，TLAB）。<br><img src="/2018/09/28/JVM-内存模型结构/堆内存.png" alt="堆内存"></p>
+<h5 id="新生代Eden空间"><a href="#新生代Eden空间" class="headerlink" title="新生代Eden空间"></a>新生代Eden空间</h5><p>在新生代的Eden空间，对象会优先分配在该空间，同时JVM可以为每个线程分配一个私有的缓存区域，称为TLAB（Thread Local Allocation Buffer），避免多线程同时分内存时需要使用加锁等机制而影响分配速度。<strong>TLAB在堆的Eden空间上工作</strong>，内存中Eden的结构大体为：</p>
+<p><img src="/2018/09/28/JVM-内存模型结构/TLAB.png" alt="TLAB"> </p>
+<p>TLAB的管理主要是依靠三个指针：<strong>start、end、top</strong>。start与end标记了Eden中被该TLAB管理的区域空间，该区域空间不会被其他线程分配内存所使用。top是指分配指针，开始时指向start的位置，随着内存分配的进行，慢慢向end靠近，当到达end位置时触发TLAB refill。TLAB缺省情况下仅占有整个Eden空间的1%，当然可以通过选项-XX:TLABWasteTargetPercent设置TLAB空间所占用Eden空间的百分比大小。  </p>
+<h5 id="新生代Survivor空间"><a href="#新生代Survivor空间" class="headerlink" title="新生代Survivor空间"></a>新生代Survivor空间</h5><p>当Eden空间足够大时，大部分新建对象会被分配在Eden区，有些大对象会被直接分配在老年代空间。<br>当Eden空间不足时，会发生一次Minor GC，未被引用的对象会被回收，Eden中仍存活的对象会被移动到From Survivor（<em>避免直接进入老年代导致过早触发Full GC</em>）。Survivor中的对象每经过一次Minor GC，对象的age会加1，默认age超过15依然存活的对象会被移入老年代空间。<br>当发生Minor GC时，如果Survivor空间不足以保存Eden区中存活的对象，那么该对象会被直接移入老年代；如果Survivor中同age的对象占用空间的总和达到或超过其中一个Survivor的一半，那么所有同age对象都会被移入老年代。<br>通常情况下，只有其中一个Survivor空间是存在对象的，另一个Survivor是空的。当再次发生GC时，Eden中的对象被复制到标记为To的空的Surivivor中，原来From中依然存活的未到达年龄的对象也会复制到To，此时To被标记为From，原来的From置空并被标记为To，轮换是为了避免Surivivor中因没有连续空间（<em>避免内存碎片的产生</em>）而导致对象被直接移入老年代。</p>
+<p><img src="/2018/09/28/JVM-内存模型结构/survivor.png" alt="survivor"></p>
+<h5 id="老年代"><a href="#老年代" class="headerlink" title="老年代"></a>老年代</h5><p>老年代用于存放生命周期长的对象，通常是从Survivor空间移入过来的对象。当对象过大时，无法在新生代用连续内存分配，那么这个大对象会直接分配在老年代上。一般来说，普通的对象都是分配在TLAB上，较大的对象，直接分配在Eden区上的其他内存区域，而过大的对象，直接分配在老年代上。当老年代被占用的空间达到一定比例就会触发Full GC。</p>
+<h5 id="永久代"><a href="#永久代" class="headerlink" title="永久代"></a>永久代</h5><p>永久代是HotSpot的概念，方法区是Java虚拟机规范中的定义，是一种规范。HotSpot虚拟机把GC分代收集扩展至方法区，使用永久代来实现方法区，进而实现对方法区内存的回收。永久代存放着类信息、常量、静态变量、JIT编译后的代码，其物理上是堆的一部分。可以通过-XX:PermSize、-XX:MaxPermSize来控制方法区初始大小和最大大小，<br>超过这个值将会抛出OutOfMemoryError: PermGen异常。</p>
+<blockquote>
+<p>由于方法区主要存储类的相关信息，所以对于动态生成类的情况比较容易出现永久代的内存溢出。最典型的场景就是，在 jsp 页面比较多的情况，容易出现永久代内存溢出。</p>
+</blockquote>
+<h5 id="Vritual空间"><a href="#Vritual空间" class="headerlink" title="Vritual空间"></a>Vritual空间</h5><p>当使用Xms与Xmx来指定堆的最小与最大空间时，如果Xms小于Xmx，堆的大小不会直接扩展到上限，而是留着一部分等待内存需求不断增长时，再分配给新生代。Vritual空间便是这部分保留的内存区域。</p>
+<h4 id="直接内存"><a href="#直接内存" class="headerlink" title="直接内存"></a>直接内存</h4><p>直接内存（Direct Memory）并不是虚拟机运行时数据区的一部分，也不是Java虚拟机规范中定义的内存区域，但是这部分内存也被频繁地使用，而且也可能导致OutOfMemoryError异常。</p>
+<p>Java中的NIO类可以使用Native函数库，直接分配堆外内存，然后通过一个存储在Java堆里面的DirectoryByteBuffer对象作为这块内存的引用进行操作，这样能避免在Java堆和Native堆中来回复制数据，在一些场景中显著提高性能。通常访问直接内存的速度会优于Java堆。因此出于性能的考虑，读写频繁的场合可能会考虑使用直接内存。</p>
+<p>从上面可以知道，本机直接内存的分配不会受到Java堆大小的限制。但还是会受到本机总内存（RAM及SWAP区或者分页文件）的大小及处理器寻址空间的限制。在配置虚拟机参数时，一般会根据实际内存设置-Xmx等参数信息，但会经常忽略直接内存，使得各个内存区域的总和大于物理内存限制，从而导致动态扩展时出现OutOfMemoryError异常。<br><img src="/2018/09/28/JVM-内存模型结构/JVM内存溢出汇总.png" alt="JVM内存溢出汇总"></p>
+<h3 id="对象创建过程"><a href="#对象创建过程" class="headerlink" title="对象创建过程"></a>对象创建过程</h3><p>最普通的对象创建会涉及到<strong>Java堆、虚拟机栈、方法区</strong>。假设在某个方法中创建一个对象，<code>Object obj = new Object()</code>。那<code>Object obj</code>这部分予以将会反映到虚拟机栈的本地变量表中，作为一个reference类型数据出现。而<code>new Object()</code>这部分语义将会反映到Java堆中，形成<strong>一块存储了Object类型所有实例数据值（Instance Data，对象中各个实例字段的数据）的结构化把内存</strong>，根据具体类型以及虚拟机实现的对象内存布局（Object Memory Layout）的不同，这块内存的长度不是固定的。而对象的类型数据，如对象类型、父类、实现的接口、方法等，则存储在方法区中。这些类型的地址信息则存储能查到对象类型数据的地址信息。  </p>
+<p>由于reference类型在Java虚拟机规范中只规定了一个指向对象的引用，并没有定义这个引用应该通过哪种方式去定位，以及访问Java堆中的对象具体位置。现主流的访问方式有两种：<strong>使用句柄和直接指针</strong>。</p>
+<h4 id="句柄访问方式"><a href="#句柄访问方式" class="headerlink" title="句柄访问方式"></a>句柄访问方式</h4><p>Java堆中将会划分出一块内存作为句柄池，reference中存储的就是对象的句柄地址，而句柄中包含了对象实例数据和类型数据各自的具体地址信息。<br><img src="/2018/09/28/JVM-内存模型结构/JVM句柄访问.png" alt="句柄访问">  </p>
+<h4 id="直接指针访问方式"><a href="#直接指针访问方式" class="headerlink" title="直接指针访问方式"></a>直接指针访问方式</h4><p>Java 堆对象的布局中就必须考虑如何放置访问类型数据的相关信息，reference中直接存储的就是对象地址。<br><img src="/2018/09/28/JVM-内存模型结构/JVM直接指针访问.png" alt="句柄访问"> </p>
+<h4 id="区别"><a href="#区别" class="headerlink" title="区别"></a>区别</h4><ul>
+<li>使用句柄访问方式的最大好处就是reference中存储的是稳定的句柄地址，在对象被移动（如垃圾回收）时，只会改变句柄中的实例数据指针，而reference本身不需要修改。   </li>
+<li>使用直接指针访问方式的最大好处就是速度更快，它节省了一次指针定位的时间开销。  </li>
+</ul>
+<h3 id="内存溢出代码示例"><a href="#内存溢出代码示例" class="headerlink" title="内存溢出代码示例"></a>内存溢出代码示例</h3><h4 id="Java堆溢出"><a href="#Java堆溢出" class="headerlink" title="Java堆溢出"></a>Java堆溢出</h4><p>控制参数：-verbose:gc -Xms20M -Xmx20M -XX:+PrintGCDetails<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HeapOutOfMemory</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">     </span><br><span class="line"></span><br><span class="line">       <span class="keyword">while</span>(<span class="keyword">true</span>)&#123;</span><br><span class="line">           <span class="keyword">new</span> TestCase();</span><br><span class="line">       &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">TestCase</span></span>&#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>通过参数<code>-XX:+HeapDumpOnOutOfMemoryError</code>可以让虚拟机在出现内存溢出异常时Dump出当前的内存堆情况快照。通过快照分析确认内存中的对象是否是必要的，也就是要先分清楚到底是出现了内存泄漏（Memory Leak）还是内存溢出（Memory Overflow）。如果是内存泄漏，可以查看泄漏对象到GC Roots的引用链，找出导致垃圾收集器无法自动回收的原因。如果不存在泄漏，就是内存中的对象确实都还必须存活着，那就应当检查虚拟机的堆参数（-Xmx 与-Xms）。</p>
+<h4 id="虚拟机栈溢出-栈层级不足"><a href="#虚拟机栈溢出-栈层级不足" class="headerlink" title="虚拟机栈溢出(栈层级不足)"></a>虚拟机栈溢出(栈层级不足)</h4><p>控制参数:-Xss128k<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StackOverFlow</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> i ;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">plus</span><span class="params">()</span> </span>&#123;</span><br><span class="line">       i++;</span><br><span class="line">       plus();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">       StackOverFlow stackOverFlow = <span class="keyword">new</span> StackOverFlow();</span><br><span class="line">       <span class="keyword">try</span> &#123;</span><br><span class="line">           stackOverFlow.plus();</span><br><span class="line">       &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">           System.out.println(<span class="string">"Exception:stack length:"</span>+stackOverFlow.i);</span><br><span class="line">           e.printStackTrace();</span><br><span class="line">       &#125; <span class="keyword">catch</span> (Error e) &#123;</span><br><span class="line">           System.out.println(<span class="string">"Error:stack length:"</span>+stackOverFlow.i);</span><br><span class="line">           e.printStackTrace();</span><br><span class="line">       &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h4 id="常量池溢出"><a href="#常量池溢出" class="headerlink" title="常量池溢出"></a>常量池溢出</h4><p>控制参数： -XX:PermSize=10M -XX:MaxPermSize=10M<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ConstantOutOfMemory</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">       <span class="keyword">try</span> &#123;</span><br><span class="line"></span><br><span class="line">           List&lt;String&gt; strings = <span class="keyword">new</span> ArrayList&lt;String&gt;();</span><br><span class="line">           <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">           <span class="keyword">while</span>(<span class="keyword">true</span>)&#123;</span><br><span class="line">              strings.add(String.valueOf(i++).intern());</span><br><span class="line"></span><br><span class="line">           &#125;</span><br><span class="line">       &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">           e.printStackTrace();</span><br><span class="line">           <span class="keyword">throw</span> e;</span><br><span class="line">       &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h4 id="方法区溢出"><a href="#方法区溢出" class="headerlink" title="方法区溢出"></a>方法区溢出</h4><p>控制参数： -XX:PermSize=10M -XX:MaxPermSize=10M<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MethodAreaOutOfMemory</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">       <span class="keyword">while</span>(<span class="keyword">true</span>)&#123;</span><br><span class="line"></span><br><span class="line">           Enhancer enhancer = <span class="keyword">new</span> Enhancer();</span><br><span class="line"></span><br><span class="line">           enhancer.setSuperclass(TestCase.class);</span><br><span class="line"></span><br><span class="line">           enhancer.setUseCache(<span class="keyword">false</span>);</span><br><span class="line"></span><br><span class="line">           enhancer.setCallback(<span class="keyword">new</span> MethodInterceptor() &#123;</span><br><span class="line"></span><br><span class="line">              <span class="meta">@Override</span></span><br><span class="line"></span><br><span class="line">              <span class="function"><span class="keyword">public</span> Object <span class="title">intercept</span><span class="params">(Object arg0, Method arg1, Object[] arg2,</span></span></span><br><span class="line"><span class="function"><span class="params"></span></span></span><br><span class="line"><span class="function"><span class="params">                     MethodProxy arg3)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line"></span><br><span class="line">                  <span class="keyword">return</span> arg3.invokeSuper(arg0, arg2);</span><br><span class="line"></span><br><span class="line">              &#125;</span><br><span class="line"></span><br><span class="line">           &#125;);</span><br><span class="line"></span><br><span class="line">           enhancer.create();</span><br><span class="line">       &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">TestCase</span></span>&#123;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h4 id="直接内存溢出"><a href="#直接内存溢出" class="headerlink" title="直接内存溢出"></a>直接内存溢出</h4><p>控制参数：-Xmx20M -XX:MaxDirectMemorySize=10M<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DirectoryMemoryOutOfmemory</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> ONE_MB = <span class="number">1024</span>*<span class="number">1024</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">int</span> count = <span class="number">1</span>;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">       <span class="keyword">try</span> &#123;</span><br><span class="line"></span><br><span class="line">           Field field = Unsafe.class.getDeclaredField(<span class="string">"theUnsafe"</span>);</span><br><span class="line"></span><br><span class="line">           field.setAccessible(<span class="keyword">true</span>);</span><br><span class="line"></span><br><span class="line">           Unsafe unsafe = (Unsafe) field.get(<span class="keyword">null</span>);</span><br><span class="line"></span><br><span class="line">           <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line"></span><br><span class="line">              unsafe.allocateMemory(ONE_MB);</span><br><span class="line"></span><br><span class="line">              count++;</span><br><span class="line"></span><br><span class="line">           &#125;</span><br><span class="line">       &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line"></span><br><span class="line">           System.out.println(<span class="string">"Exception:instance created "</span>+count);</span><br><span class="line"></span><br><span class="line">           e.printStackTrace();</span><br><span class="line"></span><br><span class="line">       &#125; <span class="keyword">catch</span> (Error e) &#123;</span><br><span class="line"></span><br><span class="line">           System.out.println(<span class="string">"Error:instance created "</span>+count);</span><br><span class="line">           e.printStackTrace();</span><br><span class="line">       &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+
+    </article>
+    <!-- license  -->
+    
+    <!-- paginator  -->
+    <ul class="post-paginator">
+        <li class="next">
+            
+                <div class="nextSlogan">Next Post</div>
+                <a href= "/2018/09/28/JVM垃圾回收/" title= JVM垃圾回收 >
+                    <div class="nextTitle">JVM垃圾回收</div>
+                </a>
+            
+        </li>
+        <li class="previous">
+            
+                <div class="prevSlogan">Previous Post</div>
+                <a href= "/2018/09/19/JVM-G1和CMS的区别/" title= JVM-G1和CMS的区别 >
+                    <div class="prevTitle">JVM-G1和CMS的区别</div>
+                </a>
+            
+        </li>
+    </ul>
+    <!-- 评论插件 -->
+    <!-- 来必力City版安装代码 -->
+
+<!-- City版安装代码已完成 -->
+    
+    
+    <!--PC版-->
+
+    <!--PC版-->
+
+
+    
+    <!-- 评论 -->
+</main>
+            <!-- profile -->
+            
+        </div>
+        <footer class="footer footer-unloaded">
+    <!-- social  -->
+    
+    <div class="social">
+        
+    
+        
+            
+                <a href="mailto:446193412@qq.com" class="iconfont-archer email" title=email ></a>
+            
+        
+    
+        
+            
+                <a href="//github.com/Focusss" class="iconfont-archer github" target="_blank" title=github></a>
+            
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+    </div>
+    
+    <!-- powered by Hexo  -->
+    <div class="copyright">
+        <span id="hexo-power">Powered by <a href="https://hexo.io/" target="_blank">Hexo</a></span><span class="iconfont-archer power">&#xe635;</span><span id="theme-info">theme <a href="https://github.com/fi3ework/hexo-theme-archer" target="_blank">Archer</a></span>
+    </div>
+    <!-- 不蒜子  -->
+    
+    <div class="busuanzi-container">
+    
+     
+    <span id="busuanzi_container_site_pv">PV: <span id="busuanzi_value_site_pv"></span> :)</span>
+    
+    </div>
+    
+</footer>
+    </div>
+    <!-- toc -->
+    
+    <div class="toc-wrapper" style=
+    
+
+
+
+
+
+
+
+top:50vh;
+
+    >
+        <div class="toc-catalog">
+            <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
+        </div>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#JVM简介"><span class="toc-number">1.</span> <span class="toc-text">JVM简介</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#概念"><span class="toc-number">1.1.</span> <span class="toc-text">概念</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#原理"><span class="toc-number">1.2.</span> <span class="toc-text">原理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#生命周期"><span class="toc-number">1.3.</span> <span class="toc-text">生命周期</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#架构"><span class="toc-number">1.4.</span> <span class="toc-text">架构</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#类加载器子系统"><span class="toc-number">1.4.1.</span> <span class="toc-text">类加载器子系统</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#加载"><span class="toc-number">1.4.1.1.</span> <span class="toc-text">加载</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#链接"><span class="toc-number">1.4.1.2.</span> <span class="toc-text">链接</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#初始化"><span class="toc-number">1.4.1.3.</span> <span class="toc-text">初始化</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#运行时数据区"><span class="toc-number">1.4.2.</span> <span class="toc-text">运行时数据区</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#执行引擎"><span class="toc-number">1.4.3.</span> <span class="toc-text">执行引擎</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#本地库接口（JNI）"><span class="toc-number">1.4.4.</span> <span class="toc-text">本地库接口（JNI）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#本地方法库（Native-Method-Libraries）"><span class="toc-number">1.4.5.</span> <span class="toc-text">本地方法库（Native Method Libraries）</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#执行程序过程"><span class="toc-number">1.5.</span> <span class="toc-text">执行程序过程</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#内存结构划分"><span class="toc-number">2.</span> <span class="toc-text">内存结构划分</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#各结构的作用"><span class="toc-number">2.1.</span> <span class="toc-text">各结构的作用</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#程序计数器"><span class="toc-number">2.1.1.</span> <span class="toc-text">程序计数器</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#虚拟机栈"><span class="toc-number">2.1.2.</span> <span class="toc-text">虚拟机栈</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#本地方法栈"><span class="toc-number">2.1.3.</span> <span class="toc-text">本地方法栈</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#方法区"><span class="toc-number">2.1.4.</span> <span class="toc-text">方法区</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#运行时常量池"><span class="toc-number">2.1.5.</span> <span class="toc-text">运行时常量池</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#堆"><span class="toc-number">2.1.6.</span> <span class="toc-text">堆</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#新生代Eden空间"><span class="toc-number">2.1.6.1.</span> <span class="toc-text">新生代Eden空间</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#新生代Survivor空间"><span class="toc-number">2.1.6.2.</span> <span class="toc-text">新生代Survivor空间</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#老年代"><span class="toc-number">2.1.6.3.</span> <span class="toc-text">老年代</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#永久代"><span class="toc-number">2.1.6.4.</span> <span class="toc-text">永久代</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#Vritual空间"><span class="toc-number">2.1.6.5.</span> <span class="toc-text">Vritual空间</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#直接内存"><span class="toc-number">2.1.7.</span> <span class="toc-text">直接内存</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#对象创建过程"><span class="toc-number">2.2.</span> <span class="toc-text">对象创建过程</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#句柄访问方式"><span class="toc-number">2.2.1.</span> <span class="toc-text">句柄访问方式</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#直接指针访问方式"><span class="toc-number">2.2.2.</span> <span class="toc-text">直接指针访问方式</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#区别"><span class="toc-number">2.2.3.</span> <span class="toc-text">区别</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#内存溢出代码示例"><span class="toc-number">2.3.</span> <span class="toc-text">内存溢出代码示例</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Java堆溢出"><span class="toc-number">2.3.1.</span> <span class="toc-text">Java堆溢出</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#虚拟机栈溢出-栈层级不足"><span class="toc-number">2.3.2.</span> <span class="toc-text">虚拟机栈溢出(栈层级不足)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#常量池溢出"><span class="toc-number">2.3.3.</span> <span class="toc-text">常量池溢出</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#方法区溢出"><span class="toc-number">2.3.4.</span> <span class="toc-text">方法区溢出</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#直接内存溢出"><span class="toc-number">2.3.5.</span> <span class="toc-text">直接内存溢出</span></a></li></ol></li></ol></li></ol>
+    </div>
+    
+    <div class="back-top iconfont-archer">&#xe639;</div>
+    <div class="sidebar sidebar-hide">
+    <ul class="sidebar-tabs sidebar-tabs-active-0">
+        <li class="sidebar-tab-archives"><span class="iconfont-archer">&#xe67d;</span><span class="tab-name">Archive</span></li>
+        <li class="sidebar-tab-tags"><span class="iconfont-archer">&#xe61b;</span><span class="tab-name">Tag</span></li>
+        <li class="sidebar-tab-categories"><span class="iconfont-archer">&#xe666;</span><span class="tab-name">Cate</span></li>
+    </ul>
+    <div class="sidebar-content sidebar-content-show-archive">
+          <div class="sidebar-panel-archives">
+    <!-- 在ejs中将archive按照时间排序 -->
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <div class="total-and-search">
+        <div class="total-archive">
+        Total : 16
+        <!-- search  -->
+        </div>
+            <div class="site-search popup-trigger">
+                <span class="iconfont-archer search-icon">&#xe627;</span>
+            </div>
+    </div>
+    
+    <div class="post-archive">
+    
+    
+    
+    
+    <div class="archive-year"> 2018 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/23</span><a class="archive-post-title" href= "/2018/10/23/偏向锁、自旋锁、轻量级锁、重量级锁/" >偏向锁、自旋锁、轻量级锁、重量级锁</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/16</span><a class="archive-post-title" href= "/2018/10/16/Java并发编程-Callable与Runnable/" >Java并发编程-Callable与Runnable</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/16</span><a class="archive-post-title" href= "/2018/10/16/Java并发编程-辅助类：CountDownLatch、CyclicBarrier和Semaphore/" >Java并发编程-辅助类：CountDownLatch、CyclicBarrier和Semaphore</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/13</span><a class="archive-post-title" href= "/2018/10/13/class文件常量池、运行时常量池、字符串常量池/" >class文件常量池、运行时常量池、字符串常量池</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/28</span><a class="archive-post-title" href= "/2018/09/28/JVM垃圾回收/" >JVM垃圾回收</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/28</span><a class="archive-post-title" href= "/2018/09/28/JVM-内存模型结构/" >JVM-内存模型结构</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/19</span><a class="archive-post-title" href= "/2018/09/19/JVM-G1和CMS的区别/" >JVM-G1和CMS的区别</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/19</span><a class="archive-post-title" href= "/2018/09/19/JVM-G1垃圾收集器/" >JVM-G1垃圾收集器</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/18</span><a class="archive-post-title" href= "/2018/09/18/JVM-CMS垃圾收集器/" >JVM-CMS垃圾收集器</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/17</span><a class="archive-post-title" href= "/2018/09/17/zookeeper的watcher乐观锁实现/" >zookeeper的watcher乐观锁实现</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/17</span><a class="archive-post-title" href= "/2018/09/17/vi编辑模式下的查找替换/" >vi编辑模式下的查找替换</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/14</span><a class="archive-post-title" href= "/2018/09/14/openOffice和swftools安装及环境配置过程/" >openOffice和swftools安装及环境配置过程</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/30</span><a class="archive-post-title" href= "/2018/08/30/阿里云上使用redis集群的一些问题/" >阿里云上使用redis集群的一些问题</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/29</span><a class="archive-post-title" href= "/2018/08/29/Linux环境变量/" >Linux环境变量</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/29</span><a class="archive-post-title" href= "/2018/08/29/redis cluster集群-ruby安装/" >redis cluster集群-ruby及相关依赖安装</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/27</span><a class="archive-post-title" href= "/2018/08/27/Github+Hexo搭建个人博客/" >Github+Hexo搭建个人博客</a>
+        </li>
+    
+    </div>
+  </div>
+        <div class="sidebar-panel-tags">
+    <div class="sidebar-tags-name">
+    
+        <span class="sidebar-tag-name" data-tags="github"><span class="iconfont-archer">&#xe606;</span>github</span>
+    
+        <span class="sidebar-tag-name" data-tags="hexo"><span class="iconfont-archer">&#xe606;</span>hexo</span>
+    
+        <span class="sidebar-tag-name" data-tags="博客"><span class="iconfont-archer">&#xe606;</span>博客</span>
+    
+        <span class="sidebar-tag-name" data-tags="JVM"><span class="iconfont-archer">&#xe606;</span>JVM</span>
+    
+        <span class="sidebar-tag-name" data-tags="CMS"><span class="iconfont-archer">&#xe606;</span>CMS</span>
+    
+        <span class="sidebar-tag-name" data-tags="G1"><span class="iconfont-archer">&#xe606;</span>G1</span>
+    
+        <span class="sidebar-tag-name" data-tags="Linux"><span class="iconfont-archer">&#xe606;</span>Linux</span>
+    
+        <span class="sidebar-tag-name" data-tags="java"><span class="iconfont-archer">&#xe606;</span>java</span>
+    
+        <span class="sidebar-tag-name" data-tags="redis"><span class="iconfont-archer">&#xe606;</span>redis</span>
+    
+        <span class="sidebar-tag-name" data-tags="zookeeper"><span class="iconfont-archer">&#xe606;</span>zookeeper</span>
+    
+        <span class="sidebar-tag-name" data-tags="乐观锁"><span class="iconfont-archer">&#xe606;</span>乐观锁</span>
+    
+        <span class="sidebar-tag-name" data-tags="GC"><span class="iconfont-archer">&#xe606;</span>GC</span>
+    
+        <span class="sidebar-tag-name" data-tags="Java并发编程"><span class="iconfont-archer">&#xe606;</span>Java并发编程</span>
+    
+        <span class="sidebar-tag-name" data-tags="CountDownLatch"><span class="iconfont-archer">&#xe606;</span>CountDownLatch</span>
+    
+        <span class="sidebar-tag-name" data-tags="CyclicBarrier"><span class="iconfont-archer">&#xe606;</span>CyclicBarrier</span>
+    
+        <span class="sidebar-tag-name" data-tags="Semaphore"><span class="iconfont-archer">&#xe606;</span>Semaphore</span>
+    
+        <span class="sidebar-tag-name" data-tags="常量池"><span class="iconfont-archer">&#xe606;</span>常量池</span>
+    
+        <span class="sidebar-tag-name" data-tags="Callable"><span class="iconfont-archer">&#xe606;</span>Callable</span>
+    
+        <span class="sidebar-tag-name" data-tags="Runnable"><span class="iconfont-archer">&#xe606;</span>Runnable</span>
+    
+        <span class="sidebar-tag-name" data-tags="锁机制"><span class="iconfont-archer">&#xe606;</span>锁机制</span>
+    
+        <span class="sidebar-tag-name" data-tags="内存模型"><span class="iconfont-archer">&#xe606;</span>内存模型</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-tags-empty">&#xe678;</div>
+    <div class="tag-load-fail" style="display: none; color: #ccc; font-size: 0.6rem;">
+    缺失模块。<br/>
+    1、请确保node版本大于6.2<br/>
+    2、在博客根目录（注意不是archer根目录）执行以下命令：<br/>
+    <span style="color: #f75357; font-size: 1rem; line-height: 2rem;">npm i hexo-generator-json-content --save</span><br/>
+    3、在根目录_config.yml里添加配置：
+    <pre style="color: #787878; font-size: 0.6rem;">
+jsonContent:
+  meta: false
+  pages: false
+  posts:
+    title: true
+    date: true
+    path: true
+    text: false
+    raw: false
+    content: false
+    slug: false
+    updated: false
+    comments: false
+    link: false
+    permalink: false
+    excerpt: false
+    categories: true
+    tags: true</pre>
+    </div> 
+    <div class="sidebar-tags-list"></div>
+</div>
+        <div class="sidebar-panel-categories">
+    <div class="sidebar-categories-name">
+    
+        <span class="sidebar-category-name" data-categories="Github"><span class="iconfont-archer">&#xe60a;</span>Github</span>
+    
+        <span class="sidebar-category-name" data-categories="JVM"><span class="iconfont-archer">&#xe60a;</span>JVM</span>
+    
+        <span class="sidebar-category-name" data-categories="Linux"><span class="iconfont-archer">&#xe60a;</span>Linux</span>
+    
+        <span class="sidebar-category-name" data-categories="java"><span class="iconfont-archer">&#xe60a;</span>java</span>
+    
+        <span class="sidebar-category-name" data-categories="redis"><span class="iconfont-archer">&#xe60a;</span>redis</span>
+    
+        <span class="sidebar-category-name" data-categories="zookeeper"><span class="iconfont-archer">&#xe60a;</span>zookeeper</span>
+    
+        <span class="sidebar-category-name" data-categories="redis"><span class="iconfont-archer">&#xe60a;</span>redis</span>
+    
+        <span class="sidebar-category-name" data-categories="Java并发编程"><span class="iconfont-archer">&#xe60a;</span>Java并发编程</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-categories-empty">&#xe678;</div>
+    <div class="sidebar-categories-list"></div>
+</div>
+    </div>
+</div> 
+    <script>
+    var siteMeta = {
+        root: "/",
+        author: "cjwei"
+    }
+</script>
+    <!-- CDN failover -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+    <script type="text/javascript">
+        if (typeof window.$ === 'undefined')
+        {
+            console.warn('jquery load from jsdelivr failed, will load local script')
+            document.write('<script src="/lib/jquery.min.js">\x3C/script>')
+        }
+    </script>
+    <script src="/scripts/main.js"></script>
+    <!-- algolia -->
+    
+    <!-- busuanzi  -->
+    
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+    <!-- CNZZ  -->
+    
+    </div>
+    <!-- async load share.js -->
+    
+        <script src="/scripts/share.js" async></script>    
+     
+    </body>
+</html>
+
+
