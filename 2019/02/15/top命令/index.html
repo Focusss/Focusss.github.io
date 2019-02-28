@@ -413,7 +413,7 @@ height:50vh;
 <li>第四、五行为内存和交换区（类似于windows的虚拟内存，Linux才有的概念）信息</li>
 </ul>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">KiB Mem : </span><br><span class="line">          1883492 total        #物理总内存</span><br><span class="line">          74140 free           #已使用物理内存</span><br><span class="line">          1494716 used         #空闲的物理内存</span><br><span class="line">          314636 buff/cache    #系统的page cache和buffer使用到的内存 </span><br><span class="line">KiB Swap:</span><br><span class="line">          0 total              #交换区总量</span><br><span class="line">          0 free               #空闲的交换区总量 </span><br><span class="line">          0 used               #已使用交换区的总量</span><br><span class="line">          216132 avail Mem     #可用的交换区总量</span><br></pre></td></tr></table></figure>
-<p>&#8194;&#8194;&#8194;&#8194;对于buff/cache的占用过高的解决可以看下<a href="https://focusss.github.io/2019/02/10/Linux中buff-cache占用过高解决手段" target="_blank" rel="noopener">Linux中buff-cache占用过高解决手段</a></p>
+<p>&#8194;&#8194;&#8194;&#8194;对于buff/cache的占用过高的解决可以看下<a href="https://focusss.github.io/2019/02/10/Linux%E4%B8%ADbuff-cache%E5%8D%A0%E7%94%A8%E8%BF%87%E9%AB%98%E8%A7%A3%E5%86%B3%E6%89%8B%E6%AE%B5/" target="_blank" rel="noopener">Linux中buff-cache占用过高解决手段</a></p>
 <p>&#8194;&#8194;&#8194;&#8194;默认情况下仅显示比较重要的 PID、USER、PR、NI、VIRT、RES、SHR、S、%CPU、%MEM、TIME+、COMMAND 列。下面是他们的含义<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">PID         #进程ID</span><br><span class="line">USER　　　　 #进程所有者ID</span><br><span class="line">PR          #优先级</span><br><span class="line">NI          #nice值。负值表示高优先级，正值表示低优先级</span><br><span class="line">VIRT        #进程使用的虚拟内存总量，单位kb。VIRT=SWAP+RES</span><br><span class="line">RES         #进程使用的、未被换出的物理内存大小，单位kb。RES=CODE+DATA</span><br><span class="line">SHR         #共享内存大小，单位kb</span><br><span class="line">S           #进程状态(D=不可中断的睡眠状态,R=运行,S=睡眠,T=跟踪/停止,Z=僵尸进程)</span><br><span class="line">%CPU        #上次更新到现在的CPU时间占用百分比</span><br><span class="line">%MEM        #进程使用的物理内存百分比</span><br><span class="line">TIME+       #进程使用的CPU时间总计，单位1/100秒</span><br><span class="line">COMMAND     #命令名/命令行</span><br></pre></td></tr></table></figure></p>
 <h3 id="命令使用格式"><a href="#命令使用格式" class="headerlink" title="命令使用格式"></a>命令使用格式</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">top [-] [d] [p] [q] [c] [C] [S] [s]  [n]</span><br></pre></td></tr></table></figure>
 <p>参数说明</p>
@@ -588,6 +588,14 @@ top:50vh;
     <div class="sidebar-content sidebar-content-show-archive">
           <div class="sidebar-panel-archives">
     <!-- 在ejs中将archive按照时间排序 -->
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
