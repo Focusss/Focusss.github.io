@@ -1,0 +1,504 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="1、Callable接口类有返回值，Runnable是没有返回值；2、Callable接口类中的call()方法可以抛出异常，Runable接口类中的run()方法是不可以抛出异常的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java并发编程-Callable与Runnable">
+<meta property="og:url" content="https://focusss.github.io/2018/10/16/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B-Callable%E4%B8%8ERunnable/index.html">
+<meta property="og:site_name" content="Focusss&#39;s Blog">
+<meta property="og:description" content="1、Callable接口类有返回值，Runnable是没有返回值；2、Callable接口类中的call()方法可以抛出异常，Runable接口类中的run()方法是不可以抛出异常的">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://focusss.github.io/2018/10/16/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B-Callable%E4%B8%8ERunnable/CallableThread.png">
+<meta property="og:image" content="https://focusss.github.io/2018/10/16/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B-Callable%E4%B8%8ERunnable/CallableThread.png">
+<meta property="og:image" content="https://focusss.github.io/2018/10/16/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B-Callable%E4%B8%8ERunnable/RunnableThread.png">
+<meta property="og:image" content="https://focusss.github.io/2018/10/16/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B-Callable%E4%B8%8ERunnable/Runnable-get.png">
+<meta property="og:image" content="https://focusss.github.io/2018/10/16/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B-Callable%E4%B8%8ERunnable/Runnable-non-get.png">
+<meta property="article:published_time" content="2018-10-16T12:24:04.000Z">
+<meta property="article:modified_time" content="2021-12-11T16:28:03.329Z">
+<meta property="article:author" content="cjwei">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="并发">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://focusss.github.io/2018/10/16/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B-Callable%E4%B8%8ERunnable/CallableThread.png"><title>Java并发编程-Callable与Runnable | Focusss's Blog</title><link ref="canonical" href="https://focusss.github.io/2018/10/16/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B-Callable%E4%B8%8ERunnable/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"carbon","highlight":"light","wordWrap":true},
+  reward: false,
+  fancybox: true,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: true,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Focusss's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">Java并发编程-Callable与Runnable</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2018-10-16</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-12-12</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h2 id="Callable与Runnable的区别">
+          <a href="#Callable与Runnable的区别" class="heading-link"><i class="fas fa-link"></i></a><a href="#Callable与Runnable的区别" class="headerlink" title="Callable与Runnable的区别"></a>Callable与Runnable的区别</h2>
+      <ul>
+<li><p>Callable接口类有返回值，具体返回值在Callable接口类的call()方法返回，该返回值可以通过实现Future接口的对象的get()方法获取，该方法会阻塞主线程（如果call方法还没执行完）；而Runnable是没有返回值的，因为Runnable接口类的run()方法是没有返回值的，Runnable接口方法是不会造成主线程阻塞的(仅在使用new Thread创建线程或利用线程池创建线程但不执行FutureTask的get()方法情况下)</p>
+</li>
+<li><p>Callable接口类中的call()方法可以抛出异常；而Runable接口类中的run()方法是不可以抛出异常的，异常只能在run方法内必须得到处理，不能向外界抛出</p>
+</li>
+<li><p>在使用Thread类实现多线程的情况下， Callable接口实现类首先需要将自己的对象实例作为参数来创建一个FutureTask对象，然后才可以通过new Thread(Runnable target)来创建线程；而Runnable接口实现类可以直接通过new Thread(Runnable target)创建线程</p>
+</li>
+</ul>
+<blockquote>
+<p>FutureTask类实现了RunnableFuture接口，而RunnableFuture接口继承了Runnable, Future<V>接口，即FutureTask类也实现了Runnable, Future<V>接口。</V></V></p>
+</blockquote>
+
+        <h2 id="Callable与Runnable的相同点">
+          <a href="#Callable与Runnable的相同点" class="heading-link"><i class="fas fa-link"></i></a><a href="#Callable与Runnable的相同点" class="headerlink" title="Callable与Runnable的相同点"></a>Callable与Runnable的相同点</h2>
+      <ul>
+<li>两者都可以将自己接口实现类的实例作为参数传递给ExecutorService接口类中的submit()方法直接分配线程运行，多个submit()可以异步执行，如: <T> Future<T> submit(Callable<T> task)、 Future&lt;?&gt; submit(Runnable task)</T></T></T></li>
+<li>只要调用了Future的get()方法了，无论是submit()方法中的参数是Callable还是Runnable，都会阻塞主线程，直到Callable中的call()方法或Runnable中的run()方法执行完毕，主线程才能继续执行</li>
+</ul>
+<blockquote>
+<p>ExecutorService的execute()和submit()区别：</p>
+<ul>
+<li>参数及返回值不一样。execute()只接受Runnable对象作为参数，且没有返回值，无法判断任务是否成功完成；submit()可以接受Runnable对象或Callable对象作为参数，且该方法返回一个Future对象，可以用这个Future对象来判断任务是否成功完成及获取Callable线程方法返回结果</li>
+<li>submit方便Exception处理</li>
+</ul>
+</blockquote>
+
+        <h2 id="使用方式">
+          <a href="#使用方式" class="heading-link"><i class="fas fa-link"></i></a><a href="#使用方式" class="headerlink" title="使用方式"></a>使用方式</h2>
+      
+        <h3 id="Callable">
+          <a href="#Callable" class="heading-link"><i class="fas fa-link"></i></a><a href="#Callable" class="headerlink" title="Callable"></a>Callable</h3>
+      
+        <h4 id="Thread方式">
+          <a href="#Thread方式" class="heading-link"><i class="fas fa-link"></i></a><a href="#Thread方式" class="headerlink" title="Thread方式"></a>Thread方式</h4>
+      <p>1、 CallableTest.java</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CallableTest</span></span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">	        <span class="comment">//创建实现了Callable接口的对象</span></span><br><span class="line">			MyCallable callable = <span class="keyword">new</span> MyCallable();</span><br><span class="line">			<span class="comment">//将实现Callable接口的对象作为参数创建一个FutureTask对象</span></span><br><span class="line">			FutureTask&lt;String&gt; task = <span class="keyword">new</span> FutureTask&lt;String&gt;(callable);</span><br><span class="line">			<span class="comment">//创建线程处理当前callable任务</span></span><br><span class="line">			Thread thread = <span class="keyword">new</span> Thread(task);</span><br><span class="line">			<span class="comment">//开启线程</span></span><br><span class="line">			<span class="keyword">long</span>  startTime = System.currentTimeMillis();</span><br><span class="line">			thread.start();</span><br><span class="line">			<span class="comment">//获取到call方法的返回值</span></span><br><span class="line">			<span class="keyword">try</span> &#123;</span><br><span class="line">				String result = task.get();</span><br><span class="line">				<span class="keyword">long</span>  endTime = System.currentTimeMillis();</span><br><span class="line">				System.out.println(<span class="string">&quot;得到返回值: &quot;</span>+result);</span><br><span class="line">				System.out.println(<span class="string">&quot;结束执行get的时间: &quot;</span>+ (endTime-startTime)/(<span class="number">1000</span>) + <span class="string">&quot;秒&quot;</span>);</span><br><span class="line">			&#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">				e.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">	 &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>2、MyCallable.java</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyCallable</span> <span class="keyword">implements</span> <span class="title">Callable</span>&lt;<span class="title">String</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> String <span class="title">call</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">		Thread.sleep(<span class="number">3000</span>);</span><br><span class="line">		<span class="keyword">return</span> <span class="string">&quot;call method result&quot;</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>执行结果：<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="CallableThread.png" alt="CallableThread">
+      <br>当主线程执行到<code>String result = task.get();</code>时就阻塞了。等待callable对象中的call()方法执行完，main线程才能继续往下执行。</p>
+
+        <h4 id="线程池方式">
+          <a href="#线程池方式" class="heading-link"><i class="fas fa-link"></i></a><a href="#线程池方式" class="headerlink" title="线程池方式"></a>线程池方式</h4>
+      <p>将CallableTest改一改换成用线程池的方式</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CallableTest</span></span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">				<span class="comment">//创建实现了Callable接口的对象</span></span><br><span class="line">				MyCallable callable = <span class="keyword">new</span> MyCallable();</span><br><span class="line">				<span class="comment">//创建线程池</span></span><br><span class="line">				ExecutorService executorService = Executors.newFixedThreadPool(<span class="number">2</span>);</span><br><span class="line">				Future&lt;String&gt; task  = (FutureTask&lt;String&gt;) executorService.submit(callable);</span><br><span class="line">				</span><br><span class="line">				<span class="comment">//开启线程</span></span><br><span class="line">				<span class="keyword">long</span>  startTime = System.currentTimeMillis();</span><br><span class="line">				<span class="comment">//获取到call方法的返回值</span></span><br><span class="line">				<span class="keyword">try</span> &#123;</span><br><span class="line">					String result = task.get();</span><br><span class="line">					<span class="keyword">long</span>  endTime = System.currentTimeMillis();</span><br><span class="line">					System.out.println(<span class="string">&quot;得到返回值: &quot;</span>+result);</span><br><span class="line">					System.out.println(<span class="string">&quot;结束执行get的时间: &quot;</span>+ (endTime-startTime)/(<span class="number">1000</span>) + <span class="string">&quot;秒&quot;</span>);</span><br><span class="line">				&#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">					e.printStackTrace();</span><br><span class="line">				&#125;<span class="keyword">finally</span>&#123;</span><br><span class="line">					executorService.shutdown();</span><br><span class="line">				&#125;</span><br><span class="line">	 &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>执行结果：<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="CallableThread.png" alt="CallableThread">
+      </p>
+
+        <h3 id="Runnable">
+          <a href="#Runnable" class="heading-link"><i class="fas fa-link"></i></a><a href="#Runnable" class="headerlink" title="Runnable"></a>Runnable</h3>
+      
+        <h4 id="Thread方式-1">
+          <a href="#Thread方式-1" class="heading-link"><i class="fas fa-link"></i></a><a href="#Thread方式-1" class="headerlink" title="Thread方式"></a>Thread方式</h4>
+      <p>1、RunnableTest.java</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RunnableTest</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">		MyRunnable runnable = <span class="keyword">new</span> MyRunnable();</span><br><span class="line">		Thread thread = <span class="keyword">new</span> Thread(runnable);</span><br><span class="line">		<span class="keyword">long</span> startTime = System.currentTimeMillis();</span><br><span class="line">		thread.start();</span><br><span class="line">		<span class="keyword">long</span> endTime = System.currentTimeMillis();</span><br><span class="line">		System.out.println(<span class="string">&quot;启动任务之后时间:  &quot;</span>+ (endTime-startTime)/(<span class="number">1000</span>) + <span class="string">&quot;秒&quot;</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>2、MyRunnable.java</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyRunnable</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			Thread.sleep(<span class="number">3000</span>);</span><br><span class="line">			System.out.println(<span class="string">&quot;MyRunnable线程：&quot;</span>+Thread.currentThread().getName()+<span class="string">&quot;执行完毕&quot;</span>);</span><br><span class="line">		&#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">			<span class="comment">// TODO Auto-generated catch block</span></span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>执行结果：<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="RunnableThread.png" alt="RunnableThread">
+      <br>runnable对象中run()方法不会阻塞main线程的执行。</p>
+
+        <h4 id="线程池方式-1">
+          <a href="#线程池方式-1" class="heading-link"><i class="fas fa-link"></i></a><a href="#线程池方式-1" class="headerlink" title="线程池方式"></a>线程池方式</h4>
+      <p>将RunnableTest改一改换成用线程池的方式</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RunnableTest</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">		MyRunnable runnable = <span class="keyword">new</span> MyRunnable();</span><br><span class="line">		<span class="comment">//创建线程池</span></span><br><span class="line">		ExecutorService executorService = Executors.newFixedThreadPool(<span class="number">2</span>);</span><br><span class="line">		<span class="keyword">long</span> startTime = System.currentTimeMillis();</span><br><span class="line">		Future&lt;String&gt; task  = (FutureTask&lt;String&gt;) executorService.submit(runnable);</span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			System.out.println(task.get());</span><br><span class="line">		&#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">			<span class="comment">// TODO Auto-generated catch block</span></span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125; <span class="keyword">catch</span> (ExecutionException e) &#123;</span><br><span class="line">			<span class="comment">// TODO Auto-generated catch block</span></span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125;<span class="keyword">finally</span>&#123;</span><br><span class="line">			executorService.shutdown();</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">long</span> endTime = System.currentTimeMillis();</span><br><span class="line">		System.out.println(<span class="string">&quot;启动任务之后时间:  &quot;</span>+ (endTime-startTime)/(<span class="number">1000</span>) + <span class="string">&quot;秒&quot;</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>执行结果：<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="Runnable-get.png" alt="Runnable-get">
+      <br>可以发现，只要调用了Future的get()方法，主线程就阻塞了。去掉该方法，重新执行下，结果如下：<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="Runnable-non-get.png" alt="Runnable-non-get">
+      <br>结果跟用Thread方式执行的结果一致。</p>
+
+        <h2 id="ExecutorService-submit-封装过程">
+          <a href="#ExecutorService-submit-封装过程" class="heading-link"><i class="fas fa-link"></i></a><a href="#ExecutorService-submit-封装过程" class="headerlink" title="ExecutorService-submit()封装过程"></a>ExecutorService-submit()封装过程</h2>
+      <figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">protected</span> &lt;T&gt; <span class="function">RunnableFuture&lt;T&gt; <span class="title">newTaskFor</span><span class="params">(Runnable runnable, T value)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> FutureTask&lt;T&gt;(runnable, value);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"><span class="keyword">protected</span> &lt;T&gt; <span class="function">RunnableFuture&lt;T&gt; <span class="title">newTaskFor</span><span class="params">(Callable&lt;T&gt; callable)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> FutureTask&lt;T&gt;(callable);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">   </span><br><span class="line"><span class="keyword">public</span> Future&lt;?&gt; submit(Runnable task) &#123;</span><br><span class="line">    <span class="keyword">if</span> (task == <span class="keyword">null</span>) <span class="keyword">throw</span> <span class="keyword">new</span> NullPointerException();</span><br><span class="line">    RunnableFuture&lt;Void&gt; ftask = newTaskFor(task, <span class="keyword">null</span>);</span><br><span class="line">    execute(ftask);</span><br><span class="line">    <span class="keyword">return</span> ftask;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> &lt;T&gt; <span class="function">Future&lt;T&gt; <span class="title">submit</span><span class="params">(Callable&lt;T&gt; task)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (task == <span class="keyword">null</span>) <span class="keyword">throw</span> <span class="keyword">new</span> NullPointerException();</span><br><span class="line">    RunnableFuture&lt;T&gt; ftask = newTaskFor(task);</span><br><span class="line">    execute(ftask);</span><br><span class="line">    <span class="keyword">return</span> ftask;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></div></figure>
+<p>在AbstractExecutorService类的源码中可以看到，submit中的newTaskFor()方法将Callable对象或Runnable对象封装成了FutureTask对象返回。</p>
+
+        <h2 id="Future-get-获取返回值及阻塞原因">
+          <a href="#Future-get-获取返回值及阻塞原因" class="heading-link"><i class="fas fa-link"></i></a><a href="#Future-get-获取返回值及阻塞原因" class="headerlink" title="Future-get()获取返回值及阻塞原因"></a>Future-get()获取返回值及阻塞原因</h2>
+      <p>FutureTask类实现了Future接口，所以我们以FutureTask类源码为例进行分析。<br>FutureTask源码中的几个静态类变量及构造方法</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">    * The run state of this task, initially NEW.  The run state</span></span><br><span class="line"><span class="comment">    * transitions to a terminal state only in methods set,</span></span><br><span class="line"><span class="comment">    * setException, and cancel.  During completion, state may take on</span></span><br><span class="line"><span class="comment">    * transient values of COMPLETING (while outcome is being set) or</span></span><br><span class="line"><span class="comment">    * INTERRUPTING (only while interrupting the runner to satisfy a</span></span><br><span class="line"><span class="comment">    * cancel(true)). Transitions from these intermediate to final</span></span><br><span class="line"><span class="comment">    * states use cheaper ordered/lazy writes because values are unique</span></span><br><span class="line"><span class="comment">    * and cannot be further modified.</span></span><br><span class="line"><span class="comment">    * </span></span><br><span class="line"><span class="comment">    * Possible state transitions:  任务状态之间的转换过程</span></span><br><span class="line"><span class="comment">    * NEW -&gt; COMPLETING -&gt; NORMAL</span></span><br><span class="line"><span class="comment">    * NEW -&gt; COMPLETING -&gt; EXCEPTIONAL</span></span><br><span class="line"><span class="comment">    * NEW -&gt; CANCELLED</span></span><br><span class="line"><span class="comment">    * NEW -&gt; INTERRUPTING -&gt; INTERRUPTED</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line">   <span class="keyword">private</span> <span class="keyword">volatile</span> <span class="keyword">int</span> state;  <span class="comment">//任务状态变量，由CAS操作保证原子性</span></span><br><span class="line">   <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> NEW          = <span class="number">0</span>; <span class="comment">//任务新建和执行中</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> COMPLETING   = <span class="number">1</span>; <span class="comment">//任务将要执行完毕</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> NORMAL       = <span class="number">2</span>; <span class="comment">//任务正常执行结束</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> EXCEPTIONAL  = <span class="number">3</span>; <span class="comment">//任务异常</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> CANCELLED    = <span class="number">4</span>; <span class="comment">//任务取消</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> INTERRUPTING = <span class="number">5</span>; <span class="comment">//任务线程即将被中断</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> INTERRUPTED  = <span class="number">6</span>; <span class="comment">//任务线程已中断</span></span><br><span class="line"></span><br><span class="line">   <span class="function"><span class="keyword">public</span> <span class="title">FutureTask</span><span class="params">(Callable&lt;V&gt; callable)</span> </span>&#123;</span><br><span class="line">       <span class="keyword">if</span> (callable == <span class="keyword">null</span>)</span><br><span class="line">           <span class="keyword">throw</span> <span class="keyword">new</span> NullPointerException();</span><br><span class="line">       <span class="keyword">this</span>.callable = callable;</span><br><span class="line">       <span class="keyword">this</span>.state = NEW;       <span class="comment">// ensure visibility of callable</span></span><br><span class="line">   &#125;</span><br></pre></td></tr></table></div></figure>
+<p>以Thread方式的Callable为例，在调用了线程的start方法之后会使得该线程处于就绪状态，有了竞争CPU时间片的权限，当分配到时间片之后，就会执行FutureTask的run()方法，其源码如下：</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (state != NEW ||</span><br><span class="line">            !UNSAFE.compareAndSwapObject(<span class="keyword">this</span>, runnerOffset,</span><br><span class="line">                                         <span class="keyword">null</span>, Thread.currentThread()))</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Callable&lt;V&gt; c = callable;</span><br><span class="line">            <span class="keyword">if</span> (c != <span class="keyword">null</span> &amp;&amp; state == NEW) &#123;</span><br><span class="line">                V result;</span><br><span class="line">                <span class="keyword">boolean</span> ran;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    result = c.call();   <span class="comment">//任务执行</span></span><br><span class="line">                    ran = <span class="keyword">true</span>;</span><br><span class="line">                &#125; <span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">                    result = <span class="keyword">null</span>;</span><br><span class="line">                    ran = <span class="keyword">false</span>;</span><br><span class="line">                    setException(ex);  <span class="comment">//异常对象赋给outcome</span></span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">if</span> (ran)</span><br><span class="line">                    set(result);    <span class="comment">//执行结果赋给outcome</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="comment">// runner must be non-null until state is settled to</span></span><br><span class="line">            <span class="comment">// prevent concurrent calls to run()</span></span><br><span class="line">            runner = <span class="keyword">null</span>;</span><br><span class="line">            <span class="comment">// state must be re-read after nulling runner to prevent</span></span><br><span class="line">            <span class="comment">// leaked interrupts</span></span><br><span class="line">            <span class="keyword">int</span> s = state;</span><br><span class="line">            <span class="keyword">if</span> (s &gt;= INTERRUPTING)</span><br><span class="line">                handlePossibleCancellationInterrupt(s);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></div></figure>
+<p>在调用完call()方法后，将执行结果赋值给result。如果程序正常执行的话，就将result在set()方法进行具体的赋值操作，set()方法的源码如下：</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">set</span><span class="params">(V v)</span> </span>&#123;</span><br><span class="line">	    <span class="comment">//将state由NEW更新为COMPLETING</span></span><br><span class="line">       <span class="keyword">if</span> (UNSAFE.compareAndSwapInt(<span class="keyword">this</span>, stateOffset, NEW, COMPLETING)) &#123;</span><br><span class="line">           outcome = v;</span><br><span class="line">            <span class="comment">//赋值完毕，将state由COMPLETING更新为NORMAL</span></span><br><span class="line">           UNSAFE.putOrderedInt(<span class="keyword">this</span>, stateOffset, NORMAL); <span class="comment">// final state</span></span><br><span class="line">           finishCompletion();</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></div></figure>
+<p>set方法将result赋给了outcome，outcome是Object类型的全局变量，同时将state状态设置为NORMAL，接着会执行finishCompletion()方法，finishCompletion()其实就是用来唤醒get()方法的。get()方法的源码如下：</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> V <span class="title">get</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException, ExecutionException </span>&#123;</span><br><span class="line">       <span class="keyword">int</span> s = state;</span><br><span class="line">       <span class="keyword">if</span> (s &lt;= COMPLETING)</span><br><span class="line">           s = awaitDone(<span class="keyword">false</span>, <span class="number">0L</span>);  </span><br><span class="line">       <span class="keyword">return</span> report(s);</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></div></figure>
+<p>如果Callable中call()方法的业务逻辑还没处理完毕，此时state为NEW，对应的值小于COMPLETING，执行awaitDone() 方法（阻塞线程的地方），其源码如下：</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">awaitDone</span><span class="params">(<span class="keyword">boolean</span> timed, <span class="keyword">long</span> nanos)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">    <span class="comment">// 任务截止时间</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">long</span> deadline = timed ? System.nanoTime() + nanos : <span class="number">0L</span>;</span><br><span class="line">    WaitNode q = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">boolean</span> queued = <span class="keyword">false</span>;</span><br><span class="line">    <span class="comment">// 自旋</span></span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        <span class="keyword">if</span> (Thread.interrupted()) &#123;</span><br><span class="line">            <span class="comment">//线程中断则移除等待线程,并抛出异常</span></span><br><span class="line">            removeWaiter(q);</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> InterruptedException();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">int</span> s = state;</span><br><span class="line">        <span class="keyword">if</span> (s &gt; COMPLETING) &#123;</span><br><span class="line">            <span class="comment">// 任务可能已经完成或者被取消了</span></span><br><span class="line">            <span class="keyword">if</span> (q != <span class="keyword">null</span>)</span><br><span class="line">                q.thread = <span class="keyword">null</span>;</span><br><span class="line">            <span class="keyword">return</span> s;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (s == COMPLETING)</span><br><span class="line">            <span class="comment">// 可能任务线程被阻塞了,主线程让出CPU</span></span><br><span class="line">            Thread.yield();</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (q == <span class="keyword">null</span>)</span><br><span class="line">            <span class="comment">// 等待线程节点为空,则初始化新节点并关联当前线程</span></span><br><span class="line">            q = <span class="keyword">new</span> WaitNode();</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (!queued)</span><br><span class="line">            <span class="comment">// 等待线程入队列,成功则queued=true</span></span><br><span class="line">            queued = UNSAFE.compareAndSwapObject(<span class="keyword">this</span>, waitersOffset,</span><br><span class="line">                    q.next = waiters, q);</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (timed) &#123;</span><br><span class="line">            nanos = deadline - System.nanoTime();</span><br><span class="line">            <span class="keyword">if</span> (nanos &lt;= <span class="number">0L</span>) &#123;</span><br><span class="line">                <span class="comment">//已经超时的话,移除等待节点</span></span><br><span class="line">                removeWaiter(q);</span><br><span class="line">                <span class="keyword">return</span> state;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 未超时,将当前线程挂起指定时间</span></span><br><span class="line">            LockSupport.parkNanos(<span class="keyword">this</span>, nanos);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            <span class="comment">// timed=false时会走到这里,挂起当前线程</span></span><br><span class="line">            LockSupport.park(<span class="keyword">this</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>执行过程：</p>
+<ul>
+<li>计算deadline，也就是到某个时间点后如果还没有返回结果，那么就超时了。</li>
+<li>进入自旋，也就是死循环。</li>
+<li>首先判断是否响应线程中断。对于线程中断的响应往往会放在线程进入阻塞之前。</li>
+<li>判断state值，如果&gt;COMPLETING表明任务已经取消或者已经执行完毕，就可以直接返回了。</li>
+<li>如果任务还在执行，则为当前线程初始化一个等待节点WaitNode，入等待队列。</li>
+<li>计算nanos，判断是否已经超时。如果已经超时，则移除所有等待节点，直接返回state。超时的话，state的值仍然还是COMPLETING。</li>
+<li>如果还未超时，就通过LockSupprot类提供的方法在指定时间内挂起当前线程，等待任务线程唤醒或者超时  </li>
+</ul>
+<p>在awaitDone方法中，会一直自旋(正常情况下)，直到set()方法将state更新为NORMAL并执行完finishCompletion()方法，来唤醒get()方法中的awaitDone()方法挂起的线程。其源码如下：</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">finishCompletion</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">//遍历等待节点</span></span><br><span class="line">    <span class="keyword">for</span> (WaitNode q; (q = waiters) != <span class="keyword">null</span>;) &#123;</span><br><span class="line">        <span class="keyword">if</span> (UNSAFE.compareAndSwapObject(<span class="keyword">this</span>, waitersOffset, q, <span class="keyword">null</span>)) &#123;</span><br><span class="line">            <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">                Thread t = q.thread;</span><br><span class="line">                <span class="keyword">if</span> (t != <span class="keyword">null</span>) &#123;</span><br><span class="line">                    q.thread = <span class="keyword">null</span>;</span><br><span class="line">                    <span class="comment">//唤醒等待线程</span></span><br><span class="line">                    LockSupport.unpark(t);</span><br><span class="line">                &#125;</span><br><span class="line">                WaitNode next = q.next;</span><br><span class="line">                <span class="keyword">if</span> (next == <span class="keyword">null</span>)</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                <span class="comment">// unlink to help gc</span></span><br><span class="line">                q.next = <span class="keyword">null</span>;</span><br><span class="line">                q = next;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//模板方法,可以被覆盖</span></span><br><span class="line">    done();</span><br><span class="line">    <span class="comment">//清空callable</span></span><br><span class="line">    callable = <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>当任务正常结束或者异常时，都会调用finishCompletion()方法去唤醒等待线程。当get()方法中的awaitDone()方法挂起的线程被唤醒后，就可以继续执行get()方法中的report()方法返回执行结果。</p>
+
+        <h2 id="总结">
+          <a href="#总结" class="heading-link"><i class="fas fa-link"></i></a><a href="#总结" class="headerlink" title="总结"></a>总结</h2>
+      <p>Callable由FutureTask的run()方法启动线程：1、在Callable对象中的call()方法的业务逻辑执行完后；2、调用FutureTask的set()方法对任务的state进行更新为COMPLETING；3、对全局变量结果outcome进行赋值；4、再次更新state为NORMAL；5、调用finishCompletion()唤醒FutureTask的get()中挂起的线程，继续执行get()方法中awaitDone下面的代码。<br>FutureTask的get()方法中，先判断state&lt;=COMPLETING，若是则调用awaitDone()挂起线程，自旋等待上述1-5步骤执行完毕，才能返回全局变量结果outcome；若不是则直接返回全局变量结果outcome。FutureTask的get()阻塞是通过自旋+挂起线程实现。</p>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://focusss.github.io">cjwei</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://focusss.github.io/2018/10/16/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B-Callable%E4%B8%8ERunnable/">https://focusss.github.io/2018/10/16/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B-Callable%E4%B8%8ERunnable/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://focusss.github.io/tags/Java/">Java</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://focusss.github.io/tags/%E5%B9%B6%E5%8F%91/">并发</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2018/10/23/%E5%81%8F%E5%90%91%E9%94%81%E3%80%81%E8%87%AA%E6%97%8B%E9%94%81%E3%80%81%E8%BD%BB%E9%87%8F%E7%BA%A7%E9%94%81%E3%80%81%E9%87%8D%E9%87%8F%E7%BA%A7%E9%94%81/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">偏向锁、自旋锁、轻量级锁、重量级锁</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2018/10/16/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B-%E8%BE%85%E5%8A%A9%E7%B1%BB%EF%BC%9ACountDownLatch%E3%80%81CyclicBarrier%E5%92%8CSemaphore/"><span class="paginator-prev__text">Java并发编程-辅助类：CountDownLatch、CyclicBarrier和Semaphore</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Callable%E4%B8%8ERunnable%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="toc-number">1.</span> <span class="toc-text">
+          Callable与Runnable的区别</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Callable%E4%B8%8ERunnable%E7%9A%84%E7%9B%B8%E5%90%8C%E7%82%B9"><span class="toc-number">2.</span> <span class="toc-text">
+          Callable与Runnable的相同点</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8%E6%96%B9%E5%BC%8F"><span class="toc-number">3.</span> <span class="toc-text">
+          使用方式</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Callable"><span class="toc-number">3.1.</span> <span class="toc-text">
+          Callable</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Thread%E6%96%B9%E5%BC%8F"><span class="toc-number">3.1.1.</span> <span class="toc-text">
+          Thread方式</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BA%BF%E7%A8%8B%E6%B1%A0%E6%96%B9%E5%BC%8F"><span class="toc-number">3.1.2.</span> <span class="toc-text">
+          线程池方式</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Runnable"><span class="toc-number">3.2.</span> <span class="toc-text">
+          Runnable</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Thread%E6%96%B9%E5%BC%8F-1"><span class="toc-number">3.2.1.</span> <span class="toc-text">
+          Thread方式</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BA%BF%E7%A8%8B%E6%B1%A0%E6%96%B9%E5%BC%8F-1"><span class="toc-number">3.2.2.</span> <span class="toc-text">
+          线程池方式</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ExecutorService-submit-%E5%B0%81%E8%A3%85%E8%BF%87%E7%A8%8B"><span class="toc-number">4.</span> <span class="toc-text">
+          ExecutorService-submit()封装过程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Future-get-%E8%8E%B7%E5%8F%96%E8%BF%94%E5%9B%9E%E5%80%BC%E5%8F%8A%E9%98%BB%E5%A1%9E%E5%8E%9F%E5%9B%A0"><span class="toc-number">5.</span> <span class="toc-text">
+          Future-get()获取返回值及阻塞原因</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">6.</span> <span class="toc-text">
+          总结</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/images/headImg.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">平安大赚 财丁兴旺</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">69</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">19</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">25</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>cjwei</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.4.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lazyload@2.0.0-rc.2/lazyload.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>

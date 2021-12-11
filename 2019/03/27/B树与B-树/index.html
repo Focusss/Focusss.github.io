@@ -1,0 +1,682 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="B树（B-tree）是一种树状数据结构，它能够存储数据、对其进行排序并允许以O(log n)的时间复杂度运行进行查找、顺序读取、插入和删除的数据结构。B树，概括来说是一个节点可以拥有多于2个子节点的多路搜索树（并不是二叉的）。与自平衡二叉查找树不同，B-树为系统最优化大块数据的读和写操作。B-tree算法减少定位记录时所经历的中间过程，从而加快存取速度。普遍运用在数据库和文件系统。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="B树与B+树">
+<meta property="og:url" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/index.html">
+<meta property="og:site_name" content="Focusss&#39;s Blog">
+<meta property="og:description" content="B树（B-tree）是一种树状数据结构，它能够存储数据、对其进行排序并允许以O(log n)的时间复杂度运行进行查找、顺序读取、插入和删除的数据结构。B树，概括来说是一个节点可以拥有多于2个子节点的多路搜索树（并不是二叉的）。与自平衡二叉查找树不同，B-树为系统最优化大块数据的读和写操作。B-tree算法减少定位记录时所经历的中间过程，从而加快存取速度。普遍运用在数据库和文件系统。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/4%E9%98%B6B%E6%A0%91.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B%E6%A0%91%E6%8F%92%E5%85%A5-1.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B%E6%A0%91%E6%8F%92%E5%85%A5-2.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B%E6%A0%91%E6%8F%92%E5%85%A5-3.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B%E6%A0%91%E6%8F%92%E5%85%A5-4.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B%E6%A0%91%E6%8F%92%E5%85%A5-5.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B%E6%A0%91%E6%8F%92%E5%85%A5-6.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B%E6%A0%91%E6%8F%92%E5%85%A5-7.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B%E6%A0%91%E6%8F%92%E5%85%A5-8.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B%E6%A0%91%E6%8F%92%E5%85%A5-9.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B%E6%A0%91%E6%8F%92%E5%85%A5-10.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B%E6%A0%91%E5%88%A0%E9%99%A4-1.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B%E6%A0%91%E5%88%A0%E9%99%A4-2.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B%E6%A0%91%E5%88%A0%E9%99%A4-3.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B%E6%A0%91%E5%88%A0%E9%99%A4-4.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B%E6%A0%91%E5%88%A0%E9%99%A4-5.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B%E6%A0%91%E5%88%A0%E9%99%A4-6.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B%E6%A0%91%E5%88%A0%E9%99%A4-7.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B%E6%A0%91%E5%88%A0%E9%99%A4-8.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B%E6%A0%91%E5%88%A0%E9%99%A4-9.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B+%E6%A0%91.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B+%E6%A0%91%E6%8F%92%E5%85%A5-1.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B+%E6%A0%91%E6%8F%92%E5%85%A5-2.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B+%E6%A0%91%E6%8F%92%E5%85%A5-3.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B+%E6%A0%91%E6%8F%92%E5%85%A5-4.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B+%E6%A0%91%E6%8F%92%E5%85%A5-5.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B+%E6%A0%91%E6%8F%92%E5%85%A5-6.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B+%E6%A0%91%E6%8F%92%E5%85%A5-7.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B+%E6%A0%91%E6%8F%92%E5%85%A5-8.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B+%E6%A0%91%E6%8F%92%E5%85%A5-9.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B+%E6%A0%91%E6%8F%92%E5%85%A5-10.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B+%E6%A0%91%E6%8F%92%E5%85%A5-11.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B+%E6%A0%91%E5%88%A0%E9%99%A4-1.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B+%E6%A0%91%E5%88%A0%E9%99%A4-2.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B+%E6%A0%91%E5%88%A0%E9%99%A4-3.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B+%E6%A0%91%E5%88%A0%E9%99%A4-4.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B+%E6%A0%91%E5%88%A0%E9%99%A4-5.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B+%E6%A0%91%E5%88%A0%E9%99%A4-6.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/B+%E6%A0%91%E5%88%A0%E9%99%A4-7.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/3%E9%98%B6%E7%9A%84B-Tree.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/3%E9%98%B6B+Tree.png">
+<meta property="article:published_time" content="2019-03-27T12:51:42.000Z">
+<meta property="article:modified_time" content="2021-12-11T11:37:42.623Z">
+<meta property="article:author" content="cjwei">
+<meta property="article:tag" content="数据结构">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/4%E9%98%B6B%E6%A0%91.png"><title>B树与B+树 | Focusss's Blog</title><link ref="canonical" href="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"carbon","highlight":"light","wordWrap":true},
+  reward: false,
+  fancybox: true,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: true,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Focusss's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">B树与B+树</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2019-03-27</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-12-11</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h3 id="简介">
+          <a href="#简介" class="heading-link"><i class="fas fa-link"></i></a><a href="#简介" class="headerlink" title="简介"></a>简介</h3>
+      <p>B树（B-tree）是一种树状数据结构，它能够存储数据、对其进行排序并允许以O(log n)的时间复杂度运行进行查找、顺序读取、插入和删除的数据结构。B树，概括来说是一个节点可以拥有多于2个子节点的多路搜索树（并不是二叉的）。与自平衡二叉查找树不同，B-树为系统最优化大块数据的读和写操作。B-tree算法减少定位记录时所经历的中间过程，从而加快存取速度。普遍运用在数据库和文件系统。<br>B树中的B代表平衡（balance），而不是二叉（binary）。</p>
+
+        <h3 id="B树定义">
+          <a href="#B树定义" class="heading-link"><i class="fas fa-link"></i></a><a href="#B树定义" class="headerlink" title="B树定义"></a>B树定义</h3>
+      <p>B树也称B-树,它是一颗多路平衡查找树。我们描述一颗B树时需要指定它的阶数，阶数表示了一个结点最多有多少个孩子结点，一般用字母m表示阶数。当m取2时，就是我们常见的二叉搜索树。</p>
+<p>一颗m阶的B树定义如下：</p>
+<p>1）每个结点最多有m-1个关键字。</p>
+<p>2）根结点最少可以只有1个关键字。</p>
+<p>3）非根结点至少有Math.ceil(m/2)-1个关键字。(向上取整)</p>
+<p>4）每个结点中的关键字都按照从小到大的顺序排列，每个关键字的左子树中的所有关键字都小于它，而右子树中的所有关键字都大于它。</p>
+<p>5）所有叶子结点都位于同一层，或者说根结点到每个叶子结点的长度都相同。</p>
+<p>B-Tree的节点是一个二元组[key, data]，key为记录的键值，data键key对应的数据。</p>
+<p>下图是一个M=4 阶的B树（阶代表一个节点子节点的数量）:<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="4%E9%98%B6B%E6%A0%91.png">
+      </p>
+<blockquote>
+<p>在实际应用中的B树的阶数m都非常大（通常大于100），所以即使存储大量的数据，B树的高度仍然比较小。<br>可以看到B树是2-3树的一种扩展，他允许一个节点有多于2个的元素。</p>
+</blockquote>
+
+        <h4 id="B树的插入">
+          <a href="#B树的插入" class="heading-link"><i class="fas fa-link"></i></a><a href="#B树的插入" class="headerlink" title="B树的插入"></a>B树的插入</h4>
+      <p>插入操作是指插入一条记录，即（key, value）的键值对。如果B树中<strong>已存在</strong>需要插入的键值对，则用需要插入的value<strong>替换</strong>旧的value。若B树<strong>不存在</strong>这个key,则一定是在<strong>叶子结点中进行插入</strong>操作。</p>
+<p>操作步骤：<br>1）根据要插入的key的值，找到叶子结点并插入。</p>
+<p>2）判断当前结点key的个数是否小于等于m-1（每个结点最多有m-1个关键字），若满足则结束，否则进行第3步。</p>
+<p>3）以结点中间的key为中心分裂成左右两部分，然后将这个中间的key插入到父结点中，这个key的左子树指向分裂后的左半部分，这个key的右子支指向分裂后的右半部分，然后将当前结点指向父结点，继续进行第3步。</p>
+<p>下面以5阶B树为例，介绍B树的插入操作，在5阶B树中，结点最多有4个key,最少有2个key<br>a）在空树中插入39<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B%E6%A0%91%E6%8F%92%E5%85%A5-1.png">
+      <br>此时根结点就一个key，此时根结点也是叶子结点</p>
+<p>b）继续插入22，97和41<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B%E6%A0%91%E6%8F%92%E5%85%A5-2.png">
+      <br>根结点此时有4个key</p>
+<p>c）继续插入53<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B%E6%A0%91%E6%8F%92%E5%85%A5-3.png">
+      <br>插入后超过了最大允许的关键字个数4，所以以key值为41为中心进行分裂，结果如下图所示，分裂后当前结点指针指向父结点（关键字41这个结点），满足B树条件，插入操作结束。当阶数m为偶数时，需要分裂时就不存在排序恰好在中间的key，那么我们选择中间位置的前一个key或中间位置的后一个key为中心进行分裂即可。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B%E6%A0%91%E6%8F%92%E5%85%A5-4.png">
+      </p>
+<p>d）依次插入13，21，40，同样会造成分裂，结果如下图所示。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B%E6%A0%91%E6%8F%92%E5%85%A5-5.png">
+      </p>
+<p>e）依次插入30，27, 33 ；36，35，34 ；24，29，结果如下图所示。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B%E6%A0%91%E6%8F%92%E5%85%A5-6.png">
+      </p>
+<p>f）插入key值为26的记录，插入后的结果如下图所示。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B%E6%A0%91%E6%8F%92%E5%85%A5-7.png">
+      </p>
+<p>当前结点需要以27为中心分裂，并向父结点进位27，然后当前结点指向父结点，结果如下图所示。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B%E6%A0%91%E6%8F%92%E5%85%A5-8.png">
+      </p>
+<p>进位后导致当前结点（即根结点）也需要分裂，分裂的结果如下图所示。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B%E6%A0%91%E6%8F%92%E5%85%A5-9.png">
+      <br>分裂后当前结点指向新的根，此时无需调整。</p>
+<p>g）最后再依次插入key为17,28,29,31,32的记录，结果如下图所示。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B%E6%A0%91%E6%8F%92%E5%85%A5-10.png">
+      </p>
+<p>在实现B树的代码中，为了使代码编写更加容易，我们可以将结点中存储记录的数组长度定义为m而非m-1，这样方便底层的结点由于分裂向上层插入一个记录时，上层有多余的位置存储这个记录。同时，每个结点还可以存储它的父结点的引用，这样就不必编写递归程序。</p>
+<p><strong>一般来说，对于确定的m和确定类型的记录，结点大小是固定的，无论它实际存储了多少个记录。</strong>但是分配固定结点大小的方法会存在浪费的情况，比如key为28,29所在的结点，还有2个key的位置没有使用，但是已经不可能继续在插入任何值了，因为这个结点的前序key是27,后继key是30，所有整数值都用完了。<strong>所以如果记录先按key的大小排好序，再插入到B树中，结点的使用率就会很低，最差情况下使用率仅为50%。</strong></p>
+
+        <h4 id="B树的删除操作">
+          <a href="#B树的删除操作" class="heading-link"><i class="fas fa-link"></i></a><a href="#B树的删除操作" class="headerlink" title="B树的删除操作"></a>B树的删除操作</h4>
+      <p>删除操作是指，根据key删除记录，如果B树中的记录中不存对应key的记录，则删除失败。</p>
+<p>1）如果当前需要删除的key位于非叶子结点上，则用后继key（这里的后继key均指后继记录的意思）覆盖要删除的key，然后在后继key所在的子支中删除该后继key。此时后继key一定位于叶子结点上。删除这个记录后执行第2步</p>
+<p>2）该结点key个数大于等于Math.ceil(m/2)-1，结束删除操作，否则执行第3步。</p>
+<p>3）如果兄弟结点key个数大于Math.ceil(m/2)-1，则父结点中的key下移到该结点，兄弟结点中的一个key上移，删除操作结束。</p>
+<p>否则，将父结点中的key下移与当前结点及它的兄弟结点中的key合并，形成一个新的结点。原父结点中的key的两个孩子指针就变成了一个孩子指针，指向这个新结点。然后当前结点的指针指向父结点，重复上第2步。</p>
+<p>有些结点它可能即有左兄弟，又有右兄弟，那么我们任意选择一个兄弟结点进行操作即可。</p>
+<p>下面以5阶B树为例，介绍B树的删除操作，5阶B树中，结点最多有4个key,最少有2个key</p>
+<p>a）原始状态</p>
+<p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B%E6%A0%91%E5%88%A0%E9%99%A4-1.png">
+      </p>
+<p>b）在上面的B树中删除21，删除后结点中的关键字个数仍然大于等2，所以删除结束。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B%E6%A0%91%E5%88%A0%E9%99%A4-2.png">
+      </p>
+<p>c）在上述情况下接着删除27。从上图可知27位于非叶子结点中，所以用27的后继替换它。从图中可以看出，27的后继为28，我们用28替换27，然后在28（原27）的右孩子结点中删除28。删除后的结果如下图所示。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B%E6%A0%91%E5%88%A0%E9%99%A4-3.png">
+      <br>删除后发现，当前叶子结点的记录的个数小于2，而它的兄弟结点中有3个记录，我们可以从兄弟结点中借取一个key。所以父结点中的28下移，兄弟结点中的26上移,删除结束。结果如下图所示。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B%E6%A0%91%E5%88%A0%E9%99%A4-4.png">
+      </p>
+<p>d）在上述情况下接着32，结果如下图。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B%E6%A0%91%E5%88%A0%E9%99%A4-5.png">
+      <br>当删除后，当前结点中只key，而兄弟结点中也仅有2个key。所以只能让父结点中的30下移和这个两个孩子结点中的key合并，成为一个新的结点，当前结点的指针指向父结点。结果如下图所示。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B%E6%A0%91%E5%88%A0%E9%99%A4-6.png">
+      <br>当前结点key的个数满足条件，故删除结束。</p>
+<p>e）上述情况下，我们接着删除key为40的记录，删除后结果如下图所示。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B%E6%A0%91%E5%88%A0%E9%99%A4-7.png">
+      <br>同理，当前结点的记录数小于2，兄弟结点中没有多余key，所以父结点中的key下移，和兄弟（这里我们选择左兄弟，选择右兄弟也可以）结点合并，合并后的指向当前结点的指针就指向了父结点。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B%E6%A0%91%E5%88%A0%E9%99%A4-8.png">
+      <br>同理，对于当前结点而言只能继续合并了，最后结果如下所示。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B%E6%A0%91%E5%88%A0%E9%99%A4-9.png">
+      <br>合并后结点当前结点满足条件，删除结束。</p>
+<blockquote>
+<p>B-树的自控制:<br>B树中每一个内部节点会包含一定数量的键值。通常，键值的数量被选定在d和2d之间。在实际中，键值占用了节点中大部分的空间。因数2将保证节点可以被拆分或组合。如果一个内部节点有2d个键值，那么添加一个键值给此节点的过程，将会拆分2d键值为2个d键值的节点，并把此键值添加给父节点。每一个拆分的节点需要最小数目的键值。相似地，如果一个内部节点和他的邻居两者都有d个键值，那么将通过它与邻居的合并来删除一个键值。删除此键值将导致此节点拥有d-1个键值;与邻居的合并则加上d个键值，再加上从邻居节点的父节点移来的一个键值。结果为完全填充的2d个键值。</p>
+</blockquote>
+
+        <h3 id="B-树定义">
+          <a href="#B-树定义" class="heading-link"><i class="fas fa-link"></i></a><a href="#B-树定义" class="headerlink" title="B+树定义"></a>B+树定义</h3>
+      <p>B+树的定义为关键字个数比孩子结点个数小1。<br>B+树是对B树的一种变形树，它与B树的差异在于：</p>
+<p>1）B+树包含2种类型的结点：内部结点（也称索引结点）和叶子结点。根结点本身即可以是内部结点，也可以是叶子结点。根结点的关键字个数最少可以只有1个。</p>
+<p>2）B+树与B树最大的不同是内部结点不保存数据，只用于索引，所有数据（或者说记录）都保存在叶子结点中。</p>
+<p>3） m阶B+树表示了内部结点最多有m-1个关键字（或者说内部结点最多有m个子树），阶数m同时限制了叶子结点最多存储m-1个记录。</p>
+<p>4）内部结点中的key都按照从小到大的顺序排列，对于内部结点中的一个key，左树中的所有key都小于它，右子树中的key都大于等于它。叶子结点中的记录也按照key的大小排列。</p>
+<p>5）每个叶子结点都存有相邻叶子结点的指针，叶子结点本身依关键字的大小自小而大顺序链接。</p>
+<p>如下图，是一个B+树:<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B+%E6%A0%91.png">
+      </p>
+<p>由于并不是所有节点都具有相同的域，因此B+Tree中叶节点和内节点一般大小不同。这点与B-Tree不同，虽然B-Tree中不同节点存放的key和指针可能数量不一致，但是每个节点的域和上限是一致的，所以在实现中B-Tree往往对每个节点申请同等大小的空间。</p>
+
+        <h4 id="B-树插入">
+          <a href="#B-树插入" class="heading-link"><i class="fas fa-link"></i></a><a href="#B-树插入" class="headerlink" title="B+树插入"></a>B+树插入</h4>
+      <p>1）若为空树，创建一个叶子结点，然后将记录插入其中，此时这个叶子结点也是根结点，插入操作结束。</p>
+<p>2）针对叶子类型结点：根据key值找到叶子结点，向这个叶子结点插入记录。插入后，若当前结点key的个数小于等于m-1，则插入结束。否则将这个叶子结点分裂成左右两个叶子结点，左叶子结点包含前m/2个记录，右结点包含剩下的记录，将第m/2+1个记录的key进位到父结点中（父结点一定是索引类型结点），进位到父结点的key左孩子指针向左结点,右孩子指针向右结点。将当前结点的指针指向父结点，然后执行第3步。</p>
+<p>3）针对索引类型结点：若当前结点key的个数小于等于m-1，则插入结束。否则，将这个索引类型结点分裂成两个索引结点，左索引结点包含前(m-1)/2个key，右结点包含m-(m-1)/2个key，将第m/2个key进位到父结点中，进位到父结点的key左孩子指向左结点, 进位到父结点的key右孩子指向右结点。将当前结点的指针指向父结点，然后重复第3步。</p>
+<p>下面是一颗5阶B树的插入过程，5阶B数的结点最少2个key，最多4个key。<br>a）空树中插入5<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B+%E6%A0%91%E6%8F%92%E5%85%A5-1.png">
+      </p>
+<p>b）依次插入8，10，15<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B+%E6%A0%91%E6%8F%92%E5%85%A5-2.png">
+      </p>
+<p>c）插入16<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B+%E6%A0%91%E6%8F%92%E5%85%A5-3.png">
+      <br>插入16后超过了关键字的个数限制，所以要进行分裂。在叶子结点分裂时，分裂出来的左结点2个记录，右边3个记录，中间key成为索引结点中的key，分裂后当前结点指向了父结点（根结点）。结果如下图所示。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B+%E6%A0%91%E6%8F%92%E5%85%A5-4.png">
+      <br>当然我们还有另一种分裂方式，给左结点3个记录，右结点2个记录，此时索引结点中的key就变为15。</p>
+<p>d）插入17</p>
+<p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B+%E6%A0%91%E6%8F%92%E5%85%A5-5.png">
+      </p>
+<p>e）插入18，插入后如下图所示</p>
+<p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B+%E6%A0%91%E6%8F%92%E5%85%A5-6.png">
+      </p>
+<p>当前结点的关键字个数大于5，进行分裂。分裂成两个结点，左结点2个记录，右结点3个记录，关键字16进位到父结点（索引类型）中，将当前结点的指针指向父结点。</p>
+<p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B+%E6%A0%91%E6%8F%92%E5%85%A5-7.png">
+      <br>当前结点的关键字个数满足条件，插入结束。</p>
+<p>f）插入若干数据后<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B+%E6%A0%91%E6%8F%92%E5%85%A5-8.png">
+      </p>
+<p>g）在上图中插入7，结果如下图所示<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B+%E6%A0%91%E6%8F%92%E5%85%A5-9.png">
+      </p>
+<p>当前结点的关键字个数超过4，需要分裂。左结点2个记录，右结点3个记录。分裂后关键字7进入到父结点中，将当前结点的指针指向父结点，结果如下图所示。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B+%E6%A0%91%E6%8F%92%E5%85%A5-10.png">
+      <br>当前结点的关键字个数超过4，需要继续分裂。左结点2个关键字，右结点2个关键字，关键字16进入到父结点中，将当前结点指向父结点，结果如下图所示。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B+%E6%A0%91%E6%8F%92%E5%85%A5-11.png">
+      <br>当前结点的关键字个数满足条件，插入结束。</p>
+
+        <h4 id="B-树删除">
+          <a href="#B-树删除" class="heading-link"><i class="fas fa-link"></i></a><a href="#B-树删除" class="headerlink" title="B+树删除"></a>B+树删除</h4>
+      <p>如果叶子结点中没有相应的key，则删除失败。否则执行下面的步骤</p>
+<p>1）删除叶子结点中对应的key。删除后若结点的key的个数大于等于Math.ceil(m-1)/2 – 1，删除操作结束,否则执行第2步。</p>
+<p>2）若兄弟结点key有富余（大于Math.ceil(m-1)/2 – 1），向兄弟结点借一个记录，同时用借到的key替换父结（指当前结点和兄弟结点共同的父结点）点中的key，删除结束。否则执行第3步。</p>
+<p>3）若兄弟结点中没有富余的key,则当前结点和兄弟结点合并成一个新的叶子结点，并删除父结点中的key（父结点中的这个key两边的孩子指针就变成了一个指针，正好指向这个新的叶子结点），将当前结点指向父结点（必为索引结点），执行第4步（第4步以后的操作和B树就完全一样了，主要是为了更新索引结点）。</p>
+<p>4）若索引结点的key的个数大于等于Math.ceil(m-1)/2 – 1，则删除操作结束。否则执行第5步</p>
+<p>5）若兄弟结点有富余，父结点key下移，兄弟结点key上移，删除结束。否则执行第6步</p>
+<p>6）当前结点和兄弟结点及父结点下移key合并成一个新的结点。将当前结点指向父结点，重复第4步。</p>
+<blockquote>
+<p>注意，通过B+树的删除操作后，索引结点中存在的key，不一定在叶子结点中存在对应的记录。</p>
+</blockquote>
+<p>下面是一颗5阶B树的删除过程，5阶B数的结点最少2个key，最多4个key。</p>
+<p>a）初始状态</p>
+<p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B+%E6%A0%91%E5%88%A0%E9%99%A4-1.png">
+      </p>
+<p>b）删除22,删除后结果如下图<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B+%E6%A0%91%E5%88%A0%E9%99%A4-2.png">
+      <br>删除后叶子结点中key的个数大于等于2，删除结束</p>
+<p>c）删除15，删除后的结果如下图所示<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B+%E6%A0%91%E5%88%A0%E9%99%A4-3.png">
+      <br>删除后当前结点只有一个key,不满足条件，而兄弟结点有三个key，可以从兄弟结点借一个关键字为9的记录,同时更新将父结点中的关键字由10也变为9，删除结束。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B+%E6%A0%91%E5%88%A0%E9%99%A4-4.png">
+      </p>
+<p>d）删除7，删除后的结果如下图所示</p>
+<p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B+%E6%A0%91%E5%88%A0%E9%99%A4-5.png">
+      </p>
+<p>当前结点关键字个数小于2，（左）兄弟结点中的也没有富余的关键字（当前结点还有个右兄弟，不过选择任意一个进行分析就可以了，这里我们选择了左边的），所以当前结点和兄弟结点合并，并删除父结点中的key，当前结点指向父结点。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B+%E6%A0%91%E5%88%A0%E9%99%A4-6.png">
+      </p>
+<p>此时当前结点的关键字个数小于2，兄弟结点的关键字也没有富余，所以父结点中的关键字下移，和两个孩子结点合并，结果如下图所示。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="B+%E6%A0%91%E5%88%A0%E9%99%A4-7.png">
+      </p>
+
+        <h3 id="B-树优点">
+          <a href="#B-树优点" class="heading-link"><i class="fas fa-link"></i></a><a href="#B-树优点" class="headerlink" title="B+树优点"></a>B+树优点</h3>
+      <p>B+ 树的优点在于：</p>
+<p>1、由于B+树在内部节点上不包含数据信息，因此在内存页中能够存放更多的key。 数据存放的更加紧密，具有更好的空间局部性。因此访问叶子节点上关联的数据也具有更好的缓存命中率。</p>
+<p>2、B+树的叶子结点都是相链的，因此对整棵树的遍历只需要一次线性遍历叶子结点即可。而且由于数据顺序排列并且相连，所以便于区间查找和搜索。而B树则需要进行每一层的递归遍历。相邻的元素可能在内存中不相邻，所以缓存命中性没有B+树好。</p>
+<p>但是B树也有优点，其优点在于，由于B树的每一个节点都包含key和value，因此经常访问的元素可能离根节点更近，因此访问也更迅速。</p>
+
+        <h3 id="B树与B-树区别">
+          <a href="#B树与B-树区别" class="heading-link"><i class="fas fa-link"></i></a><a href="#B树与B-树区别" class="headerlink" title="B树与B+树区别"></a>B树与B+树区别</h3>
+      <p>1、更加高效的单元素查找<br>a、首先B+树的中间节点不存储实际数据，所以同样大小的磁盘页可以容纳更多的节点元素，如此一来，相同数量的数据下，B+树就相对来说要更加矮胖些，磁盘IO的次数更少。</p>
+<p>b、由于只有叶子节点才保存卫星数据，B+树每次查询都要到叶子节点；而B树每次查询则不一样，最好的情况是根节点，最坏的情况是叶子节点，没有B+树稳定。<br>2、叶子节点形成有顺链表，范围查找性能更优<br>比如说对于B树来说，查找3到8，B树需要不下５次的磁盘IO，每次查一个数都需要重复从根节点开始查找，查找的范围跨度越大，则磁盘IO的次数越多，性能越差。<br>对于B+树来说，只需定位到３的叶子节点，然后通过链表指针，依次遍历得到元素5/6/8/9/11；如此一来，就不用像B树那样一个个元素进行查找。</p>
+
+        <h3 id="分析">
+          <a href="#分析" class="heading-link"><i class="fas fa-link"></i></a><a href="#分析" class="headerlink" title="分析"></a>分析</h3>
+      <p>对于一颗节点为N度为M的子树，查找和插入需要logM-1N ~ logM/2N次比较。这个很好证明，对于度为M的B树，每一个节点的子节点个数为M/2 到 M-1之间，所以树的高度在logM-1N至logM/2N之间。</p>
+<p>这种效率是很高的，对于N=620000000000个节点，如果度为1024，则logM/2N &lt;=4，即在620亿个元素中，如果这棵树的度为1024，则只需要小于4次即可定位到该节点，然后再采用二分查找即可找到要找的值。</p>
+
+        <h3 id="应用">
+          <a href="#应用" class="heading-link"><i class="fas fa-link"></i></a><a href="#应用" class="headerlink" title="应用"></a>应用</h3>
+      <p>B树和B+广泛应用于文件存储系统以及数据库系统中。<br>由于存储介质的特性，磁盘本身存取就比主存慢很多，再加上机械运动耗费，因此为了提高效率，要尽量减少磁盘I/O，减少读写操作。为了达到这个目的，磁盘往往不是严格按需读取，而是每次都会预读，即使只需要一个字节，磁盘也会从这个位置开始，顺序向后读取一定长度的数据放入内存。这样做的理论依据是计算机科学中著名的局部性原理：</p>
+<p>当一个数据被用到时，其附近的数据也通常会马上被使用。</p>
+<p>由于磁盘顺序读取的效率很高（不需要寻道时间，只需很少的旋转时间），因此对于具有局部性的程序来说，预读可以提高I/O效率。</p>
+<p>预读的长度一般为页（page）的整倍数。页是计算机管理存储器的逻辑块，硬件及操作系统往往将主存和磁盘存储区分割为连续的大小相等的块，每个存储块称为一页（在许多操作系统中，页得大小通常为4k），主存和磁盘以页为单位交换数据。当程序要读取的数据不在主存中时，会触发一个缺页异常，此时系统会向磁盘发出读盘信号，磁盘会找到数据的起始位置并向后连续读取一页或几页载入内存中，然后异常返回，程序继续运行。</p>
+<p>文件系统及数据库系统的设计者利用了磁盘预读原理，将一个节点的大小设为等于一个页，这样每个节点只需要一次I/O就可以完全载入。为了达到这个目的，在实际实现B-Tree还需要使用如下技巧：</p>
+<p>每次新建一个节点的同时，直接申请一个页的空间( 512或者1024)，这样就保证一个节点物理上也存储在一个页里，加之计算机存储分配都是按页对齐的，就实现了一个node只需一次I/O。</p>
+
+        <h4 id="B-Tree">
+          <a href="#B-Tree" class="heading-link"><i class="fas fa-link"></i></a><a href="#B-Tree" class="headerlink" title="B-Tree"></a>B-Tree</h4>
+      <p>B-Tree中的每个节点根据实际情况可以包含大量的关键字信息和分支，如下图所示为一个3阶的B-Tree：<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="3%E9%98%B6%E7%9A%84B-Tree.png">
+      </p>
+<p>每个节点占用一个盘块的磁盘空间，一个节点上有两个升序排序的关键字和三个指向子树根节点的指针，指针存储的是子节点所在磁盘块的地址。两个关键词划分成的三个范围域对应三个指针指向的子树的数据的范围域。以根节点为例，关键字为17和35，P1指针指向的子树的数据范围为小于17，P2指针指向的子树的数据范围为17-35，P3指针指向的子树的数据范围为大于35。<br>模拟查找关键字29的过程：</p>
+<p>1、根据根节点找到磁盘块1，读入内存。【磁盘I/O操作第1次】<br>2、比较关键字29在区间（17,35），找到磁盘块1的指针P2。<br>3、根据P2指针找到磁盘块3，读入内存。【磁盘I/O操作第2次】<br>4、比较关键字29在区间（26,30），找到磁盘块3的指针P2。<br>5、根据P2指针找到磁盘块8，读入内存。【磁盘I/O操作第3次】<br>6、在磁盘块8中的关键字列表中找到关键字29。</p>
+<p>分析上面过程，发现需要3次磁盘I/O操作，和3次内存查找操作。由于内存中的关键字是一个有序表结构，可以利用二分法查找提高效率。而3次磁盘I/O操作是影响整个B-Tree查找效率的决定因素。B-Tree相对于AVLTree缩减了节点个数，使每次磁盘I/O取到内存的数据都发挥了作用，从而提高了查询效率。</p>
+
+        <h4 id="B-Tree-1">
+          <a href="#B-Tree-1" class="heading-link"><i class="fas fa-link"></i></a><a href="#B-Tree-1" class="headerlink" title="B+Tree"></a>B+Tree</h4>
+      <p>B+Tree是在B-Tree基础上的一种优化，使其更适合实现外存储索引结构，InnoDB存储引擎就是用B+Tree实现其索引结构。</p>
+<p>从上一节中的B-Tree结构图中可以看到每个节点中不仅包含数据的key值，还有data值。而每一个页的存储空间是有限的，如果data数据较大时将会导致每个节点（即一个页）能存储的key的数量很小，当存储的数据量很大时同样会导致B-Tree的深度较大，增大查询时的磁盘I/O次数，进而影响查询效率。在B+Tree中，所有数据记录节点都是按照键值大小顺序存放在同一层的叶子节点上，而非叶子节点上只存储key值信息，这样可以大大加大每个节点存储的key值数量，降低B+Tree的高度。<br>评价一个数据结构作为索引的优劣最重要的指标就是在查找过程中磁盘I/O操作次数的渐进复杂度。换句话说，索引的结构组织要尽量减少查找过程中磁盘I/O的存取次数。</p>
+<p>B+Tree相对于B-Tree有几点不同：</p>
+<p>1、非叶子节点只存储键信息。<br>2、所有叶子节点之间都有一个链指针。<br>3、数据记录都存放在叶子节点中。</p>
+<p>将上一节中的B-Tree优化，由于B+Tree的非叶子节点只存储键值信息，假设每个磁盘块能存储4个键值及指针信息，则变成B+Tree后其结构如下图所示： <br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="3%E9%98%B6B+Tree.png">
+      </p>
+<p>通常在B+Tree上有两个头指针，一个指向根节点，另一个指向关键字最小的叶子节点，而且所有叶子节点（即数据节点）之间是一种链式环结构。因此可以对B+Tree进行两种查找运算：一种是对于主键的范围查找和分页查找，另一种是从根节点开始，进行随机查找。</p>
+<p>可能上面例子中只有22条数据记录，看不出B+Tree的优点，下面做一个推算：</p>
+<p>InnoDB存储引擎中页的大小为16KB，一般表的主键类型为INT（占用4个字节）或BIGINT（占用8个字节），指针类型也一般为4或8个字节，也就是说一个页（B+Tree中的一个节点）中大概存储16KB/(8B+8B)=1K个键值（因为是估值，为方便计算，这里的K取值为〖10〗^3）。也就是说一个深度为3的B+Tree索引可以维护10^3 * 10^3 * 10^3 = 10亿 条记录(1k键值可以作为一个单独的节点再分出1k个子节点)。</p>
+<p>实际情况中每个节点可能不能填充满，因此在数据库中，B+Tree的高度一般都在2-4层。mysql的InnoDB存储引擎在设计时是将根节点常驻内存的，也就是说查找某一键值的行记录时最多只需要1-3次磁盘I/O操作。</p>
+<p>数据库中的B+Tree索引可以分为聚集索引（clustered index）和辅助索引（secondary index）。上面的B+Tree示例图在数据库中的实现即为聚集索引，聚集索引的B+Tree中的叶子节点存放的是整张表的行记录数据。辅助索引与聚集索引的区别在于辅助索引的叶子节点并不包含行记录的全部数据，而是存储相应行数据的聚集索引键，即主键。当通过辅助索引来查询数据时，InnoDB存储引擎会遍历辅助索引找到主键，然后再通过主键在聚集索引中找到完整的行记录数据。</p>
+
+        <h3 id="为什么Mysql选择B-TREE索引-B-TREE索引有什么好处">
+          <a href="#为什么Mysql选择B-TREE索引-B-TREE索引有什么好处" class="heading-link"><i class="fas fa-link"></i></a><a href="#为什么Mysql选择B-TREE索引-B-TREE索引有什么好处" class="headerlink" title="为什么Mysql选择B+TREE索引? B+TREE索引有什么好处?"></a>为什么Mysql选择B+TREE索引? B+TREE索引有什么好处?</h3>
+      <p>B-/+Tree索引的性能优势： 一般使用磁盘I/O次数评价索引优劣。<br>1.结合操作系统存储结构优化处理： mysql巧妙运用操作系统存储结构(一个节点分配到一个存储页中-&gt;尽量减少IO次数) &amp; 磁盘预读(缓存预读-&gt;加速预读马上要用到的数据).</p>
+<p>2.B+Tree 单个节点能放更多的键（B+Tree内节点去掉了data域，因此可以拥有更大的出度），相同IO次数，检索出更多信息。</p>
+<p>3.B+TREE 只在叶子节点存储数据 &amp; 所有叶子结点包含一个链指针 &amp; 其他内层非叶子节点只存储索引数据。只利用索引快速定位数据索引范围，先定位索引再通过索引高效快速定位数据。</p>
+
+        <h3 id="参考资料">
+          <a href="#参考资料" class="heading-link"><i class="fas fa-link"></i></a><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3>
+      <ul>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://www.cnblogs.com/vincently/p/4526560.html">【经典数据结构】B树与B+树</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://blog.csdn.net/qq_21993785/article/details/80576642">二叉查找树、平衡二叉树（AVLTree）和平衡多路查找树（B-Tree），B+树</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://www.cnblogs.com/dongguacai/p/7241860.html">什么是B+Tree</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://www.01hai.com/note/av124483">B树和B+树的插入、删除图文详解</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+</ul>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://focusss.github.io">cjwei</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/">https://focusss.github.io/2019/03/27/B%E6%A0%91%E4%B8%8EB-%E6%A0%91/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://focusss.github.io/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">数据结构</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2019/03/27/MySQL%E7%B4%A2%E5%BC%95%E5%8E%9F%E7%90%86/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">MySQL索引原理</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2019/03/26/CopyOnWriteArrayList%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86%E5%8F%8A%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/"><span class="paginator-prev__text">CopyOnWriteArrayList实现原理及源码分析</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AE%80%E4%BB%8B"><span class="toc-number">1.</span> <span class="toc-text">
+          简介</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#B%E6%A0%91%E5%AE%9A%E4%B9%89"><span class="toc-number">2.</span> <span class="toc-text">
+          B树定义</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#B%E6%A0%91%E7%9A%84%E6%8F%92%E5%85%A5"><span class="toc-number">2.1.</span> <span class="toc-text">
+          B树的插入</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#B%E6%A0%91%E7%9A%84%E5%88%A0%E9%99%A4%E6%93%8D%E4%BD%9C"><span class="toc-number">2.2.</span> <span class="toc-text">
+          B树的删除操作</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#B-%E6%A0%91%E5%AE%9A%E4%B9%89"><span class="toc-number">3.</span> <span class="toc-text">
+          B+树定义</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#B-%E6%A0%91%E6%8F%92%E5%85%A5"><span class="toc-number">3.1.</span> <span class="toc-text">
+          B+树插入</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#B-%E6%A0%91%E5%88%A0%E9%99%A4"><span class="toc-number">3.2.</span> <span class="toc-text">
+          B+树删除</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#B-%E6%A0%91%E4%BC%98%E7%82%B9"><span class="toc-number">4.</span> <span class="toc-text">
+          B+树优点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#B%E6%A0%91%E4%B8%8EB-%E6%A0%91%E5%8C%BA%E5%88%AB"><span class="toc-number">5.</span> <span class="toc-text">
+          B树与B+树区别</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%86%E6%9E%90"><span class="toc-number">6.</span> <span class="toc-text">
+          分析</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BA%94%E7%94%A8"><span class="toc-number">7.</span> <span class="toc-text">
+          应用</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#B-Tree"><span class="toc-number">7.1.</span> <span class="toc-text">
+          B-Tree</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#B-Tree-1"><span class="toc-number">7.2.</span> <span class="toc-text">
+          B+Tree</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88Mysql%E9%80%89%E6%8B%A9B-TREE%E7%B4%A2%E5%BC%95-B-TREE%E7%B4%A2%E5%BC%95%E6%9C%89%E4%BB%80%E4%B9%88%E5%A5%BD%E5%A4%84"><span class="toc-number">8.</span> <span class="toc-text">
+          为什么Mysql选择B+TREE索引? B+TREE索引有什么好处?</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">9.</span> <span class="toc-text">
+          参考资料</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/images/headImg.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">平安大赚 财丁兴旺</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">69</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">19</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">25</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>cjwei</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.4.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lazyload@2.0.0-rc.2/lazyload.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>

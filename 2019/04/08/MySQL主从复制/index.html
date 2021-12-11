@@ -1,0 +1,572 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="主从复制，是用来建立一个和主数据库完全一样的数据库环境，称为从数据库；主数据库一般是准实时的业务数据库。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL主从复制">
+<meta property="og:url" content="https://focusss.github.io/2019/04/08/MySQL%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/index.html">
+<meta property="og:site_name" content="Focusss&#39;s Blog">
+<meta property="og:description" content="主从复制，是用来建立一个和主数据库完全一样的数据库环境，称为从数据库；主数据库一般是准实时的业务数据库。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://focusss.github.io/2019/04/08/MySQL%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/%E4%B8%BB%E4%BB%8E%E6%9E%B6%E6%9E%84.png">
+<meta property="og:image" content="https://focusss.github.io/2019/04/08/MySQL%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%861.jfif">
+<meta property="og:image" content="https://focusss.github.io/2019/04/08/MySQL%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B62.jfif">
+<meta property="og:image" content="https://focusss.github.io/2019/04/08/MySQL%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86.png">
+<meta property="og:image" content="https://focusss.github.io/2019/04/08/MySQL%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/%E5%BC%82%E6%AD%A5%E5%A4%8D%E5%88%B6.png">
+<meta property="og:image" content="https://focusss.github.io/2019/04/08/MySQL%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/%E5%8D%8A%E5%90%8C%E6%AD%A5%E5%A4%8D%E5%88%B6.png">
+<meta property="article:published_time" content="2019-04-08T14:18:01.000Z">
+<meta property="article:modified_time" content="2021-12-11T10:21:30.429Z">
+<meta property="article:author" content="cjwei">
+<meta property="article:tag" content="MySQL">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://focusss.github.io/2019/04/08/MySQL%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/%E4%B8%BB%E4%BB%8E%E6%9E%B6%E6%9E%84.png"><title>MySQL主从复制 | Focusss's Blog</title><link ref="canonical" href="https://focusss.github.io/2019/04/08/MySQL%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"carbon","highlight":"light","wordWrap":true},
+  reward: false,
+  fancybox: true,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: true,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Focusss's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">MySQL主从复制</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2019-04-08</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-12-11</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h3 id="什么是主从复制">
+          <a href="#什么是主从复制" class="heading-link"><i class="fas fa-link"></i></a><a href="#什么是主从复制" class="headerlink" title="什么是主从复制"></a>什么是主从复制</h3>
+      <p>　　主从复制，是用来建立一个和主数据库完全一样的数据库环境，称为从数据库；主数据库一般是准实时的业务数据库。</p>
+
+        <h3 id="主从复制的作用">
+          <a href="#主从复制的作用" class="heading-link"><i class="fas fa-link"></i></a><a href="#主从复制的作用" class="headerlink" title="主从复制的作用"></a>主从复制的作用</h3>
+      <ol>
+<li><p>做数据的热备，作为后备数据库，主数据库服务器故障后，可切换到从数据库继续工作，避免数据丢失。</p>
+</li>
+<li><p>架构的扩展。业务量越来越大，I/O访问频率过高，单机无法满足，此时做多库的存储，降低磁盘I/O访问的频率，提高单个机器的I/O性能。</p>
+</li>
+<li><p>读写分离，使数据库能支撑更大的并发。在报表中尤其重要。由于部分报表sql语句非常的慢，导致锁表，影响前台服务。如果前台使用master，报表使用slave，那么报表sql将不会造成前台锁，保证了前台速度。</p>
+</li>
+</ol>
+
+        <h3 id="主从复制的形式">
+          <a href="#主从复制的形式" class="heading-link"><i class="fas fa-link"></i></a><a href="#主从复制的形式" class="headerlink" title="主从复制的形式"></a>主从复制的形式</h3>
+      <p>mysql主从复制 灵活</p>
+<ul>
+<li>一主一从</li>
+<li>主主复制</li>
+<li>一主多从—扩展系统读取的性能，因为读是在从库读取的；</li>
+<li>多主一从—5.7开始支持</li>
+<li>联级复制</li>
+</ul>
+<p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E4%B8%BB%E4%BB%8E%E6%9E%B6%E6%9E%84.png">
+      </p>
+
+        <h3 id="主从部署必要条件">
+          <a href="#主从部署必要条件" class="heading-link"><i class="fas fa-link"></i></a><a href="#主从部署必要条件" class="headerlink" title="主从部署必要条件"></a>主从部署必要条件</h3>
+      <ul>
+<li>主库开启binlog日志（设置log-bin参数）</li>
+<li>主从server-id不同</li>
+<li>从库服务器能连通主库</li>
+<li>从库要配置master.info（CHANGE MASTER to…相当于配置密码文件和Master的相关信息）</li>
+</ul>
+
+        <h3 id="主从复制的原理">
+          <a href="#主从复制的原理" class="heading-link"><i class="fas fa-link"></i></a><a href="#主从复制的原理" class="headerlink" title="主从复制的原理"></a>主从复制的原理</h3>
+      <p>binlog输出线程：每当有从库连接到主库的时候，主库都会创建一个线程，然后发送binlog内容到从库。</p>
+<p>在从库里，当复制开始的时候，从库就会创建两个线程进行处理：</p>
+<p>从库I/O线程： 当START SLAVE语句在从库开始执行之后，从库创建一个I/O线程，该线程连接到主库并请求主库发送binlog里面的更新记录到从库上。从库I/O线程读取主库的binlog输出线程发送的更新并拷贝这些更新到relay log-中继日志。</p>
+<p>从库的SQL线程： 从库创建一个SQL线程，这个线程读取relay log的SQL语句并执行。</p>
+<p>可以知道，对于每一个主从复制的连接，都有三个线程。拥有多个从库的主库为每一个连接到主库的从库创建一个binlog输出线程，每一个从库都有它自己的I/O线程和SQL线程。<br>主从复制如图：<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%861.jfif">
+      <br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B62.jfif">
+      <br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86.png">
+      <br>具体步骤：</p>
+<ol>
+<li><p>主库db的更新事件(update、insert、delete)被写到binlog</p>
+</li>
+<li><p>从库执行start slave命令开启主从复制开关，此时，从库的IO线程会通过在master上已经授权的复制用户权限请求连接master服务器，并请求从执行binlog日志文件的指定位置（日志文件名和位置就是在配置主从复制服务时执行change<br>master命令指定的）之后开始发送binlog日志内容</p>
+</li>
+<li><p>Master服务器接收到来自Slave服务器的IO线程的请求后，binlog dump 线程会根据Slave服务器的IO线程请求的信息分批读取指定binlog日志文件指定位置之后的binlog日志信息，然后返回给Slave端的IO线程。返回的信息中除了binlog日志内容外，还有binlog中的下一个指定更新位置。</p>
+</li>
+<li><p>当Slave服务器的IO线程获取到Master服务器上IO线程发送的日志内容、日志文件及位置点后，会将binlog日志内容依次写到Slave端自身的Relay Log（即中继日志）文件（Mysql-relay-bin.xxx）的最末端，并将新的binlog文件名和位置记录到master-info文件中，以便下一次读取master端新binlog日志时能告诉Master服务器从新binlog日志的指定文件及位置开始读取新的binlog日志内容</p>
+</li>
+</ol>
+<ol start="5">
+<li>Slave服务器端的SQL线程会实时检测本地Relay Log 中IO线程新增的日志内容，然后及时把Relay LOG 文件中的内容解析成sql语句，并在自身Slave服务器上按解析SQL语句的位置顺序执行应用sql语句，并在relay-log.info中记录当前应用中继日志的文件名和位置点</li>
+</ol>
+
+        <h4 id="常见问题">
+          <a href="#常见问题" class="heading-link"><i class="fas fa-link"></i></a><a href="#常见问题" class="headerlink" title="常见问题"></a>常见问题</h4>
+      <ol>
+<li><p>联级复制<br>A-&gt;B-&gt;C<br>B中添加参数：</p>
+<figure class="highlight sql"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">log<span class="operator">-</span>slave<span class="operator">-</span>updates  #必须要有这个参数</span><br><span class="line">log<span class="operator">-</span>bin <span class="operator">=</span> <span class="operator">/</span>data<span class="operator">/</span><span class="number">3307</span><span class="operator">/</span>mysql<span class="operator">-</span>bin</span><br><span class="line">expire_logs_days <span class="operator">=</span> <span class="number">7</span> #相当于删除<span class="number">7</span>天之后的日志</span><br></pre></td></tr></table></div></figure>
+<p>B将把A的binlog记录到自己的binlog日志中</p>
+</li>
+<li><p>复制出错处理—1062（主键冲突），1032（记录不存在）</p>
+</li>
+</ol>
+<ul>
+<li>手动处理</li>
+<li>跳过复制错误：set global sql_slave_skip_counter=1</li>
+</ul>
+
+        <h3 id="Mysql主从复制问题">
+          <a href="#Mysql主从复制问题" class="heading-link"><i class="fas fa-link"></i></a><a href="#Mysql主从复制问题" class="headerlink" title="Mysql主从复制问题"></a>Mysql主从复制问题</h3>
+      <p>mysql主从复制存在的问题：</p>
+<ol>
+<li>主库宕机后，数据可能丢失</li>
+<li>主库写压力大，从库只有一个sql Thread，复制很可能延时</li>
+</ol>
+<p>解决方法：</p>
+<ol>
+<li>半同步复制—解决数据丢失的问题</li>
+<li>并行复制—-解决从库复制延迟的问题</li>
+</ol>
+
+        <h4 id="半同步复制">
+          <a href="#半同步复制" class="heading-link"><i class="fas fa-link"></i></a><a href="#半同步复制" class="headerlink" title="半同步复制"></a>半同步复制</h4>
+      <p>正常的主从复制采用的是异步复制策略。过程如下：<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E5%BC%82%E6%AD%A5%E5%A4%8D%E5%88%B6.png">
+      </p>
+<p>mysql semi-sync（半同步复制）<br>半同步复制：</p>
+<ul>
+<li>5.5集成到mysql，以插件的形式存在，需要单独安装</li>
+<li>确保事务提交后binlog至少传输到一个从库</li>
+<li>不保证从库应用完这个事务的binlog</li>
+<li>性能有一定的降低，响应时间会更长</li>
+<li>网络异常或从库宕机，卡主主库，直到超时或从库恢复<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E5%8D%8A%E5%90%8C%E6%AD%A5%E5%A4%8D%E5%88%B6.png">
+      <br>假设有以下架构：<figure class="highlight sql"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">M <span class="comment">--S1</span></span><br></pre></td></tr></table></div></figure>
+介于异步复制和全同步复制之间，主库在执行完客户端提交的事务后不是立刻返回给客户端，而是等待至少一个从库接收到并写到relay log中才返回给客户端。相对于异步复制，半同步复制提高了数据的安全性，同时它也造成了一定程度的延迟，这个延迟最少是一个TCP/IP往返的时间。所以，半同步复制最好在低延时的网络中使用。</li>
+</ul>
+
+        <h4 id="并行复制">
+          <a href="#并行复制" class="heading-link"><i class="fas fa-link"></i></a><a href="#并行复制" class="headerlink" title="并行复制"></a>并行复制</h4>
+      <ul>
+<li>并行是指从库多线程apply binlog</li>
+<li>库级别并行应用binlog，同一个库数据更改还是串行的(5.7版并行复制基于事务组)<br>设置sql线程数为10<figure class="highlight sql"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> <span class="keyword">global</span> slave_parallel_workers<span class="operator">=</span><span class="number">10</span>;</span><br></pre></td></tr></table></div></figure></li>
+</ul>
+
+        <h3 id="Mysql主从复制延迟问题原因及解决方法">
+          <a href="#Mysql主从复制延迟问题原因及解决方法" class="heading-link"><i class="fas fa-link"></i></a><a href="#Mysql主从复制延迟问题原因及解决方法" class="headerlink" title="Mysql主从复制延迟问题原因及解决方法"></a>Mysql主从复制延迟问题原因及解决方法</h3>
+      
+        <h4 id="一个主库的从库太多，导致复制延迟">
+          <a href="#一个主库的从库太多，导致复制延迟" class="heading-link"><i class="fas fa-link"></i></a><a href="#一个主库的从库太多，导致复制延迟" class="headerlink" title="一个主库的从库太多，导致复制延迟"></a>一个主库的从库太多，导致复制延迟</h4>
+      <p>建议从库数量3-5 为宜，要复制的从节点数量过多，会导致复制延迟</p>
+
+        <h4 id="慢SQL语句过多">
+          <a href="#慢SQL语句过多" class="heading-link"><i class="fas fa-link"></i></a><a href="#慢SQL语句过多" class="headerlink" title="慢SQL语句过多"></a>慢SQL语句过多</h4>
+      <p>假如一条SQL语句，执行时间是20秒，那么从库执行完毕，到从库上能查到数据也至少是20秒，这样就延迟20秒了<br>SQL语句的优化一般要作为常规工作不断的监控和优化，如果是单个SQL的写入时间长，可以修改后分多次写入，通过查看慢查询日志或show full processlist 命令找出执行时间长的查询语句</p>
+
+        <h4 id="主从库之间的网络延迟">
+          <a href="#主从库之间的网络延迟" class="heading-link"><i class="fas fa-link"></i></a><a href="#主从库之间的网络延迟" class="headerlink" title="主从库之间的网络延迟"></a>主从库之间的网络延迟</h4>
+      <p>主库的网卡、网线、连接的交换机等网络设备都可能成为复制的瓶颈，导致复制延迟，另外，跨公网主从复制很容易导致主库复制延迟。</p>
+
+        <h4 id="主库读写压力大，导致复制延迟">
+          <a href="#主库读写压力大，导致复制延迟" class="heading-link"><i class="fas fa-link"></i></a><a href="#主库读写压力大，导致复制延迟" class="headerlink" title="主库读写压力大，导致复制延迟"></a>主库读写压力大，导致复制延迟</h4>
+      <p>主库硬件要搞好一点，架构的前端要加buffer以及缓存层。通过read-only参数让从库只读访问 。</p>
+<blockquote>
+<ul>
+<li>在my.cnf里[mysqld]模块下加read-only参数，然后重启数据库。</li>
+</ul>
+</blockquote>
+<figure class="highlight sql"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[mysqld]</span><br><span class="line">read<span class="operator">-</span><span class="keyword">only</span></span><br></pre></td></tr></table></div></figure>
+
+<p>对于一致性要求高的可以读写都在主库上，对于读多的，可以在数据库上层添加缓存，面对高并发读。</p>
+
+        <h3 id="从库提升主库步骤">
+          <a href="#从库提升主库步骤" class="heading-link"><i class="fas fa-link"></i></a><a href="#从库提升主库步骤" class="headerlink" title="从库提升主库步骤"></a>从库提升主库步骤</h3>
+      <ol>
+<li><p>确保所有relay log全部更新完毕<br>在每个库执行</p>
+<figure class="highlight sql"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">stop slave in_thread(<span class="keyword">sql</span>线程)；</span><br><span class="line"><span class="keyword">show</span> processlit;</span><br></pre></td></tr></table></div></figure>
+<p>直到看到Has read all relay log；表示从库更新都执行完毕；</p>
+</li>
+<li><p>登录从库提升为主库<br>mysql主从复制中，需要将备库（从库）提升为主库，需要取消其从库角色，可以通过执行以下命令：</p>
+<figure class="highlight sql"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">stop slave;</span><br><span class="line">reset slave <span class="keyword">all</span>;</span><br></pre></td></tr></table></div></figure>
+<p>RESET SLAVE ALL是清除从库的同步复制信息，包括连接信息和二进制文件名、位置<br>从库上执行这个命令后，使用show slave status将不会有输出</p>
+</li>
+<li><p>进到数据库数据目录，删除master.info relay-log.info</p>
+<figure class="highlight sql"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd <span class="operator">/</span>data<span class="operator">/</span><span class="number">3306</span><span class="operator">/</span>data</span><br><span class="line">rm <span class="operator">-</span>rf master.info relay<span class="operator">-</span>log.info</span><br></pre></td></tr></table></div></figure></li>
+<li><p>开启binlog </p>
+<figure class="highlight sql"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">vim <span class="operator">/</span>data<span class="operator">/</span><span class="number">3306</span><span class="operator">/</span>my.cnf</span><br><span class="line">log<span class="operator">-</span>bin <span class="operator">=</span> <span class="operator">/</span>data<span class="operator">/</span><span class="number">3306</span><span class="operator">/</span>mysql<span class="operator">-</span>bin</span><br><span class="line">#如果存在log<span class="operator">-</span>slave<span class="operator">-</span>updates read<span class="operator">-</span><span class="keyword">only</span>等一定要注释掉它。</span><br><span class="line"><span class="operator">/</span>data<span class="operator">/</span><span class="number">3306</span><span class="operator">/</span>mysql restart</span><br></pre></td></tr></table></div></figure>
+<p>到此为止，提升主库完毕</p>
+</li>
+<li><p>其他从库操作 </p>
+<figure class="highlight sql"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">stop slave；</span><br><span class="line">CHANGE MASTER <span class="keyword">TO</span> MASTER_HOST <span class="operator">=</span><span class="string">&#x27;192.168.1.1&#x27;</span>; #如果不同步，就指定位置点。</span><br><span class="line"><span class="keyword">start</span> slave；</span><br><span class="line"><span class="keyword">show</span> slave status\G</span><br></pre></td></tr></table></div></figure></li>
+</ol>
+
+        <h3 id="参考资料">
+          <a href="#参考资料" class="heading-link"><i class="fas fa-link"></i></a><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3>
+      <ul>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://www.cnblogs.com/Aiapple/p/5792939.html">mysql 主从复制原理</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://www.zhihu.com/question/20025096">如何解决主从数据库同步延迟问题？</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://blog.csdn.net/abcdocker/article/details/71249760">MySQL主从复制原理、半同步操作步骤及原理</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://www.cnblogs.com/a8457013/p/7819018.html">主从复制</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+</ul>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://focusss.github.io">cjwei</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://focusss.github.io/2019/04/08/MySQL%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/">https://focusss.github.io/2019/04/08/MySQL%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://focusss.github.io/tags/MySQL/">MySQL</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2019/04/09/%E7%BA%BF%E7%A8%8B%E6%B1%A0%E5%8E%9F%E7%90%86/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">线程池原理</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2019/04/08/MySQL-MVCC%E7%89%88%E6%9C%AC%E6%8E%A7%E5%88%B6/"><span class="paginator-prev__text">MySQL MVCC版本控制</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6"><span class="toc-number">1.</span> <span class="toc-text">
+          什么是主从复制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E7%9A%84%E4%BD%9C%E7%94%A8"><span class="toc-number">2.</span> <span class="toc-text">
+          主从复制的作用</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E7%9A%84%E5%BD%A2%E5%BC%8F"><span class="toc-number">3.</span> <span class="toc-text">
+          主从复制的形式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%BB%E4%BB%8E%E9%83%A8%E7%BD%B2%E5%BF%85%E8%A6%81%E6%9D%A1%E4%BB%B6"><span class="toc-number">4.</span> <span class="toc-text">
+          主从部署必要条件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E7%9A%84%E5%8E%9F%E7%90%86"><span class="toc-number">5.</span> <span class="toc-text">
+          主从复制的原理</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98"><span class="toc-number">5.1.</span> <span class="toc-text">
+          常见问题</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Mysql%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E9%97%AE%E9%A2%98"><span class="toc-number">6.</span> <span class="toc-text">
+          Mysql主从复制问题</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%8D%8A%E5%90%8C%E6%AD%A5%E5%A4%8D%E5%88%B6"><span class="toc-number">6.1.</span> <span class="toc-text">
+          半同步复制</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%B9%B6%E8%A1%8C%E5%A4%8D%E5%88%B6"><span class="toc-number">6.2.</span> <span class="toc-text">
+          并行复制</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Mysql%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E5%BB%B6%E8%BF%9F%E9%97%AE%E9%A2%98%E5%8E%9F%E5%9B%A0%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95"><span class="toc-number">7.</span> <span class="toc-text">
+          Mysql主从复制延迟问题原因及解决方法</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%80%E4%B8%AA%E4%B8%BB%E5%BA%93%E7%9A%84%E4%BB%8E%E5%BA%93%E5%A4%AA%E5%A4%9A%EF%BC%8C%E5%AF%BC%E8%87%B4%E5%A4%8D%E5%88%B6%E5%BB%B6%E8%BF%9F"><span class="toc-number">7.1.</span> <span class="toc-text">
+          一个主库的从库太多，导致复制延迟</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%85%A2SQL%E8%AF%AD%E5%8F%A5%E8%BF%87%E5%A4%9A"><span class="toc-number">7.2.</span> <span class="toc-text">
+          慢SQL语句过多</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%BB%E4%BB%8E%E5%BA%93%E4%B9%8B%E9%97%B4%E7%9A%84%E7%BD%91%E7%BB%9C%E5%BB%B6%E8%BF%9F"><span class="toc-number">7.3.</span> <span class="toc-text">
+          主从库之间的网络延迟</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%BB%E5%BA%93%E8%AF%BB%E5%86%99%E5%8E%8B%E5%8A%9B%E5%A4%A7%EF%BC%8C%E5%AF%BC%E8%87%B4%E5%A4%8D%E5%88%B6%E5%BB%B6%E8%BF%9F"><span class="toc-number">7.4.</span> <span class="toc-text">
+          主库读写压力大，导致复制延迟</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%8E%E5%BA%93%E6%8F%90%E5%8D%87%E4%B8%BB%E5%BA%93%E6%AD%A5%E9%AA%A4"><span class="toc-number">8.</span> <span class="toc-text">
+          从库提升主库步骤</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">9.</span> <span class="toc-text">
+          参考资料</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/images/headImg.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">平安大赚 财丁兴旺</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">69</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">19</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">25</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>cjwei</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.4.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lazyload@2.0.0-rc.2/lazyload.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>

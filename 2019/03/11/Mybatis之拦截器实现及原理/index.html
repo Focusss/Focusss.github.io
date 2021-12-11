@@ -1,0 +1,430 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="使用拦截器可以在映射语句执行前后加一些自定义的操作，比如缓存、分页等">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Mybatis之拦截器实现及原理">
+<meta property="og:url" content="https://focusss.github.io/2019/03/11/Mybatis%E4%B9%8B%E6%8B%A6%E6%88%AA%E5%99%A8%E5%AE%9E%E7%8E%B0%E5%8F%8A%E5%8E%9F%E7%90%86/index.html">
+<meta property="og:site_name" content="Focusss&#39;s Blog">
+<meta property="og:description" content="使用拦截器可以在映射语句执行前后加一些自定义的操作，比如缓存、分页等">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-03-11T15:27:49.000Z">
+<meta property="article:modified_time" content="2021-12-11T16:37:50.937Z">
+<meta property="article:author" content="cjwei">
+<meta property="article:tag" content="Mybatis">
+<meta name="twitter:card" content="summary"><title>Mybatis之拦截器实现及原理 | Focusss's Blog</title><link ref="canonical" href="https://focusss.github.io/2019/03/11/Mybatis%E4%B9%8B%E6%8B%A6%E6%88%AA%E5%99%A8%E5%AE%9E%E7%8E%B0%E5%8F%8A%E5%8E%9F%E7%90%86/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"carbon","highlight":"light","wordWrap":true},
+  reward: false,
+  fancybox: true,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: true,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Focusss's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">Mybatis之拦截器实现及原理</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2019-03-11</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-12-12</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h3 id="为什么要有插件">
+          <a href="#为什么要有插件" class="heading-link"><i class="fas fa-link"></i></a><a href="#为什么要有插件" class="headerlink" title="为什么要有插件"></a>为什么要有插件</h3>
+      <p>可以在映射语句执行前后加一些自定义的操作，比如缓存、分页等</p>
+
+        <h3 id="可以拦截哪些方法">
+          <a href="#可以拦截哪些方法" class="heading-link"><i class="fas fa-link"></i></a><a href="#可以拦截哪些方法" class="headerlink" title="可以拦截哪些方法"></a>可以拦截哪些方法</h3>
+      <p>Executor：update、query、flushStatements、commit、rollback、getTransaction、close、isClosed。<br>实现类：SimpleExecutor/BatchExecutor/ReuseExecutor/CachingExecutor</p>
+<p>ParameterHandler：getParameterObject、setParameters。<br>实现类：DefaultParameterHandler</p>
+<p>ResultSetHandler：handleResultSets、handleOutputParameters。<br>实现类：DefaultResultSetHandler</p>
+<p>StatementHandler：prepare、parameterize、batch、update、query。<br>实现类：CallableStatementHandler/PreparedStatementHandler/SimpleStatementHandler/RoutingStatementHandler</p>
+
+        <h3 id="如何自定义插件">
+          <a href="#如何自定义插件" class="heading-link"><i class="fas fa-link"></i></a><a href="#如何自定义插件" class="headerlink" title="如何自定义插件"></a>如何自定义插件</h3>
+      <p>1、只需实现Interceptor接口，并指定要拦截的方法签名<br>2、还需要在配置文件中配置你编写的插件</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Intercepts(&#123;</span></span><br><span class="line"><span class="meta">    @Signature(</span></span><br><span class="line"><span class="meta">        type=Executor.class,method=&quot;update&quot;,args=&#123; MappedStatement.class,Object.class &#125;)</span></span><br><span class="line"><span class="meta">&#125;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ExamplePlugin</span> <span class="keyword">implements</span> <span class="title">Interceptor</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">intercept</span><span class="params">(Invocation invocation)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">       <span class="comment">//自定义实现</span></span><br><span class="line">       <span class="keyword">return</span> invocation.proceed();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">plugin</span><span class="params">(Object target)</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> Plugin.wrap(target,<span class="keyword">this</span>)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setProperties</span><span class="params">(Properties properties)</span></span>&#123;</span><br><span class="line">      <span class="comment">//传入配置项</span></span><br><span class="line">      String size = properties.getProperty(<span class="string">&quot;size&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">&lt;!-- mybatis-config.xml --&gt;</span><br><span class="line">&lt;plugins&gt;</span><br><span class="line">    &lt;plugin interceptor=<span class="string">&quot;org.mybatis.example.ExamplePlugin&quot;</span>&gt;</span><br><span class="line">        &lt;!-- 这里的配置项就传入setProperties方法中 --&gt;</span><br><span class="line">        &lt;property name=<span class="string">&quot;size&quot;</span> value=<span class="string">&quot;100&quot;</span>&gt;</span><br><span class="line">    &lt;/plugin&gt;</span><br><span class="line">&lt;/plugins&gt;</span><br><span class="line"></span><br></pre></td></tr></table></div></figure>
+
+
+        <h3 id="拦截器实现原理">
+          <a href="#拦截器实现原理" class="heading-link"><i class="fas fa-link"></i></a><a href="#拦截器实现原理" class="headerlink" title="拦截器实现原理"></a>拦截器实现原理</h3>
+      <p>Mybatis仅可以编写针对ParameterHandler、ResultSetHandler、StatementHandler、Executor这4种接口的插件，Mybatis使用JDK的动态代理，为需要拦截的接口生成代理对象以实现接口方法拦截功能，每当执行这4种接口对象的方法时，就会进入拦截方法，具体就是InvocationHandler的invoke()方法，当然，只会拦截那些你指定需要拦截的方法。</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//拦截器接口，供外部实现，实现该接口就定义了一个插件</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Interceptor</span> </span>&#123;</span><br><span class="line">  <span class="comment">//拦截方法，可以将自定义逻辑写在该方法中</span></span><br><span class="line">  <span class="function">Object <span class="title">intercept</span><span class="params">(Invocation invocation)</span> <span class="keyword">throws</span> Throwable</span>;</span><br><span class="line">  <span class="comment">//包装成插件，一般Plugin.wrap(target,this)就行了</span></span><br><span class="line">  <span class="function">Object <span class="title">plugin</span><span class="params">(Object target)</span></span>;</span><br><span class="line">  <span class="comment">//传入自定义配置参数</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">setProperties</span><span class="params">(Properties properties)</span></span>;</span><br><span class="line">&#125;</span><br><span class="line">拦截器上定义的注解</span><br><span class="line"><span class="meta">@Intercepts</span>：拦截器注解，包括一个或多个<span class="meta">@Signature</span>，拦截的目标类信息</span><br><span class="line"><span class="meta">@Signature</span>：拦截的目标类信息，包括type、method、args，一个<span class="meta">@Intercepts</span>中可包含多个<span class="meta">@Signature</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Invocation</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> Object target;<span class="comment">//目标对象</span></span><br><span class="line">  <span class="keyword">private</span> Method method;<span class="comment">//调用方法</span></span><br><span class="line">  <span class="keyword">private</span> Object[] args;<span class="comment">//方法形参列表</span></span><br><span class="line">  <span class="comment">//省略get和set方法</span></span><br><span class="line">  <span class="comment">//执行调用，基于动态代理，在Interceptor的intercept方法中一定要调用该方法</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Object <span class="title">proceed</span><span class="params">()</span> <span class="keyword">throws</span> InvocationTargetException, IllegalAccessException </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> method.invoke(target, args);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//动态代理实现</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Plugin</span> <span class="keyword">implements</span> <span class="title">InvocationHandler</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> Object target;</span><br><span class="line">  <span class="keyword">private</span> Interceptor interceptor;<span class="comment">//拦截器</span></span><br><span class="line">  <span class="keyword">private</span> Map&lt;Class&lt;?&gt;, Set&lt;Method&gt;&gt; signatureMap;<span class="comment">//拦截目标类的目标方法</span></span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">private</span> <span class="title">Plugin</span><span class="params">(Object target, Interceptor interceptor, Map&lt;Class&lt;?&gt;, Set&lt;Method&gt;&gt; signatureMap)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.target = target;</span><br><span class="line">    <span class="keyword">this</span>.interceptor = interceptor;</span><br><span class="line">    <span class="keyword">this</span>.signatureMap = signatureMap;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">//包装目标实例</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Object <span class="title">wrap</span><span class="params">(Object target, Interceptor interceptor)</span> </span>&#123;</span><br><span class="line">    Map&lt;Class&lt;?&gt;, Set&lt;Method&gt;&gt; signatureMap = getSignatureMap(interceptor);</span><br><span class="line">    Class&lt;?&gt; type = target.getClass();</span><br><span class="line">    <span class="comment">//目标类所有接口是否有signatureMap中定义的Class</span></span><br><span class="line">    Class&lt;?&gt;[] interfaces = getAllInterfaces(type, signatureMap);</span><br><span class="line">    <span class="comment">//如果拦截器中有定义拦截目标类中的方法时，就返回代理实例 </span></span><br><span class="line">   <span class="keyword">if</span> (interfaces.length &gt; <span class="number">0</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> Proxy.newProxyInstance(</span><br><span class="line">          type.getClassLoader(),</span><br><span class="line">          interfaces,</span><br><span class="line">          <span class="keyword">new</span> Plugin(target, interceptor, signatureMap));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//没有就返回目标实例</span></span><br><span class="line">    <span class="keyword">return</span> target;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Object <span class="title">invoke</span><span class="params">(Object proxy, Method method, Object[] args)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      Set&lt;Method&gt; methods = signatureMap.get(method.getDeclaringClass());</span><br><span class="line">      <span class="comment">//该方法需要拦截</span></span><br><span class="line">      <span class="keyword">if</span> (methods != <span class="keyword">null</span> &amp;&amp; methods.contains(method)) &#123;</span><br><span class="line">        <span class="keyword">return</span> interceptor.intercept(<span class="keyword">new</span> Invocation(target, method, args));</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">return</span> method.invoke(target, args);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">      <span class="keyword">throw</span> ExceptionUtil.unwrapThrowable(e);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">//获取拦截器上的SignatureMap</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">static</span> Map&lt;Class&lt;?&gt;, Set&lt;Method&gt;&gt; getSignatureMap(Interceptor interceptor) &#123;</span><br><span class="line">    Intercepts interceptsAnnotation = interceptor.getClass().getAnnotation(Intercepts.class);</span><br><span class="line">    <span class="keyword">if</span> (interceptsAnnotation == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> PluginException(<span class="string">&quot;No @Intercepts annotation was found in interceptor &quot;</span> + interceptor.getClass().getName());      </span><br><span class="line">    &#125;</span><br><span class="line">    Signature[] sigs = interceptsAnnotation.value();</span><br><span class="line">    Map&lt;Class&lt;?&gt;, Set&lt;Method&gt;&gt; signatureMap = <span class="keyword">new</span> HashMap&lt;Class&lt;?&gt;, Set&lt;Method&gt;&gt;();</span><br><span class="line">    <span class="keyword">for</span> (Signature sig : sigs) &#123;</span><br><span class="line">      Set&lt;Method&gt; methods = signatureMap.get(sig.type());<span class="comment">//重复定义的只生效一个</span></span><br><span class="line">      <span class="keyword">if</span> (methods == <span class="keyword">null</span>) &#123;</span><br><span class="line">        methods = <span class="keyword">new</span> HashSet&lt;Method&gt;();</span><br><span class="line">        signatureMap.put(sig.type(), methods);</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">//获取目标类中的指定方法</span></span><br><span class="line">        Method method = sig.type().getMethod(sig.method(), sig.args());</span><br><span class="line">        methods.add(method);</span><br><span class="line">      &#125; <span class="keyword">catch</span> (NoSuchMethodException e) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> PluginException(<span class="string">&quot;Could not find method on &quot;</span> + sig.type() + <span class="string">&quot; named &quot;</span> + sig.method() + <span class="string">&quot;. Cause: &quot;</span> + e, e);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> signatureMap;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">static</span> Class&lt;?&gt;[] getAllInterfaces(Class&lt;?&gt; type, Map&lt;Class&lt;?&gt;, Set&lt;Method&gt;&gt; signatureMap) &#123;</span><br><span class="line">    Set&lt;Class&lt;?&gt;&gt; interfaces = <span class="keyword">new</span> HashSet&lt;Class&lt;?&gt;&gt;();</span><br><span class="line">    <span class="keyword">while</span> (type != <span class="keyword">null</span>) &#123;<span class="comment">//获取type上的所有接口</span></span><br><span class="line">      <span class="keyword">for</span> (Class&lt;?&gt; c : type.getInterfaces()) &#123;</span><br><span class="line">        <span class="keyword">if</span> (signatureMap.containsKey(c)) &#123;<span class="comment">//这里不判断Method,只判断Class&lt;?&gt;</span></span><br><span class="line">          interfaces.add(c);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      type = type.getSuperclass();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> interfaces.toArray(<span class="keyword">new</span> Class&lt;?&gt;[interfaces.size()]);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>在配置文件中定义的过滤器，都保存在Configuration类的interceptorChain中，这个类保存了mybatis的所有配置，interceptorChain类中保存中所有Interceptor集合组成的拦截器链，这个链是如何添加进去的呢？请看源码。</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"> <span class="comment">//XMLConfigBuilder类中解析mybatis-config.xml 核心方法parseConfiguration(XNode root)</span></span><br><span class="line"> pluginElement(root.evalNode(<span class="string">&quot;plugins&quot;</span>));<span class="comment">//插件配置项</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">pluginElement</span><span class="params">(XNode parent)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">   <span class="keyword">if</span> (parent != <span class="keyword">null</span>) &#123;</span><br><span class="line">   <span class="comment">//遍历 plugins的子节点plugin</span></span><br><span class="line">   <span class="keyword">for</span> (XNode child : parent.getChildren()) &#123;</span><br><span class="line">       String interceptor = child.getStringAttribute(<span class="string">&quot;interceptor&quot;</span>);<span class="comment">//获取interceptor属性值</span></span><br><span class="line">       Properties properties = child.getChildrenAsProperties();<span class="comment">//获取plugin属性值</span></span><br><span class="line">       <span class="comment">//创建拦截器实例，这里interceptor值也可以是typeAlias注册的简名</span></span><br><span class="line">       Interceptor interceptorInstance = (Interceptor) resolveClass(interceptor).newInstance();</span><br><span class="line">       <span class="comment">//设置属性项</span></span><br><span class="line">       interceptorInstance.setProperties(properties);</span><br><span class="line">       <span class="comment">//添加到interceptorChain中</span></span><br><span class="line">       configuration.addInterceptor(interceptorInstance);</span><br><span class="line">     &#125;</span><br><span class="line">   &#125;</span><br><span class="line"> &#125;</span><br><span class="line"> <span class="comment">//Configuration类,添加拦截器</span></span><br><span class="line"> <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">addInterceptor</span><span class="params">(Interceptor interceptor)</span> </span>&#123;</span><br><span class="line">   interceptorChain.addInterceptor(interceptor);</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="拦截的哪些接口">
+          <a href="#拦截的哪些接口" class="heading-link"><i class="fas fa-link"></i></a><a href="#拦截的哪些接口" class="headerlink" title="拦截的哪些接口"></a>拦截的哪些接口</h3>
+      <figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//SQL语句处理器</span></span><br><span class="line"> <span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">StatementHandler</span> </span>&#123;</span><br><span class="line">   <span class="comment">//预备工作</span></span><br><span class="line">   <span class="function">Statement <span class="title">prepare</span><span class="params">(Connection connection, Integer transactionTimeout)</span> <span class="keyword">throws</span> SQLException</span>;</span><br><span class="line">   <span class="comment">//参数处理</span></span><br><span class="line">   <span class="function"><span class="keyword">void</span> <span class="title">parameterize</span><span class="params">(Statement statement)</span> <span class="keyword">throws</span> SQLException</span>;</span><br><span class="line">   <span class="comment">//批量处理</span></span><br><span class="line">   <span class="function"><span class="keyword">void</span> <span class="title">batch</span><span class="params">(Statement statement)</span>  <span class="keyword">throws</span> SQLException</span>;</span><br><span class="line">   <span class="comment">//更新处理</span></span><br><span class="line">   <span class="function"><span class="keyword">int</span> <span class="title">update</span><span class="params">(Statement statement)</span> <span class="keyword">throws</span> SQLException</span>;</span><br><span class="line">   <span class="comment">//查询处理</span></span><br><span class="line">   &lt;E&gt; <span class="function">List&lt;E&gt; <span class="title">query</span><span class="params">(Statement statement, ResultHandler resultHandler)</span> <span class="keyword">throws</span> SQLException</span>;</span><br><span class="line"> &#125;</span><br><span class="line"> <span class="comment">//返回集处理器</span></span><br><span class="line"> <span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">ResultSetHandler</span> </span>&#123;</span><br><span class="line">   <span class="comment">//处理返回结果</span></span><br><span class="line">   &lt;E&gt; <span class="function">List&lt;E&gt; <span class="title">handleResultSets</span><span class="params">(Statement stmt)</span> <span class="keyword">throws</span> SQLException</span>;</span><br><span class="line">   <span class="comment">//处理输出参数</span></span><br><span class="line">   <span class="function"><span class="keyword">void</span> <span class="title">handleOutputParameters</span><span class="params">(CallableStatement cs)</span> <span class="keyword">throws</span> SQLException</span>;</span><br><span class="line"> &#125;</span><br><span class="line"> <span class="comment">//参数处理器</span></span><br><span class="line"> <span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">ParameterHandler</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">   <span class="function">Object <span class="title">getParameterObject</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">   <span class="function"><span class="keyword">void</span> <span class="title">setParameters</span><span class="params">(PreparedStatement ps)</span> <span class="keyword">throws</span> SQLException</span>;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="如何拦截这些接口">
+          <a href="#如何拦截这些接口" class="heading-link"><i class="fas fa-link"></i></a><a href="#如何拦截这些接口" class="headerlink" title="如何拦截这些接口"></a>如何拦截这些接口</h3>
+      <figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//创建相应Handler时会将所有拦截器通过动态代理方式返回代理Handler</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Configuration</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//创建ParameterHandler(参数处理器)</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> ParameterHandler <span class="title">newParameterHandler</span><span class="params">(MappedStatement mappedStatement, </span></span></span><br><span class="line"><span class="params"><span class="function">        Object parameterObject, BoundSql boundSql)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 根据指定Lang(默认RawLanguageDriver)，创建ParameterHandler，将实际参数传递给JDBC语句</span></span><br><span class="line">    ParameterHandler parameterHandler = mappedStatement.getLang().createParameterHandler(</span><br><span class="line">        mappedStatement, parameterObject, boundSql);</span><br><span class="line">    <span class="comment">//返回代理实例</span></span><br><span class="line">    parameterHandler = (ParameterHandler) interceptorChain.pluginAll(parameterHandler);</span><br><span class="line">    <span class="keyword">return</span> parameterHandler;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//创建ResultSetHandler(结果处理器)</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> ResultSetHandler <span class="title">newResultSetHandler</span><span class="params">(Executor executor, MappedStatement mappedStatement, </span></span></span><br><span class="line"><span class="params"><span class="function">     RowBounds rowBounds,ParameterHandler parameterHandler,</span></span></span><br><span class="line"><span class="params"><span class="function">     ResultHandler resultHandler,BoundSql boundSql)</span> </span>&#123;</span><br><span class="line">    <span class="comment">//默认使用DefaultResultSetHandler创建ResultSetHandler实例</span></span><br><span class="line">    ResultSetHandler resultSetHandler = <span class="keyword">new</span> DefaultResultSetHandler(executor, mappedStatement,</span><br><span class="line">       parameterHandler, resultHandler, boundSql, rowBounds);</span><br><span class="line">    <span class="comment">//返回代理实例</span></span><br><span class="line">    resultSetHandler = (ResultSetHandler) interceptorChain.pluginAll(resultSetHandler);</span><br><span class="line">    <span class="keyword">return</span> resultSetHandler;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//创建StatementHandler(SQL语句处理器)</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> StatementHandler <span class="title">newStatementHandler</span><span class="params">(Executor executor, MappedStatement mappedStatement, </span></span></span><br><span class="line"><span class="params"><span class="function">    Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql)</span> </span>&#123;</span><br><span class="line">    <span class="comment">//默认使用RoutingStatementHandler(路由作用)</span></span><br><span class="line">    <span class="comment">//创建指定StatementHandler实例(默认SimpleStatementHandler)</span></span><br><span class="line">    StatementHandler statementHandler = <span class="keyword">new</span> RoutingStatementHandler(executor, mappedStatement, </span><br><span class="line">          parameterObject, rowBounds, resultHandler, boundSql);</span><br><span class="line">    <span class="comment">//返回代理实例</span></span><br><span class="line">    statementHandler = (StatementHandler) interceptorChain.pluginAll(statementHandler);</span><br><span class="line">    <span class="keyword">return</span> statementHandler;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//创建Executor(执行器)</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Executor <span class="title">newExecutor</span><span class="params">(Transaction transaction, ExecutorType executorType)</span> </span>&#123;</span><br><span class="line">    <span class="comment">//获取executorType，默认是SIMPLE</span></span><br><span class="line">    executorType = executorType == <span class="keyword">null</span> ? defaultExecutorType : executorType;</span><br><span class="line">    <span class="comment">//这一行感觉有点多余啊</span></span><br><span class="line">    executorType = executorType == <span class="keyword">null</span> ? ExecutorType.SIMPLE : executorType;</span><br><span class="line">    Executor executor;</span><br><span class="line">    <span class="keyword">if</span> (ExecutorType.BATCH == executorType) &#123;  <span class="comment">//批量执行</span></span><br><span class="line">      executor = <span class="keyword">new</span> BatchExecutor(<span class="keyword">this</span>, transaction);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (ExecutorType.REUSE == executorType) &#123;  <span class="comment">//重用</span></span><br><span class="line">      executor = <span class="keyword">new</span> ReuseExecutor(<span class="keyword">this</span>, transaction);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      executor = <span class="keyword">new</span> SimpleExecutor(<span class="keyword">this</span>, transaction);<span class="comment">//通用</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (cacheEnabled) &#123;  <span class="comment">//开启缓存</span></span><br><span class="line">      executor = <span class="keyword">new</span> CachingExecutor(executor);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//返回代理实例</span></span><br><span class="line">    executor = (Executor) interceptorChain.pluginAll(executor);</span><br><span class="line">    <span class="keyword">return</span> executor;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//执行器</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Executor</span> </span>&#123;</span><br><span class="line">    <span class="comment">//更新</span></span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">update</span><span class="params">(MappedStatement ms, Object parameter)</span> <span class="keyword">throws</span> SQLException</span>;</span><br><span class="line">    <span class="comment">//查询(先查缓存)</span></span><br><span class="line">    &lt;E&gt; <span class="function">List&lt;E&gt; <span class="title">query</span><span class="params">(MappedStatement ms, Object parameter, RowBounds rowBounds, </span></span></span><br><span class="line"><span class="params"><span class="function">          ResultHandler resultHandler, CacheKey cacheKey, BoundSql boundSql)</span> <span class="keyword">throws</span> SQLException</span>;</span><br><span class="line">    <span class="comment">//查询</span></span><br><span class="line">    &lt;E&gt; <span class="function">List&lt;E&gt; <span class="title">query</span><span class="params">(MappedStatement ms, Object parameter, </span></span></span><br><span class="line"><span class="params"><span class="function">          RowBounds rowBounds, ResultHandler resultHandler)</span> <span class="keyword">throws</span> SQLException</span>;</span><br><span class="line">    <span class="comment">//查询游标</span></span><br><span class="line">    &lt;E&gt; <span class="function">Cursor&lt;E&gt; <span class="title">queryCursor</span><span class="params">(MappedStatement ms, Object parameter, RowBounds rowBounds)</span> </span></span><br><span class="line"><span class="function">          <span class="keyword">throws</span> SQLException</span>;</span><br><span class="line">    <span class="comment">//刷新Statement</span></span><br><span class="line">    <span class="function">List&lt;BatchResult&gt; <span class="title">flushStatements</span><span class="params">()</span> <span class="keyword">throws</span> SQLException</span>;</span><br><span class="line">    <span class="comment">//提交事务</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">commit</span><span class="params">(<span class="keyword">boolean</span> required)</span> <span class="keyword">throws</span> SQLException</span>;</span><br><span class="line">    <span class="comment">//回滚事务</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">rollback</span><span class="params">(<span class="keyword">boolean</span> required)</span> <span class="keyword">throws</span> SQLException</span>;</span><br><span class="line">    <span class="comment">//创建缓存key</span></span><br><span class="line">    <span class="function">CacheKey <span class="title">createCacheKey</span><span class="params">(MappedStatement ms, Object parameterObject,RowBounds rowBounds, </span></span></span><br><span class="line"><span class="params"><span class="function">          BoundSql boundSql)</span></span>;</span><br><span class="line">    <span class="comment">//是否存在key</span></span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">isCached</span><span class="params">(MappedStatement ms, CacheKey key)</span></span>;</span><br><span class="line">    <span class="comment">//清除本地缓存</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">clearLocalCache</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="comment">//延迟加载</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">deferLoad</span><span class="params">(MappedStatement ms, MetaObject resultObject, String property, CacheKey key, </span></span></span><br><span class="line"><span class="params"><span class="function">          Class&lt;?&gt; targetType)</span></span>;</span><br><span class="line">    <span class="comment">//获取事务</span></span><br><span class="line">    <span class="function">Transaction <span class="title">getTransaction</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="comment">//关闭连接</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">close</span><span class="params">(<span class="keyword">boolean</span> forceRollback)</span></span>;</span><br><span class="line">    <span class="comment">//是否关闭</span></span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">isClosed</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="comment">//设置Executor</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">setExecutorWrapper</span><span class="params">(Executor executor)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="总结">
+          <a href="#总结" class="heading-link"><i class="fas fa-link"></i></a><a href="#总结" class="headerlink" title="总结"></a>总结</h3>
+      <p>当然具体实现肯定不止这么多代码，如果需要了解，需要自行看源码，下面坐下总结。</p>
+<ul>
+<li>拦截器实现<br>Interceptor接口供插件实现，@Intercepts注解在插件实现上，表示这是一个插件类并配置将要拦截哪些方法，@Signature定义将要拦截的方法信息,如名称/类型/形参列表，Plugin类实现了InvocationHandler接口，是动态代理的具体实现，Invocation类包装了拦截的目标实例，InterceptorChain保存所有拦截器。</li>
+<li>如何实现拦截<br>创建目标实例，比如A a = new A();<br>Interceptor interceptor =  new LogInterceptor();//如果拦截a中的save方法<br>将A b = (A)interceptor.plugin(a);这里b就是a的代理实例，在调用a中的save方法时，实际将调用interceptor的intercept方法，在该方法中一定要调用Invocation的proceed方法并将返回值返回。</li>
+</ul>
+
+        <h3 id="参考资料">
+          <a href="#参考资料" class="heading-link"><i class="fas fa-link"></i></a><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3>
+      <ul>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://www.jianshu.com/p/6d52713fb05e">Mybatis之插件实现原理</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzA3MjMwMzg2Nw==&mid=2247483712&idx=1&sn=0ec86ebc8299492d80bc56e6fac56cb7&chksm=9f2114d4a8569dc20147a15ccc9dd710222a148aa3289b9eca68fca0b532cdbaf4b05d2f95ab&scene=21#wechat_redirect">10 个 MyBatis 常见面试题</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+</ul>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://focusss.github.io">cjwei</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://focusss.github.io/2019/03/11/Mybatis%E4%B9%8B%E6%8B%A6%E6%88%AA%E5%99%A8%E5%AE%9E%E7%8E%B0%E5%8F%8A%E5%8E%9F%E7%90%86/">https://focusss.github.io/2019/03/11/Mybatis%E4%B9%8B%E6%8B%A6%E6%88%AA%E5%99%A8%E5%AE%9E%E7%8E%B0%E5%8F%8A%E5%8E%9F%E7%90%86/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://focusss.github.io/tags/Mybatis/">Mybatis</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2019/03/11/Mybatis%E5%88%9D%E5%A7%8B%E5%8C%96%E5%8A%A0%E8%BD%BD%E8%BF%87%E7%A8%8B(%E4%B8%80)/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">Mybatis初始化加载过程(一)</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2019/03/11/Oracle%E6%95%B0%E6%8D%AE%E5%BA%93%E9%94%81%E8%A1%A8%E5%8F%8A%E8%A7%A3%E9%94%81%E8%BF%9B%E7%A8%8B/"><span class="paginator-prev__text">Oracle数据库锁表及解锁进程</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E6%9C%89%E6%8F%92%E4%BB%B6"><span class="toc-number">1.</span> <span class="toc-text">
+          为什么要有插件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%AF%E4%BB%A5%E6%8B%A6%E6%88%AA%E5%93%AA%E4%BA%9B%E6%96%B9%E6%B3%95"><span class="toc-number">2.</span> <span class="toc-text">
+          可以拦截哪些方法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A6%82%E4%BD%95%E8%87%AA%E5%AE%9A%E4%B9%89%E6%8F%92%E4%BB%B6"><span class="toc-number">3.</span> <span class="toc-text">
+          如何自定义插件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8B%A6%E6%88%AA%E5%99%A8%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86"><span class="toc-number">4.</span> <span class="toc-text">
+          拦截器实现原理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8B%A6%E6%88%AA%E7%9A%84%E5%93%AA%E4%BA%9B%E6%8E%A5%E5%8F%A3"><span class="toc-number">5.</span> <span class="toc-text">
+          拦截的哪些接口</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A6%82%E4%BD%95%E6%8B%A6%E6%88%AA%E8%BF%99%E4%BA%9B%E6%8E%A5%E5%8F%A3"><span class="toc-number">6.</span> <span class="toc-text">
+          如何拦截这些接口</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">7.</span> <span class="toc-text">
+          总结</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">8.</span> <span class="toc-text">
+          参考资料</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/images/headImg.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">平安大赚 财丁兴旺</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">69</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">19</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">25</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>cjwei</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.4.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lazyload@2.0.0-rc.2/lazyload.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>

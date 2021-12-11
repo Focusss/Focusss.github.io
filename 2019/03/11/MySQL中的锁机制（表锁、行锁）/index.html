@@ -1,0 +1,711 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="MySQL锁机制比较简单，但其最显著的特点是不同的存储引擎支持不同的所机制">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL中的锁机制（表锁、行锁）">
+<meta property="og:url" content="https://focusss.github.io/2019/03/11/MySQL%E4%B8%AD%E7%9A%84%E9%94%81%E6%9C%BA%E5%88%B6%EF%BC%88%E8%A1%A8%E9%94%81%E3%80%81%E8%A1%8C%E9%94%81%EF%BC%89/index.html">
+<meta property="og:site_name" content="Focusss&#39;s Blog">
+<meta property="og:description" content="MySQL锁机制比较简单，但其最显著的特点是不同的存储引擎支持不同的所机制">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-03-11T15:27:49.000Z">
+<meta property="article:modified_time" content="2021-12-11T16:34:38.911Z">
+<meta property="article:author" content="cjwei">
+<meta property="article:tag" content="MySQL">
+<meta name="twitter:card" content="summary"><title>MySQL中的锁机制（表锁、行锁） | Focusss's Blog</title><link ref="canonical" href="https://focusss.github.io/2019/03/11/MySQL%E4%B8%AD%E7%9A%84%E9%94%81%E6%9C%BA%E5%88%B6%EF%BC%88%E8%A1%A8%E9%94%81%E3%80%81%E8%A1%8C%E9%94%81%EF%BC%89/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"carbon","highlight":"light","wordWrap":true},
+  reward: false,
+  fancybox: true,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: true,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Focusss's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">MySQL中的锁机制（表锁、行锁）</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2019-03-11</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-12-12</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body"><p>Mysql锁机制比较简单，但其最显著的特点是不同的存储引擎支持不同的所机制。<br>大致上可分为以下3种锁：</p>
+<ul>
+<li>表级锁：开销小，加锁快；不会出现死锁；锁定粒度大，发生锁冲突的概率最高，并发度最低</li>
+<li>行级锁：开销大，加锁慢；会出现死锁；锁定粒度最小，发生锁冲突的概率最低，并发度最高</li>
+<li>页面锁：开销和加锁时间界于表锁和行锁之间；会出现死锁；锁定粒度界于表锁和行锁之间，并发度一般</li>
+</ul>
+
+        <h3 id="表级锁（MyISAM）">
+          <a href="#表级锁（MyISAM）" class="heading-link"><i class="fas fa-link"></i></a><a href="#表级锁（MyISAM）" class="headerlink" title="表级锁（MyISAM）"></a>表级锁（MyISAM）</h3>
+      <p>Mysql表级锁有两种模式：表共享锁（Table Read Lock）和表独占写锁（Table Write Lock）</p>
+<ul>
+<li>对MyISAM的读操作，不会阻塞其他用户对同一表的<code>读请求</code>，但会阻塞对同一表的写请求</li>
+<li>对MyISAM的写操作，则会阻塞其他用户对同一表的读和写操作</li>
+</ul>
+<p>MyISAM表的读和写之间、写与写之间是串行的，读与读之间是并行的，即读写、写写互斥；当一个线程获得对一个表的写锁后，只有持有锁线程可以对表进行更新操作。其他线程的读、写操作都会等待直到锁被释放为止。</p>
+
+        <h4 id="加锁过程">
+          <a href="#加锁过程" class="heading-link"><i class="fas fa-link"></i></a><a href="#加锁过程" class="headerlink" title="加锁过程"></a>加锁过程</h4>
+      <p>MyISAM在执行查询语句（select）前，会自动给涉及的所有表加读锁，在执行更新操作（update、delete、insert）前，会自动给涉及的表加写锁，这个过程并不需要用户干预，因此用户一般不需要直接使用<code>LOCK TABLE</code>命令给MyISAM表显示加锁。<br>下面对MyISAM显示加锁的命令进行讲解</p>
+<figure class="highlight sql"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">LOCK tables table_name read <span class="keyword">local</span></span><br></pre></td></tr></table></div></figure>
+<blockquote>
+<p>local选项，其作用就是在满足MyISAM表并发插入条件的情况下，允许其他用户在表尾插入记录<br>在用LOCK  tables给表显示加表锁时，必须同时取得所有涉及表的锁，并且MYSQL支持锁升级。也就是说，在执行LOCK TABLES后，只能访问显示加锁的这些表，不能访问加锁的表；同时，如果加的是读锁，那么只能执行查询操作，而不能执行更新操作。其实，在自动加锁的情况下也基本如此，MYSQL一次性获得SQL语句所需要的全部锁。这也正是MyISAM表不会出现死锁（deadlock free）的原因。</p>
+</blockquote>
+<p>一次session使用LOCK TABLES命令给表加了读锁，这个session可以查询锁定表中的记录，但更新或访问其他表都会提示错误；同时，另外一个session可以查询表中的记录，但更新就会出现锁等待。当使用LOCK TABLES时，不仅需要一次锁定用到的所有表，而且，同一个表在SQL语句中出现多少次，就要通过与SQL语句中相同的别名锁多少次，否则也会出错。</p>
+
+        <h4 id="并发锁">
+          <a href="#并发锁" class="heading-link"><i class="fas fa-link"></i></a><a href="#并发锁" class="headerlink" title="并发锁"></a>并发锁</h4>
+      <p>MyISAM在读操作占主导的情况下是很高效的。可一旦出现大量的读写并发，同InnoDB相比，MyISAM的效率就会直线下降，而且，MyISAM和InnoDB的数据存储方式也有显著不同：通常，在MyISAM里，新数据会被附加到数据文件的结尾，可如果时常做一些UPDATE，DELETE操作之后，数据文件就不再是连续的，形象一点来说，就是数据文件里出现了很多洞洞，此时再插入新数据时，按缺省设置会先看这些洞洞的大小是否可以容纳下新数据，如果可以，则直接把新数据保存到洞洞里，反之，则把新数据保存到数据文件的结尾。之所以这样做是为了减少数据文件的大小，降低文件碎片的产生。但InnoDB里则不是这样，在InnoDB里，由于主键是cluster的，所以，数据文件始终是按照主键排序的，如果使用自增ID做主键，则新数据始终是位于数据文件的结尾。</p>
+<p>在一定条件下，MyISAM也支持查询和更新的并发进行。<br>MyISAM存储引擎有一个系统变量concurrent_insert，专门用以控制其并发插入行为，其值分别可分为0、1、2。</p>
+<blockquote>
+<ul>
+<li>当concurrent_insert设置为0时，不允许并发插入</li>
+<li>当concurrent_insert设置为1时，如果MyISAM允许在一个读表的同时，另一个进程从表尾插入记录。这也是MySQL的默认设置。</li>
+<li>当concurrent_insert设置为2时，无论MyISAM表中有没有空洞，都允许在表尾插入记录，都允许在表尾并发插入记录。</li>
+</ul>
+</blockquote>
+<p>可以利用MyISAM存储引擎的并发插入特性，来解决应用中对同一表查询和插入锁争用。例如，将concurrent_insert系统变量为2，总是允许并发插入；同时，通过定期在系统空闲时段执行OPTIONMIZE TABLE语句来整理空间碎片，收到因删除记录而产生的中间空洞。</p>
+
+        <h4 id="MyISAM锁调度机制">
+          <a href="#MyISAM锁调度机制" class="heading-link"><i class="fas fa-link"></i></a><a href="#MyISAM锁调度机制" class="headerlink" title="MyISAM锁调度机制"></a>MyISAM锁调度机制</h4>
+      <p>当一个进程请求某个MyISAM表的读锁，同时另一个进程也请求同一表的写锁时，写进程会先获得锁！这也正是MyISAM表不太适合于大量更新操作和查询操作应用的原因，大量的更新操作会造成查询很难获得读锁，从而可能永远阻塞。可以通过设置以下手段来调整</p>
+<blockquote>
+<ul>
+<li>通过指定启动参数low_priority_updates，使MyISAM引擎默认给予读请求以优先的权利</li>
+<li>通过指定INSERT、UPDATE、DELETE语句的LOW_PRIORITY属性，降低该语句的优先级</li>
+</ul>
+</blockquote>
+<p>另外，MYSQL也提供了一种折中得办法来调节读写冲突，即给系统参数max_write_lock_count设置一个合适的值，当一个表的读锁达到这个值后，MySQL变暂时将写请求的优先级降低，给读进程一定获得锁的机会。</p>
+<p>应用中应尽量避免出现长时间运行的查询操作，不要总想用一条SELECT语句来解决问题。因为这种看似巧妙的SQL语句，往往比较复杂，执行时间较长，在可能的情况下可以通过使用中间表等措施对SQL语句做一定的“分解”，使每一步查询都能在较短时间完成，从而减少锁冲突。如果复杂查询不可避免，应尽量安排在数据库空闲时段执行，比如一些定期统计可以安排在夜间执行。</p>
+
+        <h3 id="行级锁（InnoDB）">
+          <a href="#行级锁（InnoDB）" class="heading-link"><i class="fas fa-link"></i></a><a href="#行级锁（InnoDB）" class="headerlink" title="行级锁（InnoDB）"></a>行级锁（InnoDB）</h3>
+      <p>InnoDB与MyISAM的最大不同有两点：1、支持事务；2、采用了行级锁。</p>
+
+        <h4 id="事务及其ACID属性">
+          <a href="#事务及其ACID属性" class="heading-link"><i class="fas fa-link"></i></a><a href="#事务及其ACID属性" class="headerlink" title="事务及其ACID属性"></a>事务及其ACID属性</h4>
+      <p>事务是由一组SQL语句组成的逻辑处理单元。事务具有ACID属性。</p>
+<blockquote>
+<ul>
+<li>原子性（Actomicity）: 事务是一个原子操作单元，其对数据的修改，要么全都执行，要么全都不执行。</li>
+<li>一致性（Consistent）：在事务开始和完成时，数据都必须保持一致状态。这意味着所有相关的数据规则都必须应用于事务的修改，以保持完整性；事务结束时，所有的内部数据结构（B树索引或双向链表）也都必须是正确的。</li>
+<li>隔离性（isolation）： 数据库系统提供一定的隔离机制，保证事务在不受外部并发操作影响的独立环境执行。这意味着事务处理过程中的中间状态对外部是不可见的。</li>
+<li>持久性（Durable）： 事务完成之后，它对于数据的修改是永久性的，即使出现系统故障也能够保持。</li>
+</ul>
+</blockquote>
+
+        <h4 id="并发事务带来的问题">
+          <a href="#并发事务带来的问题" class="heading-link"><i class="fas fa-link"></i></a><a href="#并发事务带来的问题" class="headerlink" title="并发事务带来的问题"></a>并发事务带来的问题</h4>
+      <blockquote>
+<ul>
+<li>更新丢失（Lost Update）：当两个或多个事务选择同一行，然后基于最初选定的值更新该行时，由于每个事务都不知道其他事务的存在，就会发生丢失更新问题，最后的更新覆盖了其他事务所作的更新。</li>
+<li>脏读（Dirty Reads）：一个事务正在对一条记录做修改，在这个事务并提交前，这条记录的数据就处于不一致状态；这时，另一个事务也来读取同一条记录，如果不加控制，第二个事务读取了这些脏的数据，并据此做了进一步的处理，就会产生未提交的数据依赖关系。这种现象被形象地叫做脏读。<br>　一句话：事务A读取到了事务B已经修改但尚未提交的数据，还在这个数据基础上做了操作。此时，如果B事务回滚，A读取的数据无效，不符合一致性要求。 </li>
+<li>不可重复读（Non-Repeatable Reads）： 一个事务在读取了某些数据后的某个时间，再次读取以前读取过的数据，却发现其读出的数据<code>已经发生了改变！</code>这种现象叫做不可重复读。<br>一句话：事务A读取到了事务B已经提交的修改数据，不符合隔离性 </li>
+<li>幻读（Phantom Reads）： 　一个事务按相同的查询条件重新读取以前检索过的数据，却发现其他事务<code>插入了满足其查询条件的新数据或某些记录已经被删除了</code>，这种现象就称为“幻读”。一句话：事务A读取到了事务B提交的新增数据或事务B删除了数据，不符合隔离性</li>
+</ul>
+</blockquote>
+
+        <h4 id="事务隔离级别">
+          <a href="#事务隔离级别" class="heading-link"><i class="fas fa-link"></i></a><a href="#事务隔离级别" class="headerlink" title="事务隔离级别"></a>事务隔离级别</h4>
+      <p>要防止<code>更新丢失</code>，并不能单靠数据库事务控制器来解决，需要应用程序对要更新的数据加必要的锁来解决。因此，防止更新丢失应该是应用的责任。<br><code>脏读</code>，<code>不可重复读</code>和<code>幻读</code>，都是数据库一致性问题，必须由数据库提供一定的事务隔离机制来解决。<br>数据库实现<code>事务隔离（isolation）</code>的方式，基本可分为以下两种（悲观锁和乐观锁）：</p>
+<ul>
+<li>悲观锁方式：一种是在读取数据前，对其加锁，阻止其他事务对数据进行修改；</li>
+<li>乐观锁方式：不用加锁，通过一定机制生成一个数据请求时间点的一致性数据快照，并用这个快照来提供一定级别（语句级或事务级）的一致性读取。从用户的角度，好像是数据库可以提供同一个数据的多个版本，这种技术叫做数据多版本并发控制（ＭultiVersion Concurrency Control，简称MVCC或MCC），也称为多版本数据库。</li>
+</ul>
+
+        <h4 id="4种隔离级别">
+          <a href="#4种隔离级别" class="heading-link"><i class="fas fa-link"></i></a><a href="#4种隔离级别" class="headerlink" title="4种隔离级别"></a>4种隔离级别</h4>
+      <blockquote>
+<ul>
+<li>Serializable （串行化）：最严格的级别，事务串行执行，资源消耗最大；</li>
+</ul>
+</blockquote>
+<blockquote>
+<ul>
+<li>REPEATABLE READ（重复读） ：保证了一个事务不会修改已经由另一个事务读取但未提交（回滚）的数据。避免了“脏读取”和“不可重复读取”的情况，但不能避免“幻读”，但是带来了更多的性能损失。</li>
+</ul>
+</blockquote>
+<blockquote>
+<ul>
+<li>READ COMMITTED （提交读）：大多数主流数据库的默认事务等级，保证了一个事务不会读到另一个并行事务已修改但未提交的数据，避免了“脏读取”，但不能避免“幻读”和“不可重复读取”。该级别适用于大多数系统。</li>
+</ul>
+</blockquote>
+<blockquote>
+<ul>
+<li>Read Uncommitted（未提交读） ：事务中的修改，即使没有提交，其他事务也可以看得到，会导致“脏读”、“幻读”和“不可重复读取”。</li>
+</ul>
+</blockquote>
+<p>数据库的事务隔离级别越严格，并发副作用越小，但事务执行效率越差。因为事务隔离实质上就是使事务在一定程度上”串行化”执行。</p>
+
+        <h4 id="数据库一致性问题">
+          <a href="#数据库一致性问题" class="heading-link"><i class="fas fa-link"></i></a><a href="#数据库一致性问题" class="headerlink" title="数据库一致性问题"></a>数据库一致性问题</h4>
+      <blockquote>
+<ul>
+<li>脏读：所谓的脏读，其实就是读到了别的事务回滚前的脏数据。比如事务B执行过程中修改了数据X，在未提交前，事务A读取了X，而事务B却回滚了，这样事务A就形成了脏读。</li>
+</ul>
+</blockquote>
+<p>也就是说，当前事务读到的数据是别的事务想要修改成为的但是没有修改成功的数据。</p>
+<blockquote>
+<ul>
+<li>不可重复读：事务A首先读取了一条数据，然后执行逻辑的时候，事务B将这条数据改变了，然后事务A再次读取的时候，发现数据不匹配了，就是所谓的不可重复读了。</li>
+</ul>
+</blockquote>
+<p>也就是说，当前事务先进行了一次数据读取，然后再次读取到的数据是别的事务修改成功的数据，导致两次读取到的数据不匹配，也就照应了不可重复读的语义。</p>
+<blockquote>
+<ul>
+<li>幻读：事务A首先根据条件索引得到N条数据，然后事务B改变了这N条数据之外的M条或者增添了M条符合事务A搜索条件的数据，导致事务A再次搜索发现有N+M条数据了，就产生了幻读。</li>
+</ul>
+</blockquote>
+<p>也就是说，当前事务读第一次取到的数据比后来读取到数据条目少。</p>
+<p>不可重复读和幻读比较：<br>两者有些相似，但是前者针对的是update或delete，后者针对的insert。</p>
+
+        <h4 id="事务4种隔离级别比较">
+          <a href="#事务4种隔离级别比较" class="heading-link"><i class="fas fa-link"></i></a><a href="#事务4种隔离级别比较" class="headerlink" title="事务4种隔离级别比较"></a>事务4种隔离级别比较</h4>
+      <div class="table-container"><table>
+<thead>
+<tr>
+<th>隔离级别/读数据一致性及允许的并发副作用</th>
+<th align="right">读数据一致性</th>
+<th align="right">脏读</th>
+<th align="right">不可重复读</th>
+<th align="center">幻读</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>未提交读（Read uncommitted）</td>
+<td align="right">最低级别，只能保证不读取物理上损坏的数据</td>
+<td align="right">是</td>
+<td align="right">是</td>
+<td align="center">是</td>
+</tr>
+<tr>
+<td>已提交读（Read committed）</td>
+<td align="right">语句级</td>
+<td align="right">否</td>
+<td align="right">是</td>
+<td align="center">是</td>
+</tr>
+<tr>
+<td>可重复读（Repeatable read）</td>
+<td align="right">事务级</td>
+<td align="right">否</td>
+<td align="right">否</td>
+<td align="center">是</td>
+</tr>
+<tr>
+<td>可序列化（Serializable）</td>
+<td align="right">最高级别，事务级</td>
+<td align="right">否</td>
+<td align="right">否</td>
+<td align="center">否</td>
+</tr>
+</tbody></table></div>
+<p>Mysql查看事务隔离级别命令为</p>
+<figure class="highlight sql"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">show</span>  VARIABLES <span class="keyword">like</span> <span class="string">&#x27;%tx_isolation%&#x27;</span></span><br></pre></td></tr></table></div></figure>
+<p>Oracle只提供Read committed（默认）和Serializable两个标准级别，另外还自己定义的Read only隔离级别：ＭySQL支持全部４个隔离级别，默认为REPEATABLE-READ。</p>
+
+        <h4 id="InnoDB的行锁模式及加锁方法">
+          <a href="#InnoDB的行锁模式及加锁方法" class="heading-link"><i class="fas fa-link"></i></a><a href="#InnoDB的行锁模式及加锁方法" class="headerlink" title="InnoDB的行锁模式及加锁方法"></a>InnoDB的行锁模式及加锁方法</h4>
+      <p>InnoDB实现了以下两种类型的行锁</p>
+<blockquote>
+<ul>
+<li>共享锁：又称为读锁，简称S锁，顾名思义，共享锁就是多个事务对于同一数据可以共享一把锁，都能访问到数据，但是只能读不能修改。</li>
+<li>排他锁：又称为写锁，简称X锁，顾名思义，排他锁就是不能与其他所并存，如一个事务获取了一个数据行的排他锁，其他事务就不能再获取该行的其他锁，包括共享锁和排他锁，但是获取排他锁的事务是可以对数据就行读取和修改。</li>
+</ul>
+</blockquote>
+<p>另外，为了允许行锁和表锁共存，实现多粒度锁机制，InnoDB还有内部使用的意向锁（Intention Locks），这两种意向锁都是表锁。</p>
+<blockquote>
+<ul>
+<li>意向共享锁（IS）：事务打算给数据行共享锁，事务在给一个数据行加共享锁前必须先取得该表的IS锁。</li>
+<li>意向排他锁（IX）： 事务打算给数据行加排他锁，事务在给一个数据行加排他锁前必须先取得该表的IX锁。</li>
+</ul>
+</blockquote>
+
+        <h4 id="InnoDB行锁模式兼容性列表">
+          <a href="#InnoDB行锁模式兼容性列表" class="heading-link"><i class="fas fa-link"></i></a><a href="#InnoDB行锁模式兼容性列表" class="headerlink" title="InnoDB行锁模式兼容性列表"></a>InnoDB行锁模式兼容性列表</h4>
+      <div class="table-container"><table>
+<thead>
+<tr>
+<th>当前锁模式/是否兼容/请求锁模式</th>
+<th align="right">X</th>
+<th align="right">IX</th>
+<th align="right">S</th>
+<th align="center">IS</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>X</td>
+<td align="right">冲突</td>
+<td align="right">冲突</td>
+<td align="right">冲突</td>
+<td align="center">冲突</td>
+</tr>
+<tr>
+<td>IX</td>
+<td align="right">冲突</td>
+<td align="right">兼容</td>
+<td align="right">冲突</td>
+<td align="center">兼容</td>
+</tr>
+<tr>
+<td>S</td>
+<td align="right">冲突</td>
+<td align="right">冲突</td>
+<td align="right">兼容</td>
+<td align="center">兼容</td>
+</tr>
+<tr>
+<td>IS</td>
+<td align="right">冲突</td>
+<td align="right">兼容</td>
+<td align="right">兼容</td>
+<td align="center">兼容</td>
+</tr>
+</tbody></table></div>
+<p>如果一个事务请求的锁模式与当前的锁兼容，Innodb就请求的锁授予该事务；反之，如果两者不兼容，该事务就要等待锁释放。<br>意向锁是InnoDB自动加的，不需用户干预。对于update、delete和insert语句，innodb会自动给涉及数据行加排他锁；对于普通的select语句，innodb不会加任何锁。事务可以通过以下语句显示给记录集加共享锁和排他锁。<br>共享锁（S）： select * from table_name where … lock in share mode;<br>排他锁（X）： select * from table_name where … for update;<br> 用select…in share mode获得共享锁，主要用在需要数据依存关系时确认某行记录是否存在，并确保没有人对这个记录进行update或者delete操作。但是如果当前事务也需要对该记录进行更新操作，则很有可能造成死锁，对于锁定记录后需要进行更新操作的应用，应该用select…for update方式获取排他锁。</p>
+
+        <h4 id="innodb实现行锁的方式">
+          <a href="#innodb实现行锁的方式" class="heading-link"><i class="fas fa-link"></i></a><a href="#innodb实现行锁的方式" class="headerlink" title="innodb实现行锁的方式"></a>innodb实现行锁的方式</h4>
+      <p>innodb行锁是通过索引上的索引项来实现的，Oracle是通过在数据中对相应数据行加锁来实现的，innodb行锁只有通过索引条件检索数据，innodb才会使用到行锁，否则，innodb将使用表锁！<br>在实际应用中，要特别注意innodb行锁这一特性，不然可能会导致大量的锁冲突，从而影响并发性能。</p>
+
+        <h3 id="间隙锁（Next-Key锁）">
+          <a href="#间隙锁（Next-Key锁）" class="heading-link"><i class="fas fa-link"></i></a><a href="#间隙锁（Next-Key锁）" class="headerlink" title="间隙锁（Next-Key锁）"></a>间隙锁（Next-Key锁）</h3>
+      <p>当我们用范围条件而不是相等条件检索数据，并请求共享或排他锁时，innodb会给符合条件的已有数据索引项加锁；对于键值在条件范围内但不存在的记录，叫做间隙（GAP），innodb也会对这个间隙加锁。<br>举例来说，假如emp表中只有101条记录，其中empid的值分别是1-101，下面的SQL：</p>
+<figure class="highlight sql"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> emp <span class="keyword">where</span> empid <span class="operator">&gt;</span> <span class="number">100</span> <span class="keyword">for</span> update;</span><br></pre></td></tr></table></div></figure>
+<p>是一个范围条件的检索，innodb不仅会对符合条件的empid值为101的记录加锁，也会对empid大于101的数据加锁，尽管这些数据不存在。<br>innodb使用间隙锁的目的，一方面是为了防止幻读，以满足相关隔离级别的要求。如果不使用间隙锁，其他事务插入了empid大于100的任何记录，那么本事务如果再次执行上述语句，就会发生幻读；另一方面，是为了满足其恢复和复制的需要。<br>很显然，在使用范围条件检索并锁定记录时，innodb这种加锁机制会阻塞符合条件范围内键值的并发插入。这种往往会造成严重的锁等待。因此，在实际开发中，尤其是并发插入比较多的应用，我们尽量优化业务逻辑，尽量使用相等条件来访问更新数据，避免使用范围条件！</p>
+
+        <h3 id="使用表锁的场景">
+          <a href="#使用表锁的场景" class="heading-link"><i class="fas fa-link"></i></a><a href="#使用表锁的场景" class="headerlink" title="使用表锁的场景"></a>使用表锁的场景</h3>
+      <p>对于innodb表，在绝大部分情况下都应该使用行锁，因为事务和行锁是我们选择innodb表的理由。但在特殊的事务中，也可以考虑使用表锁。</p>
+<ul>
+<li>事务需要更新大部分或全部数据，表又比较大。如果使用默认的行锁，不仅这个事务执行效率低，而且可能造成其他事务长时间锁等待和锁冲突，这种情况下可以考虑使用表锁来提高该事务的执行速度。</li>
+<li>事务涉及多个表，比较复杂，很可能引起死锁，造成大量事务回滚。这种情况可以考虑一次性锁定事务涉及的表，从而避免死锁、减少数据库因事务回滚带来的开销。</li>
+</ul>
+<p>在innodb下，使用表锁要注意以下两点：</p>
+<blockquote>
+<ul>
+<li>使用lock tables虽然可以给innodb加表锁，但表锁不是innodb存储引擎管理的，而是由其上一层MySQL Server负责的，仅当autocommit=0、innodb_table_lock=1（默认设置）时，innodb层才能直到Mysql加的表锁，Mysql Server才能感知Innodb加的行锁，这种情况下，innodb才能自动识别涉及表锁的死锁，否则，innodb将无法自动检测并处理这种死锁。</li>
+<li>在用lock tables对innodb锁时要注意，要将autocommit=0，否则MySQL不会给表加锁；事务结束前，不要用UNLOCAK TABLES释放表锁，因为UNLOCK TABLES会隐含地提交事务；COMMIT或ROLLBACK产不能释放用LOCAK TABLES加的表级锁，必须用UNLOCK TABLES释放表锁。</li>
+</ul>
+</blockquote>
+
+        <h3 id="死锁">
+          <a href="#死锁" class="heading-link"><i class="fas fa-link"></i></a><a href="#死锁" class="headerlink" title="死锁"></a>死锁</h3>
+      <p>死锁的四个必要条件：</p>
+<blockquote>
+<ul>
+<li>互斥条件(Mutual exclusion)：资源不能被共享，只能由一个进程使用。</li>
+<li>请求与保持条件(Hold and wait)：已经得到资源的进程可以再次申请新的资源。</li>
+<li>非剥夺条件(No pre-emption)：已经分配的资源不能从相应的进程中被强制地剥夺。</li>
+<li>循环等待条件(Circular wait)：系统中若干进程组成环路，该环路中每个进程都在等待相邻进程正占用的资源。</li>
+</ul>
+</blockquote>
+<p>MyISAM表锁是deadlock free的，因为MyISAM总是一次性获得所需要的全部锁。而在innodb中，除单个SQL组成的事务外，锁是逐步获得的，这就决定了innodb发生死锁的可能性。<br>发生死锁后，innodb一般都能自动检测到，并使一个事务释放锁并退回，另一个事务获得锁，继续完成事务。但在涉及外部锁的情况下，innodb并不能完全自动检测到死锁，这需要通过设置锁等待超时参数innodb_lock_wait_timeout来解决。需要说明的是，这个参数并不是只是用来解决死锁问题，，在并发访问比较高的情况下，如果大量事务因无法立即获取所需的锁而挂起，会占用大量计算机资源，造成严重性能问题，甚至拖垮数据库。我们通过设置合适的锁等待超时阈值，可以避免这种情况发生。</p>
+
+        <h4 id="导致死锁情况">
+          <a href="#导致死锁情况" class="heading-link"><i class="fas fa-link"></i></a><a href="#导致死锁情况" class="headerlink" title="导致死锁情况"></a>导致死锁情况</h4>
+      <ul>
+<li>在应用中，如果不同的程序会并发存取多个表，应尽量约定按相同的顺序访问表，这样可以大大降低产生死锁的机会。如果两个session访问两个表的顺序不同，发生死锁的机会就非常高！但如果以相同的顺序来访问，死锁就可能避免。</li>
+<li>在程序按批量方式处理数据的时候，如果事先对数据排序，保证每个线程按固定的顺序来处理记录，也可以大大降低死锁的可能性</li>
+<li>在事务中，如果要更新记录，应该直接申请足够级别的锁，排他锁，而不是应该先申请共享锁，更新时再申请排他锁，甚至死锁。</li>
+<li>在REPEATEABLE READ隔离级别下，如果两个线程同时对相同条件记录用SELECT…ROR UPDATE加排他锁，在没有符合该记录情况下，两个线程都会加锁成功。程序发现记录尚不存在，就试图插入一条新记录。如果两个线程都这么做，就会出现死锁。这种情况下，将隔离级别改成READ COMMITTED，就可以避免问题。</li>
+<li>当隔离级别为READ COMMITED时，如果两个线程都先执行SELECT…FOR UPDATE，判断是否存在符号条件记录，如果没有，就插入记录。此时，只有一个线程能插入成功，另一个线程会出现所等待，当第1个线程提交后，第2个线程会因主键出错，但是这个线程出错了，却会获得一个排他锁！这时如果有第3个线程又来申请排他锁，也会出现死锁。对于这种情况，可以直接做插入操作，然后再捕获主键异常，或者在遇到主键错误时，总是执行ROLLBACK释放获得的排他锁。<br>如果出现死锁，可以用SHOW ENGINE INNODB STATUS命令来确定最后一个死锁产生的原因和改进措施。</li>
+</ul>
+
+        <h3 id="总结">
+          <a href="#总结" class="heading-link"><i class="fas fa-link"></i></a><a href="#总结" class="headerlink" title="总结"></a>总结</h3>
+      <p>对于MyISAM的表锁，主要有以下几点：</p>
+<ul>
+<li>共享读锁（S）之间是兼容的，但共享读锁（S）和排他写锁（X）之间，以及排他写锁（X）之间是互斥的，也就是读和写是串行的。</li>
+<li>在一定条件下，MyISAM允许查询和插入并发执行，我们可以利用这一点来解决应用中对同一表和插入的锁竞争问题。</li>
+<li>MyISAM默认的锁调度机制是写有限，这不一定适合所有应用，用户可以通过设置LOW_PRIPORITY_UPDATES参数，或在INSERT、UPDATE、DELETE语句中指定LOW_PRIORITY选项来调节读写锁的争用。</li>
+<li>由于表锁的锁定粒度大，读写之间又是串行的，因此，如果更新操作较多，MyISAM表可能会出现严重的锁等待，可以考虑采用innodb表来减少锁冲突</li>
+</ul>
+<p>对于innodb表，主要有以下几点：</p>
+<ul>
+<li>innodb的行锁是基于索引实现的，如果不通过索引访问数据，innodb会使用表锁</li>
+<li>innodb锁冲突甚至死锁很难完全避免</li>
+</ul>
+<p>在了解InnoDB的锁特性后，用户可以通过设计和SQL调整等措施减少锁冲突和死锁，包括：</p>
+<ul>
+<li>尽量使用较低的隔离级别</li>
+<li>精心设计索引，并尽量使用索引访问数据，使加锁更精确，从而减少锁冲突的机会。</li>
+<li>选择合理的事务大小，小事务发生锁冲突的几率也更小。</li>
+<li>给记录集显示加锁时，最好一次性请求足够级别的锁。比如要修改数据的话，最好直接申请排他锁，而不是先申请共享锁，修改时再请求排他锁，这样容易产生死锁。</li>
+<li>不同程序访问一组表时，应尽量约定以相同的顺序访问各表，对一个表而言，尽可能以固定的顺序存取表中的行。这样可以大减少死锁的机会。</li>
+<li>尽量用相等条件访问数据，这样可以避免间隙锁对并发插入的影响。</li>
+<li>不要申请超过实际需要的锁级别；除非必须，查询时不要显示加锁。</li>
+<li>对于一些特定的事务，可以使用表锁来提高处理速度或减少死锁的可能。</li>
+</ul>
+
+        <h3 id="参考资料">
+          <a href="#参考资料" class="heading-link"><i class="fas fa-link"></i></a><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3>
+      <ul>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://blog.csdn.net/Somhu/article/details/78775198">通俗地解释脏读、不可重复读、幻读</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://www.cnblogs.com/LBSer/p/5183300.html">mysql死锁问题分析</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+</ul>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://focusss.github.io">cjwei</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://focusss.github.io/2019/03/11/MySQL%E4%B8%AD%E7%9A%84%E9%94%81%E6%9C%BA%E5%88%B6%EF%BC%88%E8%A1%A8%E9%94%81%E3%80%81%E8%A1%8C%E9%94%81%EF%BC%89/">https://focusss.github.io/2019/03/11/MySQL%E4%B8%AD%E7%9A%84%E9%94%81%E6%9C%BA%E5%88%B6%EF%BC%88%E8%A1%A8%E9%94%81%E3%80%81%E8%A1%8C%E9%94%81%EF%BC%89/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://focusss.github.io/tags/MySQL/">MySQL</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2019/03/11/MYSQL%20%E8%A7%A3%E9%94%81%E4%B8%8E%E9%94%81%E8%A1%A8/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">MySQL 解锁与锁表</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2019/03/11/Mybatis%E5%88%9D%E5%A7%8B%E5%8C%96%E5%8A%A0%E8%BD%BD%E8%BF%87%E7%A8%8B(%E4%B8%80)/"><span class="paginator-prev__text">Mybatis初始化加载过程(一)</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A1%A8%E7%BA%A7%E9%94%81%EF%BC%88MyISAM%EF%BC%89"><span class="toc-number">1.</span> <span class="toc-text">
+          表级锁（MyISAM）</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%8A%A0%E9%94%81%E8%BF%87%E7%A8%8B"><span class="toc-number">1.1.</span> <span class="toc-text">
+          加锁过程</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%B9%B6%E5%8F%91%E9%94%81"><span class="toc-number">1.2.</span> <span class="toc-text">
+          并发锁</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#MyISAM%E9%94%81%E8%B0%83%E5%BA%A6%E6%9C%BA%E5%88%B6"><span class="toc-number">1.3.</span> <span class="toc-text">
+          MyISAM锁调度机制</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A1%8C%E7%BA%A7%E9%94%81%EF%BC%88InnoDB%EF%BC%89"><span class="toc-number">2.</span> <span class="toc-text">
+          行级锁（InnoDB）</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BA%8B%E5%8A%A1%E5%8F%8A%E5%85%B6ACID%E5%B1%9E%E6%80%A7"><span class="toc-number">2.1.</span> <span class="toc-text">
+          事务及其ACID属性</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%B9%B6%E5%8F%91%E4%BA%8B%E5%8A%A1%E5%B8%A6%E6%9D%A5%E7%9A%84%E9%97%AE%E9%A2%98"><span class="toc-number">2.2.</span> <span class="toc-text">
+          并发事务带来的问题</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB"><span class="toc-number">2.3.</span> <span class="toc-text">
+          事务隔离级别</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4%E7%A7%8D%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB"><span class="toc-number">2.4.</span> <span class="toc-text">
+          4种隔离级别</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%80%E8%87%B4%E6%80%A7%E9%97%AE%E9%A2%98"><span class="toc-number">2.5.</span> <span class="toc-text">
+          数据库一致性问题</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BA%8B%E5%8A%A14%E7%A7%8D%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E6%AF%94%E8%BE%83"><span class="toc-number">2.6.</span> <span class="toc-text">
+          事务4种隔离级别比较</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#InnoDB%E7%9A%84%E8%A1%8C%E9%94%81%E6%A8%A1%E5%BC%8F%E5%8F%8A%E5%8A%A0%E9%94%81%E6%96%B9%E6%B3%95"><span class="toc-number">2.7.</span> <span class="toc-text">
+          InnoDB的行锁模式及加锁方法</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#InnoDB%E8%A1%8C%E9%94%81%E6%A8%A1%E5%BC%8F%E5%85%BC%E5%AE%B9%E6%80%A7%E5%88%97%E8%A1%A8"><span class="toc-number">2.8.</span> <span class="toc-text">
+          InnoDB行锁模式兼容性列表</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#innodb%E5%AE%9E%E7%8E%B0%E8%A1%8C%E9%94%81%E7%9A%84%E6%96%B9%E5%BC%8F"><span class="toc-number">2.9.</span> <span class="toc-text">
+          innodb实现行锁的方式</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%97%B4%E9%9A%99%E9%94%81%EF%BC%88Next-Key%E9%94%81%EF%BC%89"><span class="toc-number">3.</span> <span class="toc-text">
+          间隙锁（Next-Key锁）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8%E8%A1%A8%E9%94%81%E7%9A%84%E5%9C%BA%E6%99%AF"><span class="toc-number">4.</span> <span class="toc-text">
+          使用表锁的场景</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%AD%BB%E9%94%81"><span class="toc-number">5.</span> <span class="toc-text">
+          死锁</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AF%BC%E8%87%B4%E6%AD%BB%E9%94%81%E6%83%85%E5%86%B5"><span class="toc-number">5.1.</span> <span class="toc-text">
+          导致死锁情况</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">6.</span> <span class="toc-text">
+          总结</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">7.</span> <span class="toc-text">
+          参考资料</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/images/headImg.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">平安大赚 财丁兴旺</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">69</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">19</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">25</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>cjwei</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.4.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lazyload@2.0.0-rc.2/lazyload.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>

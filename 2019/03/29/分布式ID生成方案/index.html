@@ -1,0 +1,655 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="分布式ID生成要有全局唯一性、递增、高可用高性能。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="分布式ID生成方案">
+<meta property="og:url" content="https://focusss.github.io/2019/03/29/%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E6%96%B9%E6%A1%88/index.html">
+<meta property="og:site_name" content="Focusss&#39;s Blog">
+<meta property="og:description" content="分布式ID生成要有全局唯一性、递增、高可用高性能。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://focusss.github.io/2019/03/29/%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E6%96%B9%E6%A1%88/%E9%9B%AA%E8%8A%B1.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/29/%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E6%96%B9%E6%A1%88/%E6%97%B6%E9%92%9F%E5%9B%9E%E6%8B%A8.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/29/%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E6%96%B9%E6%A1%88/ID1.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/29/%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E6%96%B9%E6%A1%88/ID2.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/29/%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E6%96%B9%E6%A1%88/ID1.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/29/%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E6%96%B9%E6%A1%88/ID3.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/29/%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E6%96%B9%E6%A1%88/ID4.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/29/%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E6%96%B9%E6%A1%88/ID5.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/29/%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E6%96%B9%E6%A1%88/ID6.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/29/%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E6%96%B9%E6%A1%88/ID3.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/29/%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E6%96%B9%E6%A1%88/ID5.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/29/%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E6%96%B9%E6%A1%88/%E5%90%84%E6%96%B9%E6%A1%88%E5%AF%B9%E6%AF%94.png">
+<meta property="article:published_time" content="2019-03-29T03:22:39.000Z">
+<meta property="article:modified_time" content="2021-12-11T11:19:34.511Z">
+<meta property="article:author" content="cjwei">
+<meta property="article:tag" content="分布式">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://focusss.github.io/2019/03/29/%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E6%96%B9%E6%A1%88/%E9%9B%AA%E8%8A%B1.png"><title>分布式ID生成方案 | Focusss's Blog</title><link ref="canonical" href="https://focusss.github.io/2019/03/29/%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E6%96%B9%E6%A1%88/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"carbon","highlight":"light","wordWrap":true},
+  reward: false,
+  fancybox: true,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: true,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Focusss's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">分布式ID生成方案</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2019-03-29</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-12-11</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h3 id="分布式系统中我们对ID生成器要求又有哪些呢">
+          <a href="#分布式系统中我们对ID生成器要求又有哪些呢" class="heading-link"><i class="fas fa-link"></i></a><a href="#分布式系统中我们对ID生成器要求又有哪些呢" class="headerlink" title="分布式系统中我们对ID生成器要求又有哪些呢?"></a>分布式系统中我们对ID生成器要求又有哪些呢?</h3>
+      <ul>
+<li><p>全局唯一性：不能出现重复的ID号，既然是唯一标识，这是最基本的要求。</p>
+</li>
+<li><p>递增：比较低要求的条件为趋势递增，即保证下一个ID一定大于上一个ID，而比较苛刻的要求是连续递增，如1,2,3等等。</p>
+</li>
+<li><p>高可用高性能：ID生成事关重大，一旦挂掉系统崩溃;高性能是指必须要在压测下表现良好，如果达不到要求则在高并发环境下依然会导致系统瘫痪。</p>
+</li>
+</ul>
+
+        <h3 id="UUID-GUID（通用唯一识别码）">
+          <a href="#UUID-GUID（通用唯一识别码）" class="heading-link"><i class="fas fa-link"></i></a><a href="#UUID-GUID（通用唯一识别码）" class="headerlink" title="UUID/GUID（通用唯一识别码）"></a>UUID/GUID（通用唯一识别码）</h3>
+      <p>UUID是通用唯一识别码（Universally Unique Identifier)的缩写，开放软件基金会(OSF)。<br>由以下几部分的组合：</p>
+<p>1、当前日期和时间<br>2、时钟序列<br>3、全局唯一的IEEE机器识别号（如果有网卡，从网卡获得，没有网卡以其他方式获得）</p>
+<p>UUID是由128位二进制组成，一般转换成十六进制，然后用String表示。</p>
+<p>示例UUID，长度为36的字符串：4cdbc040-657a-4847-b266-7e31d9e2c3d9</p>
+
+        <h4 id="优点">
+          <a href="#优点" class="heading-link"><i class="fas fa-link"></i></a><a href="#优点" class="headerlink" title="优点"></a>优点</h4>
+      <p>1、通过本地生成，没有经过网络I/O，性能较快</p>
+<p>2、能够保证独立性，程序可以在不同的数据库间迁移，效果不受影响。</p>
+<p>3、保证生成的ID不仅是表独立的，而且是库独立的，这点在你想切分数据库的时候尤为重要。</p>
+
+        <h4 id="缺点">
+          <a href="#缺点" class="heading-link"><i class="fas fa-link"></i></a><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4>
+      <p>1、UUID太长，通常以36长度的字符串表示，空间占用大。</p>
+<p>2、UUID无业务含义：很多需要ID能标识业务含义的地方不使用。</p>
+<p>3、不满足递增要求，对MySQL索引不利：如果作为数据库主键，在InnoDB引擎下，UUID的无序性可能会引起数据位置频繁变动，严重影响性能。</p>
+
+        <h4 id="适用场景">
+          <a href="#适用场景" class="heading-link"><i class="fas fa-link"></i></a><a href="#适用场景" class="headerlink" title="适用场景"></a>适用场景</h4>
+      <p>UUID的适用场景可以为不担心过多的空间占用，以及不需要生成有递增趋势的数字。在Log4j里面他在UuidPatternConverter中加入了UUID来标识每一条日志。</p>
+
+        <h3 id="数据库主键自增">
+          <a href="#数据库主键自增" class="heading-link"><i class="fas fa-link"></i></a><a href="#数据库主键自增" class="headerlink" title="数据库主键自增"></a>数据库主键自增</h3>
+      <p>用数据库生成ID是最常见的方案。能够确保ID全数据库唯一。</p>
+<p>MySQL使用AUTO_INCREMENT、Oracle使用Sequence序列</p>
+<p>集群环境下，不同的库，设置不同的初始值，每次自增加100</p>
+<p>MySQL下修改起点和步长的方式</p>
+<figure class="highlight sql"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">set</span> @<span class="variable">@auto</span>_increment_offset<span class="operator">=</span><span class="number">1</span>;  <span class="comment">-- 设置起点</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span> @<span class="variable">@auto</span>_increment_increment<span class="operator">=</span><span class="number">100</span>; <span class="comment">-- 设置步长为100</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">show</span> variables <span class="keyword">like</span> <span class="string">&#x27;auto_inc%&#x27;</span>; <span class="comment">-- 查看参数</span></span><br></pre></td></tr></table></div></figure>
+
+        <h4 id="优点-1">
+          <a href="#优点-1" class="heading-link"><i class="fas fa-link"></i></a><a href="#优点-1" class="headerlink" title="优点"></a>优点</h4>
+      <p>简单方便，有序递增，方便排序和分页</p>
+
+        <h4 id="缺点-1">
+          <a href="#缺点-1" class="heading-link"><i class="fas fa-link"></i></a><a href="#缺点-1" class="headerlink" title="缺点"></a>缺点</h4>
+      <ul>
+<li><p>分库分表会带来问题，需要进行改造。</p>
+</li>
+<li><p>并发性能不高，受限于数据库的性能。</p>
+</li>
+<li><p>数据库宕机服务不可用。</p>
+</li>
+</ul>
+
+        <h4 id="适用场景-1">
+          <a href="#适用场景-1" class="heading-link"><i class="fas fa-link"></i></a><a href="#适用场景-1" class="headerlink" title="适用场景"></a>适用场景</h4>
+      <p>根据上面可以总结出来，当数据量不多，并发性能不高的时候这个很适合，比如一些to B的业务，商家注册这些，商家注册和用户注册不是一个数量级的，所以可以数据库主键递增。如果对顺序递增强依赖，那么也可以使用数据库主键自增。</p>
+
+        <h4 id="优化方案">
+          <a href="#优化方案" class="heading-link"><i class="fas fa-link"></i></a><a href="#优化方案" class="headerlink" title="优化方案"></a>优化方案</h4>
+      <p>针对主库单点，如果有多个Master库，则每个Master库设置的起始数字不一样，步长一样，可以是Master的个数。比如：Master1 生成的是 1，4，7，10，Master2生成的是2,5,8,11 Master3生成的是 3,6,9,12。这样就可以有效生成集群中的唯一ID，也可以大大降低ID生成数据库操作的负载。</p>
+
+        <h3 id="基于Redis自增">
+          <a href="#基于Redis自增" class="heading-link"><i class="fas fa-link"></i></a><a href="#基于Redis自增" class="headerlink" title="基于Redis自增"></a>基于Redis自增</h3>
+      <p>Redis的 incr(key)  API 用于将key的值进行递增，并返回增长数值。如果key不存在，则创建并赋值为0。</p>
+<p>利用Redis的特性：单线程原子操作、自增计数API、数据有效期机制 EX。<br>示例：</p>
+<p>1、业务编码 + 地区 + 自增数值。 （9 020 00000000001）</p>
+
+        <h4 id="优点-2">
+          <a href="#优点-2" class="heading-link"><i class="fas fa-link"></i></a><a href="#优点-2" class="headerlink" title="优点"></a>优点</h4>
+      <p>1、性能比数据库好，能满足有序递增。</p>
+<p>2、拓展性强，可以方便的结合业务进行处理；</p>
+<p>3、利用Redis操作原子性的特性，保证在并发的时候不会重复；</p>
+
+        <h4 id="缺点-2">
+          <a href="#缺点-2" class="heading-link"><i class="fas fa-link"></i></a><a href="#缺点-2" class="headerlink" title="缺点"></a>缺点</h4>
+      <p>1、引入Redis就意味着引入其他第三方的依赖；</p>
+<p>2、增加一次网络开销；</p>
+<p>3、需要对Redis服务实现高可用；</p>
+<p>4、 由于redis是内存的KV数据库，即使有AOF和RDB，但是依然会存在数据丢失，有可能会造成ID重复。</p>
+
+        <h4 id="适用场景-2">
+          <a href="#适用场景-2" class="heading-link"><i class="fas fa-link"></i></a><a href="#适用场景-2" class="headerlink" title="适用场景"></a>适用场景</h4>
+      <p>由于其性能比数据库好，但是有可能会出现ID重复和不稳定，这一块如果可以接受那么就可以使用。也适用于到了某个时间，比如每天都刷新ID，那么这个ID就需要重置，通过(Incr Today)，每天都会从0开始加。</p>
+
+        <h3 id="ZooKeeper生成ID">
+          <a href="#ZooKeeper生成ID" class="heading-link"><i class="fas fa-link"></i></a><a href="#ZooKeeper生成ID" class="headerlink" title="ZooKeeper生成ID"></a>ZooKeeper生成ID</h3>
+      <p>实际业务中，除了分布式ID全局唯一之外，还有是否趋势/连续递增的要求。根据具体业务需求的不同，有两种可选方案。</p>
+<p>一是只保证全局唯一，不保证连续递增。二是既保证全局唯一，又保证连续递增。</p>
+
+        <h4 id="基于ZooKeeper和本地缓存的方案">
+          <a href="#基于ZooKeeper和本地缓存的方案" class="heading-link"><i class="fas fa-link"></i></a><a href="#基于ZooKeeper和本地缓存的方案" class="headerlink" title="基于ZooKeeper和本地缓存的方案"></a>基于ZooKeeper和本地缓存的方案</h4>
+      <p>基于zookeeper分布式ID实现方案有很多种，本方案只使用ZooKeeper作为分段节点协调工具。每台服务器首先从zookeeper缓存一段，如1-1000的id。</p>
+<p>此时zk上保存最大值1000，每次获取的时候都会进行判断，如果id小于本地最大值，即id&lt;=1000，则更新本地的当前值，如果id大于本地当前值，比如说是1001，则会将从zk再获取下一个id数据段并在本地缓存。获取数据段的时候需要更新zk节点数据，更新的时候使用curator的分布式锁来实现。</p>
+<p>由于id是从本机获取，因此本方案的优点是性能非常好。缺点是如果多主机负载均衡，则会出现不连续的id，当然将递增区段设置为1也能保证连续的id，但是效率会受到很大影响。</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.curator.framework.CuratorFramework;</span><br><span class="line"><span class="keyword">import</span> org.apache.curator.framework.CuratorFrameworkFactory;</span><br><span class="line"><span class="keyword">import</span> org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;</span><br><span class="line"><span class="keyword">import</span> org.apache.curator.retry.ExponentialBackoffRetry;</span><br><span class="line"><span class="keyword">import</span> org.apache.zookeeper.CreateMode;</span><br><span class="line"><span class="keyword">import</span> org.apache.zookeeper.data.Stat;</span><br><span class="line"><span class="keyword">import</span> org.slf4j.Logger;</span><br><span class="line"><span class="keyword">import</span> org.slf4j.LoggerFactory;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.io.UnsupportedEncodingException;</span><br><span class="line"><span class="keyword">import</span> java.util.Map;</span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.ConcurrentHashMap;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 根据开源项目mycat实现基于zookeeper的递增序列号</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * 只要配置好ZK地址和表名的如下属性</span></span><br><span class="line"><span class="comment"> * MINID 某线程当前区间内最小值</span></span><br><span class="line"><span class="comment"> * MAXID 某线程当前区间内最大值</span></span><br><span class="line"><span class="comment"> * CURID 某线程当前区间内当前值</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> wangwanbin</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@version</span> 1.0</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@time</span> 2017/9/1</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ZKCachedSequenceHandler</span> <span class="keyword">extends</span> <span class="title">SequenceHandler</span> </span>&#123;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">static</span> <span class="keyword">final</span> Logger LOGGER = LoggerFactory.getLogger(ZKCachedSequenceHandler.class);</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String KEY_MIN_NAME = <span class="string">&quot;.MINID&quot;</span>;<span class="comment">// 1</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String KEY_MAX_NAME = <span class="string">&quot;.MAXID&quot;</span>;<span class="comment">// 10000</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String KEY_CUR_NAME = <span class="string">&quot;.CURID&quot;</span>;<span class="comment">// 888</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> <span class="keyword">long</span> PERIOD = <span class="number">1000</span>;<span class="comment">//每次缓存的ID段数量</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> ZKCachedSequenceHandler instance = <span class="keyword">new</span> ZKCachedSequenceHandler();</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 私有化构造方法,单例模式</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">ZKCachedSequenceHandler</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 获取sequence工具对象的唯一方法</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> ZKCachedSequenceHandler <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Map&lt;String, Map&lt;String, String&gt;&gt; tableParaValMap = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> CuratorFramework client;</span><br><span class="line">    <span class="keyword">private</span> InterProcessSemaphoreMutex interProcessSemaphore = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">loadZK</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">this</span>.client = CuratorFrameworkFactory.newClient(zkAddress, <span class="keyword">new</span> ExponentialBackoffRetry(<span class="number">1000</span>, <span class="number">3</span>));</span><br><span class="line">            <span class="keyword">this</span>.client.start();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            LOGGER.error(<span class="string">&quot;Error caught while initializing ZK:&quot;</span> + e.getCause());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Map&lt;String, String&gt; <span class="title">getParaValMap</span><span class="params">(String prefixName)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (tableParaValMap == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                loadZK();</span><br><span class="line">                fetchNextPeriod(prefixName);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                LOGGER.error(<span class="string">&quot;Error caught while loding configuration within current thread:&quot;</span> + e.getCause());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        Map&lt;String, String&gt; paraValMap = tableParaValMap.get(prefixName);</span><br><span class="line">        <span class="keyword">return</span> paraValMap;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Boolean <span class="title">fetchNextPeriod</span><span class="params">(String prefixName)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Stat stat = <span class="keyword">this</span>.client.checkExists().forPath(PATH + <span class="string">&quot;/&quot;</span> + prefixName + SEQ);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (stat == <span class="keyword">null</span> || (stat.getDataLength() == <span class="number">0</span>)) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    client.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT)</span><br><span class="line">                            .forPath(PATH + <span class="string">&quot;/&quot;</span> + prefixName + SEQ, String.valueOf(<span class="number">0</span>).getBytes());</span><br><span class="line">                &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                    LOGGER.debug(<span class="string">&quot;Node exists! Maybe other instance is initializing!&quot;</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (interProcessSemaphore == <span class="keyword">null</span>) &#123;</span><br><span class="line">                interProcessSemaphore = <span class="keyword">new</span> InterProcessSemaphoreMutex(client, PATH + <span class="string">&quot;/&quot;</span> + prefixName + SEQ);</span><br><span class="line">            &#125;</span><br><span class="line">            interProcessSemaphore.acquire();</span><br><span class="line">            <span class="keyword">if</span> (tableParaValMap == <span class="keyword">null</span>) &#123;</span><br><span class="line">                tableParaValMap = <span class="keyword">new</span> ConcurrentHashMap&lt;&gt;();</span><br><span class="line">            &#125;</span><br><span class="line">            Map&lt;String, String&gt; paraValMap = tableParaValMap.get(prefixName);</span><br><span class="line">            <span class="keyword">if</span> (paraValMap == <span class="keyword">null</span>) &#123;</span><br><span class="line">                paraValMap = <span class="keyword">new</span> ConcurrentHashMap&lt;&gt;();</span><br><span class="line">                tableParaValMap.put(prefixName, paraValMap);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">long</span> now = Long.parseLong(<span class="keyword">new</span> String(client.getData().forPath(PATH + <span class="string">&quot;/&quot;</span> + prefixName + SEQ)));</span><br><span class="line">            client.setData().forPath(PATH + <span class="string">&quot;/&quot;</span> + prefixName + SEQ, ((now + PERIOD) + <span class="string">&quot;&quot;</span>).getBytes());</span><br><span class="line">            <span class="keyword">if</span> (now == <span class="number">1</span>) &#123;</span><br><span class="line">                paraValMap.put(prefixName + KEY_MAX_NAME, PERIOD + <span class="string">&quot;&quot;</span>);</span><br><span class="line">                paraValMap.put(prefixName + KEY_MIN_NAME, <span class="string">&quot;1&quot;</span>);</span><br><span class="line">                paraValMap.put(prefixName + KEY_CUR_NAME, <span class="string">&quot;0&quot;</span>);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                paraValMap.put(prefixName + KEY_MAX_NAME, (now + PERIOD) + <span class="string">&quot;&quot;</span>);</span><br><span class="line">                paraValMap.put(prefixName + KEY_MIN_NAME, (now) + <span class="string">&quot;&quot;</span>);</span><br><span class="line">                paraValMap.put(prefixName + KEY_CUR_NAME, (now) + <span class="string">&quot;&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            LOGGER.error(<span class="string">&quot;Error caught while updating period from ZK:&quot;</span> + e.getCause());</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                interProcessSemaphore.release();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                LOGGER.error(<span class="string">&quot;Error caught while realeasing distributed lock&quot;</span> + e.getCause());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Boolean <span class="title">updateCURIDVal</span><span class="params">(String prefixName, Long val)</span> </span>&#123;</span><br><span class="line">        Map&lt;String, String&gt; paraValMap = tableParaValMap.get(prefixName);</span><br><span class="line">        <span class="keyword">if</span> (paraValMap == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">&quot;ZKCachedSequenceHandler should be loaded first!&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        paraValMap.put(prefixName + KEY_CUR_NAME, val + <span class="string">&quot;&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 获取自增ID</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> sequenceEnum</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">long</span> <span class="title">nextId</span><span class="params">(SequenceEnum sequenceEnum)</span> </span>&#123;</span><br><span class="line">        String prefixName = sequenceEnum.getCode();</span><br><span class="line">        Map&lt;String, String&gt; paraMap = <span class="keyword">this</span>.getParaValMap(prefixName);</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">null</span> == paraMap) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(<span class="string">&quot;fetch Param Values error.&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        Long nextId = Long.parseLong(paraMap.get(prefixName + KEY_CUR_NAME)) + <span class="number">1</span>;</span><br><span class="line">        Long maxId = Long.parseLong(paraMap.get(prefixName + KEY_MAX_NAME));</span><br><span class="line">        <span class="keyword">if</span> (nextId &gt; maxId) &#123;</span><br><span class="line">            fetchNextPeriod(prefixName);</span><br><span class="line">            <span class="keyword">return</span> nextId(sequenceEnum);</span><br><span class="line">        &#125;</span><br><span class="line">        updateCURIDVal(prefixName, nextId);</span><br><span class="line">        <span class="keyword">return</span> nextId.longValue();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> UnsupportedEncodingException </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> startTime = System.currentTimeMillis();   <span class="comment">//获取开始时间</span></span><br><span class="line">        <span class="keyword">final</span> ZKCachedSequenceHandler sequenceHandler = getInstance();</span><br><span class="line">        sequenceHandler.loadZK();</span><br><span class="line">        <span class="keyword">new</span> Thread() &#123;</span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">long</span> startTime2 = System.currentTimeMillis();   <span class="comment">//获取开始时间</span></span><br><span class="line">                <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">5000</span>; i++) &#123;</span><br><span class="line">                    System.out.println(<span class="string">&quot;线程1 &quot;</span> + sequenceHandler.nextId(SequenceEnum.ACCOUNT));</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">long</span> endTime2 = System.currentTimeMillis(); <span class="comment">//获取结束时间</span></span><br><span class="line">                System.out.println(<span class="string">&quot;程序运行时间1： &quot;</span> + (endTime2 - startTime2) + <span class="string">&quot;ms&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;.start();</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">5000</span>; i++) &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;线程2 &quot;</span> + sequenceHandler.nextId(SequenceEnum.ACCOUNT));</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">long</span> endTime = System.currentTimeMillis(); <span class="comment">//获取结束时间</span></span><br><span class="line">        System.out.println(<span class="string">&quot;程序运行时间2： &quot;</span> + (endTime - startTime) + <span class="string">&quot;ms&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h4 id="利用zk的永久自增节点策略实现持续递增ID">
+          <a href="#利用zk的永久自增节点策略实现持续递增ID" class="heading-link"><i class="fas fa-link"></i></a><a href="#利用zk的永久自增节点策略实现持续递增ID" class="headerlink" title="利用zk的永久自增节点策略实现持续递增ID"></a>利用zk的永久自增节点策略实现持续递增ID</h4>
+      <p>使用zk的永久sequence策略创建节点，并获取返回值，然后删除前一个节点，这样既防止zk服务器存在过多的节点，又提高了效率；节点删除采用线程池来统一处理，提高响应速度。</p>
+<p>优点：能创建连续递增的ID。<br>关键实现代码如下：</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> com.zb.p2p.enums.SequenceEnum;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.pool2.PooledObject;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.pool2.PooledObjectFactory;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.pool2.impl.DefaultPooledObject;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.pool2.impl.GenericObjectPool;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.pool2.impl.GenericObjectPoolConfig;</span><br><span class="line"><span class="keyword">import</span> org.apache.curator.framework.CuratorFramework;</span><br><span class="line"><span class="keyword">import</span> org.apache.curator.framework.CuratorFrameworkFactory;</span><br><span class="line"><span class="keyword">import</span> org.apache.curator.retry.ExponentialBackoffRetry;</span><br><span class="line"><span class="keyword">import</span> org.apache.zookeeper.CreateMode;</span><br><span class="line"><span class="keyword">import</span> org.slf4j.Logger;</span><br><span class="line"><span class="keyword">import</span> org.slf4j.LoggerFactory;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.ArrayDeque;</span><br><span class="line"><span class="keyword">import</span> java.util.Iterator;</span><br><span class="line"><span class="keyword">import</span> java.util.Queue;</span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.ConcurrentLinkedQueue;</span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.CountDownLatch;</span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.ExecutorService;</span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.Executors;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 基于zk的永久型自增节点PERSISTENT_SEQUENTIAL实现</span></span><br><span class="line"><span class="comment"> * 每次生成节点后会使用线程池执行删除节点任务</span></span><br><span class="line"><span class="comment"> * Created by wangwanbin on 2017/9/5.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ZKIncreaseSequenceHandler</span> <span class="keyword">extends</span> <span class="title">SequenceHandler</span> <span class="keyword">implements</span> <span class="title">PooledObjectFactory</span>&lt;<span class="title">CuratorFramework</span>&gt; </span>&#123;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">static</span> <span class="keyword">final</span> Logger LOGGER = LoggerFactory.getLogger(ZKCachedSequenceHandler.class);</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> ZKIncreaseSequenceHandler instance = <span class="keyword">new</span> ZKIncreaseSequenceHandler();</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> ExecutorService fixedThreadPool = Executors.newFixedThreadPool(<span class="number">1</span>);</span><br><span class="line">    <span class="keyword">private</span> GenericObjectPool genericObjectPool;</span><br><span class="line">    <span class="keyword">private</span> Queue&lt;Long&gt; preNodes = <span class="keyword">new</span> ConcurrentLinkedQueue&lt;&gt;();</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> String ZK_ADDRESS = <span class="string">&quot;&quot;</span>; <span class="comment">//192.168.0.65</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> String PATH = <span class="string">&quot;&quot;</span>;<span class="comment">//  /sequence/p2p</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> String SEQ = <span class="string">&quot;&quot;</span>;<span class="comment">//seq;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 私有化构造方法,单例模式</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">ZKIncreaseSequenceHandler</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        GenericObjectPoolConfig config = <span class="keyword">new</span> GenericObjectPoolConfig();</span><br><span class="line">        config.setMaxTotal(<span class="number">4</span>);</span><br><span class="line">        genericObjectPool = <span class="keyword">new</span> GenericObjectPool(<span class="keyword">this</span>, config);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 获取sequence工具对象的唯一方法</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> ZKIncreaseSequenceHandler <span class="title">getInstance</span><span class="params">(String zkAddress, String path, String seq)</span> </span>&#123;</span><br><span class="line">        ZK_ADDRESS = zkAddress;</span><br><span class="line">        PATH = path;</span><br><span class="line">        SEQ = seq;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">long</span> <span class="title">nextId</span><span class="params">(<span class="keyword">final</span> SequenceEnum sequenceEnum)</span> </span>&#123;</span><br><span class="line">        String result = createNode(sequenceEnum.getCode());</span><br><span class="line">        <span class="keyword">final</span> String idstr = result.substring((PATH + <span class="string">&quot;/&quot;</span> + sequenceEnum.getCode() + <span class="string">&quot;/&quot;</span> + SEQ).length());</span><br><span class="line">        <span class="keyword">final</span> <span class="keyword">long</span> id = Long.parseLong(idstr);</span><br><span class="line">        preNodes.add(id);</span><br><span class="line">        <span class="comment">//删除上一个节点</span></span><br><span class="line">        fixedThreadPool.execute(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                Iterator&lt;Long&gt; iterator = preNodes.iterator();</span><br><span class="line">                <span class="keyword">if</span> (iterator.hasNext()) &#123;</span><br><span class="line">                    <span class="keyword">long</span> preNode = iterator.next();</span><br><span class="line">                    <span class="keyword">if</span> (preNode &lt; id) &#123;</span><br><span class="line">                        <span class="keyword">final</span> String format = <span class="string">&quot;%0&quot;</span> + idstr.length() + <span class="string">&quot;d&quot;</span>;</span><br><span class="line">                        String preIdstr = String.format(format, preNode);</span><br><span class="line">                        <span class="keyword">final</span> String prePath = PATH + <span class="string">&quot;/&quot;</span> + sequenceEnum.getCode() + <span class="string">&quot;/&quot;</span> + SEQ + preIdstr;</span><br><span class="line">                        CuratorFramework client = <span class="keyword">null</span>;</span><br><span class="line">                        <span class="keyword">try</span> &#123;</span><br><span class="line">                            client = (CuratorFramework) genericObjectPool.borrowObject();</span><br><span class="line">                            client.delete().forPath(prePath);</span><br><span class="line">                            preNodes.remove(preNode);</span><br><span class="line">                        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                            LOGGER.error(<span class="string">&quot;delete preNode error&quot;</span>, e);</span><br><span class="line">                        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                            <span class="keyword">if</span> (client != <span class="keyword">null</span>)</span><br><span class="line">                                genericObjectPool.returnObject(client);</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">        <span class="keyword">return</span> id;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> String <span class="title">createNode</span><span class="params">(String prefixName)</span> </span>&#123;</span><br><span class="line">        CuratorFramework client = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            client = (CuratorFramework) genericObjectPool.borrowObject();</span><br><span class="line">            String result = client.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT_SEQUENTIAL)</span><br><span class="line">                    .forPath(PATH + <span class="string">&quot;/&quot;</span> + prefixName + <span class="string">&quot;/&quot;</span> + SEQ, String.valueOf(<span class="number">0</span>).getBytes());</span><br><span class="line">            <span class="keyword">return</span> result;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(<span class="string">&quot;create zookeeper node error&quot;</span>, e);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (client != <span class="keyword">null</span>)</span><br><span class="line">                genericObjectPool.returnObject(client);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        ExecutorService executorService = Executors.newFixedThreadPool(<span class="number">1</span>);</span><br><span class="line">        <span class="keyword">long</span> startTime = System.currentTimeMillis();   <span class="comment">//获取开始时间</span></span><br><span class="line">        <span class="keyword">final</span> ZKIncreaseSequenceHandler sequenceHandler = ZKIncreaseSequenceHandler.getInstance(<span class="string">&quot;192.168.0.65&quot;</span>, <span class="string">&quot;/sequence/p2p&quot;</span>, <span class="string">&quot;seq&quot;</span>);</span><br><span class="line">        <span class="keyword">int</span> count = <span class="number">10</span>;</span><br><span class="line">        <span class="keyword">final</span> CountDownLatch cd = <span class="keyword">new</span> CountDownLatch(count);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; count; i++) &#123;</span><br><span class="line">            executorService.execute(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                    System.out.printf(<span class="string">&quot;线程 %s %d \n&quot;</span>, Thread.currentThread().getId(), sequenceHandler.nextId(SequenceEnum.ORDER));</span><br><span class="line">                    cd.countDown();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            cd.await();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            LOGGER.error(<span class="string">&quot;Interrupted thread&quot;</span>,e);</span><br><span class="line">            Thread.currentThread().interrupt();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">long</span> endTime = System.currentTimeMillis(); <span class="comment">//获取结束时间</span></span><br><span class="line">        System.out.println(<span class="string">&quot;程序运行时间： &quot;</span> + (endTime - startTime) + <span class="string">&quot;ms&quot;</span>);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> PooledObject&lt;CuratorFramework&gt; <span class="title">makeObject</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        CuratorFramework client = CuratorFrameworkFactory.newClient(ZK_ADDRESS, <span class="keyword">new</span> ExponentialBackoffRetry(<span class="number">1000</span>, <span class="number">3</span>));</span><br><span class="line">        client.start();</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> DefaultPooledObject&lt;&gt;(client);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">destroyObject</span><span class="params">(PooledObject&lt;CuratorFramework&gt; p)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">validateObject</span><span class="params">(PooledObject&lt;CuratorFramework&gt; p)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">activateObject</span><span class="params">(PooledObject&lt;CuratorFramework&gt; p)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">passivateObject</span><span class="params">(PooledObject&lt;CuratorFramework&gt; p)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+
+        <h3 id="雪花算法-Snowflake">
+          <a href="#雪花算法-Snowflake" class="heading-link"><i class="fas fa-link"></i></a><a href="#雪花算法-Snowflake" class="headerlink" title="雪花算法-Snowflake"></a>雪花算法-Snowflake</h3>
+      <p>snowflake是Twitter开源的分布式ID生成算法，结果是一个long型的ID。其核心思想是：使用41bit作为毫秒数，10bit作为机器的ID（5个bit是数据中心，5个bit的机器ID），12bit作为毫秒内的流水号（意味着每个节点在每毫秒可以产生 4096 个 ID），最后还有一个符号位，永远是0。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E9%9B%AA%E8%8A%B1.png">
+      </p>
+<ul>
+<li><p>1bit:一般是符号位，不做处理</p>
+</li>
+<li><p>41bit:用来记录时间戳，这里可以记录69年，如果设置好起始时间比如今年是2018年，那么可以用到2089年，到时候怎么办？要是这个系统能用69年，我相信这个系统早都重构了好多次了。</p>
+</li>
+<li><p>10bit:10bit用来记录机器ID，总共可以记录1024台机器，一般用前5位代表数据中心，后面5位是某个数据中心的机器ID</p>
+</li>
+<li><p>12bit:循环位，用来对同一个毫秒之内产生不同的ID，12位可以最多记录4095个，也就是在同一个机器同一毫秒最多记录4095个，多余的需要进行等待下毫秒。</p>
+</li>
+</ul>
+<p>上面四部分加起来是 64比特位 = 8字节 = Long 。（转换成字符串后长度最多19）。</p>
+<p>上面只是一个将64bit划分的标准，当然也不一定这么做，可以根据不同业务的具体场景来划分，比如下面给出一个业务场景：</p>
+<ul>
+<li><p>服务目前QPS10万，预计几年之内会发展到百万。</p>
+</li>
+<li><p>当前机器三地部署，上海，北京，深圳都有。</p>
+</li>
+<li><p>当前机器10台左右，预计未来会增加至百台。</p>
+</li>
+</ul>
+<p>这个时候我们根据上面的场景可以再次合理的划分62bit,QPS几年之内会发展到百万，那么每毫秒就是千级的请求，目前10台机器那么每台机器承担百级的请求，为了保证扩展，后面的循环位可以限制到1024，也就是2^10，那么循环位10位就足够了。</p>
+<p>机器三地部署我们可以用3bit总共8来表示机房位置，当前的机器10台，为了保证扩展到百台那么可以用7bit 128来表示，时间位依然是41bit,那么还剩下64-10-3-7-41-1 = 2bit,还剩下2bit可以用来进行扩展。</p>
+<p>这个算法单机每秒内理论上最多可以生成1000<code>*</code>(2^12)，也就是409.6万个ID</p>
+
+        <h4 id="代码实现">
+          <a href="#代码实现" class="heading-link"><i class="fas fa-link"></i></a><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h4>
+      <figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Twitter_Snowflake&lt;br&gt;</span></span><br><span class="line"><span class="comment"> * SnowFlake的结构如下(每部分用-分开):&lt;br&gt;</span></span><br><span class="line"><span class="comment"> * 0 - 0000000000 0000000000 0000000000 0000000000 0 - 00000 - 00000 - 000000000000 &lt;br&gt;</span></span><br><span class="line"><span class="comment"> * 1位标识，由于long基本类型在Java中是带符号的，最高位是符号位，正数是0，负数是1，所以id一般是正数，最高位是0&lt;br&gt;</span></span><br><span class="line"><span class="comment"> * 41位时间截(毫秒级)，注意，41位时间截不是存储当前时间的时间截，而是存储时间截的差值（当前时间截 - 开始时间截)</span></span><br><span class="line"><span class="comment"> * 得到的值），这里的的开始时间截，一般是我们的id生成器开始使用的时间，由我们程序来指定的（如下下面程序IdWorker类的startTime属性）。41位的时间截，可以使用69年，年T = (1L &lt;&lt; 41) / (1000L * 60 * 60 * 24 * 365) = 69&lt;br&gt;</span></span><br><span class="line"><span class="comment"> * 10位的数据机器位，可以部署在1024个节点，包括5位datacenterId和5位workerId&lt;br&gt;</span></span><br><span class="line"><span class="comment"> * 12位序列，毫秒内的计数，12位的计数顺序号支持每个节点每毫秒(同一机器，同一时间截)产生4096个ID序号&lt;br&gt;</span></span><br><span class="line"><span class="comment"> * 加起来刚好64位，为一个Long型。&lt;br&gt;</span></span><br><span class="line"><span class="comment"> * SnowFlake的优点是，整体上按照时间自增排序，并且整个分布式系统内不会产生ID碰撞(由数据中心ID和机器ID作区分)，并且效率较高，经测试，SnowFlake每秒能够产生26万ID左右。</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SnowflakeIdWorker</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ==============================Fields===========================================</span></span><br><span class="line">    <span class="comment">/** 开始时间截 (2015-01-01) */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">long</span> twepoch = <span class="number">1420041600000L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** 机器id所占的位数 */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">long</span> workerIdBits = <span class="number">5L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** 数据标识id所占的位数 */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">long</span> datacenterIdBits = <span class="number">5L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** 支持的最大机器id，结果是31 (这个移位算法可以很快的计算出几位二进制数所能表示的最大十进制数) */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">long</span> maxWorkerId = -<span class="number">1L</span> ^ (-<span class="number">1L</span> &lt;&lt; workerIdBits);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** 支持的最大数据标识id，结果是31 */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">long</span> maxDatacenterId = -<span class="number">1L</span> ^ (-<span class="number">1L</span> &lt;&lt; datacenterIdBits);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** 序列在id中占的位数 */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">long</span> sequenceBits = <span class="number">12L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** 机器ID向左移12位 */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">long</span> workerIdShift = sequenceBits;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** 数据标识id向左移17位(12+5) */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">long</span> datacenterIdShift = sequenceBits + workerIdBits;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** 时间截向左移22位(5+5+12) */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">long</span> timestampLeftShift = sequenceBits + workerIdBits + datacenterIdBits;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** 生成序列的掩码，这里为4095 (0b111111111111=0xfff=4095) */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">long</span> sequenceMask = -<span class="number">1L</span> ^ (-<span class="number">1L</span> &lt;&lt; sequenceBits);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** 工作机器ID(0~31) */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> workerId;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** 数据中心ID(0~31) */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> datacenterId;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** 毫秒内序列(0~4095) */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> sequence = <span class="number">0L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** 上次生成ID的时间截 */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> lastTimestamp = -<span class="number">1L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//==============================Constructors=====================================</span></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 构造函数</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> workerId 工作ID (0~31)</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> datacenterId 数据中心ID (0~31)</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">SnowflakeIdWorker</span><span class="params">(<span class="keyword">long</span> workerId, <span class="keyword">long</span> datacenterId)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (workerId &gt; maxWorkerId || workerId &lt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(String.format(<span class="string">&quot;worker Id can&#x27;t be greater than %d or less than 0&quot;</span>, maxWorkerId));</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (datacenterId &gt; maxDatacenterId || datacenterId &lt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(String.format(<span class="string">&quot;datacenter Id can&#x27;t be greater than %d or less than 0&quot;</span>, maxDatacenterId));</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">this</span>.workerId = workerId;</span><br><span class="line">        <span class="keyword">this</span>.datacenterId = datacenterId;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ==============================Methods==========================================</span></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 获得下一个ID (该方法是线程安全的)</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> SnowflakeId</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">long</span> <span class="title">nextId</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> timestamp = timeGen();</span><br><span class="line"></span><br><span class="line">        <span class="comment">//如果当前时间小于上一次ID生成的时间戳，说明系统时钟回退过这个时候应当抛出异常</span></span><br><span class="line">        <span class="keyword">if</span> (timestamp &lt; lastTimestamp) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(</span><br><span class="line">                    String.format(<span class="string">&quot;Clock moved backwards.  Refusing to generate id for %d milliseconds&quot;</span>, lastTimestamp - timestamp));</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//如果是同一时间生成的，则进行毫秒内序列</span></span><br><span class="line">        <span class="keyword">if</span> (lastTimestamp == timestamp) &#123;</span><br><span class="line">            sequence = (sequence + <span class="number">1</span>) &amp; sequenceMask;</span><br><span class="line">            <span class="comment">//毫秒内序列溢出</span></span><br><span class="line">            <span class="keyword">if</span> (sequence == <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="comment">//阻塞到下一个毫秒,获得新的时间戳</span></span><br><span class="line">                timestamp = tilNextMillis(lastTimestamp);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//时间戳改变，毫秒内序列重置</span></span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            sequence = <span class="number">0L</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//上次生成ID的时间截</span></span><br><span class="line">        lastTimestamp = timestamp;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//移位并通过或运算拼到一起组成64位的ID</span></span><br><span class="line">        <span class="keyword">return</span> ((timestamp - twepoch) &lt;&lt; timestampLeftShift) <span class="comment">//</span></span><br><span class="line">                | (datacenterId &lt;&lt; datacenterIdShift) <span class="comment">//</span></span><br><span class="line">                | (workerId &lt;&lt; workerIdShift) <span class="comment">//</span></span><br><span class="line">                | sequence;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 阻塞到下一个毫秒，直到获得新的时间戳</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> lastTimestamp 上次生成ID的时间截</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> 当前时间戳</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">long</span> <span class="title">tilNextMillis</span><span class="params">(<span class="keyword">long</span> lastTimestamp)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> timestamp = timeGen();</span><br><span class="line">        <span class="keyword">while</span> (timestamp &lt;= lastTimestamp) &#123;</span><br><span class="line">            timestamp = timeGen();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> timestamp;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 返回以毫秒为单位的当前时间</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> 当前时间(毫秒)</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">long</span> <span class="title">timeGen</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> System.currentTimeMillis();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//==============================Test=============================================</span></span><br><span class="line">    <span class="comment">/** 测试 */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SnowflakeIdWorker idWorker = <span class="keyword">new</span> SnowflakeIdWorker(<span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">1000</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">long</span> id = idWorker.nextId();</span><br><span class="line">            System.out.println(Long.toBinaryString(id));</span><br><span class="line">            System.out.println(id);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+        <h4 id="优点-3">
+          <a href="#优点-3" class="heading-link"><i class="fas fa-link"></i></a><a href="#优点-3" class="headerlink" title="优点"></a>优点</h4>
+      <ul>
+<li><p>性能较优，速度快；</p>
+</li>
+<li><p>无需第三方依赖，实现也很简单；</p>
+</li>
+<li><p>可以根据实际情况调整和拓展算法，方便灵活；</p>
+</li>
+</ul>
+
+        <h4 id="缺点-3">
+          <a href="#缺点-3" class="heading-link"><i class="fas fa-link"></i></a><a href="#缺点-3" class="headerlink" title="缺点"></a>缺点</h4>
+      <ul>
+<li>依赖机器时间，如果发生回拨会导致可能生成ID重复。业界使用一般是基于雪花算法进行拓展；</li>
+</ul>
+
+        <h3 id="适用场景-3">
+          <a href="#适用场景-3" class="heading-link"><i class="fas fa-link"></i></a><a href="#适用场景-3" class="headerlink" title="适用场景"></a>适用场景</h3>
+      <p>当我们需要无序不能被猜测的ID，并且需要一定高性能，且需要long型，那么就可以使用我们雪花算法。比如常见的订单ID，用雪花算法别人就发猜测你每天的订单量是多少。</p>
+
+        <h4 id="问题分析">
+          <a href="#问题分析" class="heading-link"><i class="fas fa-link"></i></a><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h4>
+      <p>1、为什么bit位置利用了63位？<br>因为long在java中占8字节，每字节8bit，一共64bit，其中有1个bit位是符号位不能用做生成ID，如果符号位也用来做ID中的1个bit为会导致ID出现负数，影响趋势递增特性。</p>
+<p>2、雪花算法需要用单例方式生成ID<br>　　因为雪花算法会依赖上一次生成的ID的时间来判断是否需要对序列号进行增加的操作，如果不是单例，两个业务用两个对象同时获取ID，则可能会生成相同的ID</p>
+<p>3、机器位怎么取值？</p>
+<ul>
+<li><p>主机唯一标识<br> 如果线上机器有唯一标识，可以采用这种方式。我们公司运维平台提供了每台机器的唯一标识，不过提供的数值比较大，所以更改了机器位长度为22位。当当的sharding-jdbc也有类似的方法。例如，机器的 HostName 为: dangdang-db-sharding-dev-01(公司名-部门名-服务名-环境名-编号)，会截取 HostName 最后的编号 01 作为机器位。</p>
+</li>
+<li><p>可根据ip进行计算<br>　如果能保证不同机房的机器ip不重复，可以利用ip来计算机器位，IP最大 255.255.255.255。而（255+255+255+255) &lt; 1024，因此采用IP段数值相加即可生成机器位，不受IP位限制。不过这种方式也不是绝对ok，要根据自身情况在选择，比如10.0.5.2 与 10.0.2.5 计算出来也是相同的。使用这种IP生成机器位的方法,必须保证IP段相加不能重复</p>
+</li>
+</ul>
+
+        <h4 id="时钟回拨问题">
+          <a href="#时钟回拨问题" class="heading-link"><i class="fas fa-link"></i></a><a href="#时钟回拨问题" class="headerlink" title="时钟回拨问题"></a>时钟回拨问题</h4>
+      <p>原因：<br>第一：人为操作，在真实环境一般不会有那个傻逼干这种事情，所以基本可以排除。<br>第二：由于有些业务等需要，机器需要同步时间服务器（在这个过程中可能会存在时间回拨，查了下我们服务器一般在10ms以内（2小时同步一次））。</p>
+<p>解决：<br>雪花算法是强依赖我们的时间的，如果时间发生回拨，有可能会生成重复的ID，在我们上面的nextId中我们用当前时间和上一次的时间进行判断，如果当前时间小于上一次的时间那么肯定是发生了回拨，普通的算法会直接抛出异常,这里我们可以对其进行优化,一般分为两个情况:</p>
+<ul>
+<li><p>如果时间回拨时间较短，比如配置5ms以内，那么可以直接等待一定的时间，让机器的时间追上来。</p>
+</li>
+<li><p>如果时间的回拨时间较长，我们不能接受这么长的阻塞等待，那么又有两个策略:</p>
+</li>
+</ul>
+<p>1、直接拒绝，抛出异常，打日志，通知RD时钟回滚。</p>
+<p>2、利用扩展位，上面我们讨论过不同业务场景位数可能用不到那么多，那么我们可以把扩展位数利用起来了，比如当这个时间回拨比较长的时候，我们可以不需要等待，直接在扩展位加1。2位的扩展位允许我们有3次大的时钟回拨，一般来说就够了，如果其超过三次我们还是选择抛出异常，打日志。</p>
+<p>另外一种解决方案：<br>由于是分布在各各机器自己上面，如果要几台集中的机器（并且不做时间同步），那么就基本上就不存在回拨可能性了（曲线救国也是救国，哈哈），但是也的确带来了新问题，各各结点需要访问集中机器，要保证性能，百度的uid-generator产生就是基于这种情况做的（每次取一批回来，很好的思想，性能也非常不错）<span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://github.com/baidu/uid-generator%E3%80%82">https://github.com/baidu/uid-generator。</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>通过上面的几种策略可以比较的防护我们的时钟回拨，防止出现回拨之后大量的异常出现。下面是修改之后的代码，这里修改了时钟回拨的逻辑:<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E6%97%B6%E9%92%9F%E5%9B%9E%E6%8B%A8.png">
+      </p>
+
+        <h4 id="ID逆运算">
+          <a href="#ID逆运算" class="heading-link"><i class="fas fa-link"></i></a><a href="#ID逆运算" class="headerlink" title="ID逆运算"></a>ID逆运算</h4>
+      <p>如果线上出现ID重复，如何进行问题定位？对ID进行逆运算拿到ID的时间位、机器位、序号位。就可以进行下一步分析了。以上述生成的4198401为例</p>
+<p>1、ID生成时间</p>
+<p>时间位 =  ID /
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="ID1.png">
+       + from</p>
+<p>时间位 = 4198401 / 
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="ID2.png">
+       + 1422720000000 = 1422720000001<br>与上述生成ID时用时间位相符</p>
+<p>注意:ID /
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="ID1.png">
+        是整数</p>
+<p>2、ID生成的机器</p>
+<p>机器位 = (ID / 
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="ID3.png">
+      ) % 
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="ID4.png">
+      </p>
+<p>机器位 = (4198401  / 
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="ID5.png">
+      ) % 
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="ID6.png">
+       = (1025) % 1024 = 1<br>与上述生成ID时用机器位数值相符</p>
+<p>3、序列号<br>ID % 
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="ID3.png">
+      </p>
+<p>序列号 = 4198401 % 
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="ID5.png">
+       = 4198401 % 1024 = 1<br>与上述生成ID时用的序列号数值相符</p>
+
+        <h3 id="各方案对比">
+          <a href="#各方案对比" class="heading-link"><i class="fas fa-link"></i></a><a href="#各方案对比" class="headerlink" title="各方案对比"></a>各方案对比</h3>
+      <p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E5%90%84%E6%96%B9%E6%A1%88%E5%AF%B9%E6%AF%94.png">
+      </p>
+
+        <h3 id="参考资料">
+          <a href="#参考资料" class="heading-link"><i class="fas fa-link"></i></a><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3>
+      <ul>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzAxNjM2MTk0Ng==&mid=2247484315&idx=1&sn=3a08d749aa77f4d97eac0f97e4080a2d&chksm=9bf4b32eac833a38968a839e801d1092dcbdf2e584efc3efc9ccfb76166b72ec0a1aca45f95e&scene=21#wechat_redirect">分布式ID常见解决方案</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/4rPm7_U3GG2SwYpLBgb8Gg">分布式、高并发ID生成策略</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/KfoLFClRwDXlcTDmhCEdaQ">如果再有人问你分布式ID，这篇文章丢给他</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/WijbBrH_VWNTnCyWrL0IbA">分布式唯一id：snowflake算法思考</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/FN_IEbhPg0Jnuexkb0qKsw">分布式ID生成方法-细聊雪花算法</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://blog.csdn.net/a724888/article/details/80784533">搞懂分布式技术12：分布式ID生成方案</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+</ul>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://focusss.github.io">cjwei</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://focusss.github.io/2019/03/29/%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E6%96%B9%E6%A1%88/">https://focusss.github.io/2019/03/29/%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E6%96%B9%E6%A1%88/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://focusss.github.io/tags/%E5%88%86%E5%B8%83%E5%BC%8F/">分布式</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2019/03/29/MySQL-%E4%B8%AD%E7%9A%84%E9%87%8D%E5%81%9A%E6%97%A5%E5%BF%97%EF%BC%8C%E5%9B%9E%E6%BB%9A%E6%97%A5%E5%BF%97-%EF%BC%8C%E4%BB%A5%E5%8F%8A%E4%BA%8C%E8%BF%9B%E5%88%B6%E6%97%A5%E5%BF%97%E7%9A%84%E7%AE%80%E5%8D%95%E6%80%BB%E7%BB%93/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">MySQL 中的重做日志，回滚日志 ，以及二进制日志的简单总结</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2019/03/29/Java%E4%B8%AD%E7%9A%84%E9%98%BB%E5%A1%9E%E9%98%9F%E5%88%97/"><span class="paginator-prev__text">Java中的阻塞队列</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E4%B8%AD%E6%88%91%E4%BB%AC%E5%AF%B9ID%E7%94%9F%E6%88%90%E5%99%A8%E8%A6%81%E6%B1%82%E5%8F%88%E6%9C%89%E5%93%AA%E4%BA%9B%E5%91%A2"><span class="toc-number">1.</span> <span class="toc-text">
+          分布式系统中我们对ID生成器要求又有哪些呢?</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#UUID-GUID%EF%BC%88%E9%80%9A%E7%94%A8%E5%94%AF%E4%B8%80%E8%AF%86%E5%88%AB%E7%A0%81%EF%BC%89"><span class="toc-number">2.</span> <span class="toc-text">
+          UUID&#x2F;GUID（通用唯一识别码）</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BC%98%E7%82%B9"><span class="toc-number">2.1.</span> <span class="toc-text">
+          优点</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BC%BA%E7%82%B9"><span class="toc-number">2.2.</span> <span class="toc-text">
+          缺点</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="toc-number">2.3.</span> <span class="toc-text">
+          适用场景</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%BB%E9%94%AE%E8%87%AA%E5%A2%9E"><span class="toc-number">3.</span> <span class="toc-text">
+          数据库主键自增</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BC%98%E7%82%B9-1"><span class="toc-number">3.1.</span> <span class="toc-text">
+          优点</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BC%BA%E7%82%B9-1"><span class="toc-number">3.2.</span> <span class="toc-text">
+          缺点</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF-1"><span class="toc-number">3.3.</span> <span class="toc-text">
+          适用场景</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BC%98%E5%8C%96%E6%96%B9%E6%A1%88"><span class="toc-number">3.4.</span> <span class="toc-text">
+          优化方案</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9F%BA%E4%BA%8ERedis%E8%87%AA%E5%A2%9E"><span class="toc-number">4.</span> <span class="toc-text">
+          基于Redis自增</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BC%98%E7%82%B9-2"><span class="toc-number">4.1.</span> <span class="toc-text">
+          优点</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BC%BA%E7%82%B9-2"><span class="toc-number">4.2.</span> <span class="toc-text">
+          缺点</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF-2"><span class="toc-number">4.3.</span> <span class="toc-text">
+          适用场景</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#ZooKeeper%E7%94%9F%E6%88%90ID"><span class="toc-number">5.</span> <span class="toc-text">
+          ZooKeeper生成ID</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%9F%BA%E4%BA%8EZooKeeper%E5%92%8C%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98%E7%9A%84%E6%96%B9%E6%A1%88"><span class="toc-number">5.1.</span> <span class="toc-text">
+          基于ZooKeeper和本地缓存的方案</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%A9%E7%94%A8zk%E7%9A%84%E6%B0%B8%E4%B9%85%E8%87%AA%E5%A2%9E%E8%8A%82%E7%82%B9%E7%AD%96%E7%95%A5%E5%AE%9E%E7%8E%B0%E6%8C%81%E7%BB%AD%E9%80%92%E5%A2%9EID"><span class="toc-number">5.2.</span> <span class="toc-text">
+          利用zk的永久自增节点策略实现持续递增ID</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%9B%AA%E8%8A%B1%E7%AE%97%E6%B3%95-Snowflake"><span class="toc-number">6.</span> <span class="toc-text">
+          雪花算法-Snowflake</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0"><span class="toc-number">6.1.</span> <span class="toc-text">
+          代码实现</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BC%98%E7%82%B9-3"><span class="toc-number">6.2.</span> <span class="toc-text">
+          优点</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BC%BA%E7%82%B9-3"><span class="toc-number">6.3.</span> <span class="toc-text">
+          缺点</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF-3"><span class="toc-number">7.</span> <span class="toc-text">
+          适用场景</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90"><span class="toc-number">7.1.</span> <span class="toc-text">
+          问题分析</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%97%B6%E9%92%9F%E5%9B%9E%E6%8B%A8%E9%97%AE%E9%A2%98"><span class="toc-number">7.2.</span> <span class="toc-text">
+          时钟回拨问题</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#ID%E9%80%86%E8%BF%90%E7%AE%97"><span class="toc-number">7.3.</span> <span class="toc-text">
+          ID逆运算</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%90%84%E6%96%B9%E6%A1%88%E5%AF%B9%E6%AF%94"><span class="toc-number">8.</span> <span class="toc-text">
+          各方案对比</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">9.</span> <span class="toc-text">
+          参考资料</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/images/headImg.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">平安大赚 财丁兴旺</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">69</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">19</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">25</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>cjwei</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.4.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lazyload@2.0.0-rc.2/lazyload.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>

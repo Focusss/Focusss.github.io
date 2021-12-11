@@ -1,0 +1,699 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="全称Garbage First-垃圾优先收集器，G1在回收垃圾的时候同时完成了堆的部分内存压缩，相对于CMS的优势而言就是内存碎片的产生率大大降低">
+<meta property="og:type" content="article">
+<meta property="og:title" content="JVM-G1垃圾收集器">
+<meta property="og:url" content="https://focusss.github.io/2018/09/19/JVM-G1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/index.html">
+<meta property="og:site_name" content="Focusss&#39;s Blog">
+<meta property="og:description" content="全称Garbage First-垃圾优先收集器，G1在回收垃圾的时候同时完成了堆的部分内存压缩，相对于CMS的优势而言就是内存碎片的产生率大大降低">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://focusss.github.io/2018/09/19/JVM-G1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/%E5%A0%86%E5%88%86%E5%B8%83%E5%9B%BE.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/19/JVM-G1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/RSet.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/19/JVM-G1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/card.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/19/JVM-G1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/InitialMarking.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/19/JVM-G1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/ConcurrentMarking.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/19/JVM-G1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/Remark.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/19/JVM-G1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/CopyingCleanup2.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/19/JVM-G1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/CopyingCleanup1.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/19/JVM-G1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/AfterCopyingCleanup1.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/19/JVM-G1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/AfterCopyingCleanup2.png">
+<meta property="article:published_time" content="2018-09-19T11:04:11.000Z">
+<meta property="article:modified_time" content="2021-12-11T17:04:27.177Z">
+<meta property="article:author" content="cjwei">
+<meta property="article:tag" content="JVM">
+<meta property="article:tag" content="G1">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://focusss.github.io/2018/09/19/JVM-G1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/%E5%A0%86%E5%88%86%E5%B8%83%E5%9B%BE.png"><title>JVM-G1垃圾收集器 | Focusss's Blog</title><link ref="canonical" href="https://focusss.github.io/2018/09/19/JVM-G1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"carbon","highlight":"light","wordWrap":true},
+  reward: false,
+  fancybox: true,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: true,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Focusss's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">JVM-G1垃圾收集器</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2018-09-19</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-12-12</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h2 id="简介">
+          <a href="#简介" class="heading-link"><i class="fas fa-link"></i></a><a href="#简介" class="headerlink" title="简介"></a>简介</h2>
+      
+        <h3 id="概念">
+          <a href="#概念" class="heading-link"><i class="fas fa-link"></i></a><a href="#概念" class="headerlink" title="概念"></a>概念</h3>
+      <p>&ensp;&ensp;&ensp;&ensp;全称<code>Garbage First</code>，垃圾优先收集器，是jdk1.9的默认垃圾收集器。G1的设计初衷是为用户提供<strong>大内存</strong>、<strong>低GC停顿时间</strong>的应用解决方案。G1会跟踪各个Region里面的垃圾堆积的价值大小(回收所获得的空间大小以及回收所需要的时间经验值)，在后台维护一个优先列表，每次根据允许的收集时间，优先回收价值最大的Region。</p>
+<p>&ensp;&ensp;&ensp;&ensp;<strong>G1的设计目标：</strong></p>
+<blockquote>
+<ul>
+<li>像CMS那样做到并发GC，提高GC并行和并发表现  </li>
+<li>没有内存碎片问题，内存整理过程不需要延长GC时间，不需要STW  </li>
+<li>可预测的GC停顿时间  </li>
+<li>更高的吞吐量  </li>
+<li>在不增加堆内存大小下更好地利用堆内存</li>
+<li>尽量缩短处理超大堆（6-8GB）时产生的停顿</li>
+</ul>
+</blockquote>
+<p>&ensp;&ensp;&ensp;&ensp;<strong>与CMS区别，G1优点包括：</strong></p>
+<blockquote>
+<ul>
+<li>G1是内存整理虚拟机，G1通过对堆内存划分区域（region）分区管理避免使用细粒度空闲列表来实现高效内存整理</li>
+<li>G1提供比CMS更加可预测的GC停顿时间，并允许用户设定停顿时间目标</li>
+</ul>
+</blockquote>
+<p>&ensp;&ensp;&ensp;&ensp;但是，G1为了垃圾收集产生的内存占用以及程序运行时的额外执行负载都比CMS要高。<br>&ensp;&ensp;&ensp;&ensp;在HotSpot垃圾收集器里，除G1以外，其他的垃圾收集器使用内置的JVM线程执行GC的多线程操作；而G1 GC可以采用用户线程承担后台运行的GC工作，即当JVM的GC线程处理速度慢时，系统会调用用户线程帮忙加速垃圾回收过程。</p>
+<p>&ensp;&ensp;&ensp;&ensp;<strong>推荐使用场景：</strong></p>
+<blockquote>
+<ul>
+<li>FullGC发生频繁或总时间过长</li>
+<li>对象分配率或对象升级至老年代的比例波动较大</li>
+<li>较长的垃圾收集或内存整理停顿（大于0.5至1秒）</li>
+</ul>
+</blockquote>
+<p>&ensp;&ensp;&ensp;&ensp;G1在回收的时候将对象从一个小堆区复制到另一个小堆区，这意味着G1在回收垃圾的时候同时完成了堆的部分内存压缩，相对于CMS的优势而言就是内存碎片的产生率大大降低。heap被划分为一系列<strong>大小相等</strong>的“小堆区”，也称为<strong>region</strong>。每个小堆区region的大小为<strong>1-32MB</strong>，数值必须是<strong>2的幂</strong>，所以Region的大小只能是1M、2M、4M、8M、16M或32M。整个堆默认划分为2048个小堆区，比如堆内存为16g，G1就会采用16G / 2048 = 8M 的Region。  </p>
+<p>&ensp;&ensp;&ensp;&ensp;G1在逻辑上同样会将堆划分出<strong>Eden、Survivor和Old</strong>，只是<strong>Eden、Survivor和Old</strong>空间对应的小堆区的<strong>个数不是固定的，各代小堆区存储地址是不连续的</strong>。此外heap堆还存在着一些未被使用的空间，这些空间同样也会被进行划分。<strong>Eden、Survivor和Old</strong>空间大小不再是固定的，每个代分区的数量是可以动态调整的。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E5%A0%86%E5%88%86%E5%B8%83%E5%9B%BE.png" alt="堆分布图">
+      <br>图中的H代表Humongous，这表示这些Region存储的是巨大对象（humongous object，H-obj）。  </p>
+
+        <h3 id="大对象分配">
+          <a href="#大对象分配" class="heading-link"><i class="fas fa-link"></i></a><a href="#大对象分配" class="headerlink" title="大对象分配"></a>大对象分配</h3>
+      <p>&ensp;&ensp;&ensp;&ensp;如果一个对象占用的空间超过了分区容量50%以上，G1收集器就认为这是一个巨型对象。为此，G1划分了一个Humongous区，它用来专门存放巨型对象。如果一个H区装不下一个巨型对象，那么G1会寻找连续的H分区来存储。为了能找到连续的H区，有时候不得不启动Full GC。</p>
+<blockquote>
+<ul>
+<li>对象的大小&lt;0.5个RegionSize直接存在新生代Eden Region区</li>
+<li>对象的大小&gt;=0.5个RegionSize且对象的大小&lt;1个RegionSize,存到大对象区Humongous Region</li>
+<li>对象的大小&gt;=1个RegionSize存到连续的大对象区Humongous Region</li>
+</ul>
+</blockquote>
+
+        <h3 id="数据结构">
+          <a href="#数据结构" class="heading-link"><i class="fas fa-link"></i></a><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h3>
+      <p>&ensp;&ensp;&ensp;&ensp;G1垃圾收集器占用内存会比CMS大，增大的部分主要与<em>accouting</em>数据结构有关，如<code>Remembered Set(RSet)</code>、<code>Card Table</code>和<code>Collection Set(CSet)</code>。</p>
+<p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="RSet.png" alt="RSet">
+      </p>
+
+        <h4 id="RSet">
+          <a href="#RSet" class="heading-link"><i class="fas fa-link"></i></a><a href="#RSet" class="headerlink" title="RSet"></a>RSet</h4>
+      <p>&ensp;&ensp;&ensp;&ensp;<strong>Remembered Set</strong>： 每个Region都包含一个RSet，RSet记录的是其他Region中的对象引用本Region对象的关系，用来记录<strong>不同代之间的引用关系</strong>，主要是老年代到新生代之间的引用的一个集合，至于新生代之间的引用记录会在每次GC时被扫描，所以不用记录新生代到新生代之间的引用。每个Region对应一个RSet，RSet对整体内存占用的影响少于5%。<strong>RSet是一个空间换时间的数据结构，有了RSet可以避免对整个堆进行扫描</strong>。</p>
+<p>&ensp;&ensp;&ensp;&ensp;在CMS中，也有RSet的概念，在老年代中有一块区域用来记录指向新生代的引用，即我引用了谁的对象。这是一种point-out，在进行Young GC时，扫描根时，仅仅需要扫描这一块区域，而不需要扫描整个老年代。<br>&ensp;&ensp;&ensp;&ensp;但在G1中，并没有使用point-out，这是由于一个Region太小，Region数量太多，如果是用point-out的话，会造成大量的扫描浪费，有些根本不需要GC的Region引用也扫描了。于是G1中使用point-in来解决。point-in的意思是哪些Region引用了当前Region中的对象。这样，仅仅<strong>将这些对象当做根来扫描就避免了无效的扫描</strong>。</p>
+<p>&ensp;&ensp;&ensp;&ensp;比如a=b（a引用b），若采用point out结构，则在a的RSet中记录b的地址；若采用point in结构，则在b的RSet中记录a的地址。G1的RSet采用的是point in结构，即谁引用了我；Card Table采用的是point out结构。</p>
+<p>&ensp;&ensp;&ensp;&ensp;RSet其实是一个 hash table，key是别的Region的起始地址，value是一个集合，里面的元素是 card table的 Index。举例来说，如果region A的Rset里有一项的key是 region B，value里有 index为1234的card，它的意思就是 region B的一个card里有引用指向region A。所以对 region A来说该RSet记录的是 points-in的关系，而 card table仍然记录了 points-out的关系。</p>
+<p>&ensp;&ensp;&ensp;&ensp;由于新生代有多个，那么我们需要在新生代之间记录引用吗？这是不必要的，原因在于每次GC时，所有新生代都会被扫描，所以只需要记录<strong>老年代到新生代之间的引用</strong>即可。</p>
+
+        <h5 id="GC为什么需要记录跨代的引用">
+          <a href="#GC为什么需要记录跨代的引用" class="heading-link"><i class="fas fa-link"></i></a><a href="#GC为什么需要记录跨代的引用" class="headerlink" title="GC为什么需要记录跨代的引用"></a>GC为什么需要记录跨代的引用</h5>
+      <p>&ensp;&ensp;&ensp;&ensp;Young GC只会回收年轻代，Old GC只会回收老年代，无论是哪一种GC都会面临跨代引用的情况，比如老年代对象引用新生代或者新生代对象引用老年代。<br>&ensp;&ensp;&ensp;&ensp;Young GC在回收年轻代时，需要判断年轻代的对象是否存活，而年轻代的部分对象可能被老年代的对象引用，因此必须扫描老年代才不会发生误判年轻代的对象为垃圾；同理，在回收老年代时，也需要扫描年轻代。<br>&ensp;&ensp;&ensp;&ensp;那么无论是只回收新生代还是老年代，都需要扫描其他代的对象，相当于进行全堆扫描，效率很低。那么将代际之间的引用关系记录在一个单独的地方，只需要扫描这个地方即可，避免全堆扫描。  </p>
+
+        <h5 id="RSet带来的问题">
+          <a href="#RSet带来的问题" class="heading-link"><i class="fas fa-link"></i></a><a href="#RSet带来的问题" class="headerlink" title="RSet带来的问题"></a>RSet带来的问题</h5>
+      <blockquote>
+<ul>
+<li>RSet需要额外的内存空间来存储这些引用关系，一般是JVM最大的额外开销的1%-20%之间；</li>
+<li>RSet中的对象可能已经死亡，那么这个时候引用的对象会被认为活跃对象，实际上它是浮动垃圾；</li>
+<li>RSet是通过写屏障来完成的，即在内存分配的地方，插入一段代码来执行RSet的更新，如果对象的创建/修改/回收比较频繁，那么写RSet的性能开销还是比较大的。因此一般不会记录年轻代到老年代的引用。</li>
+</ul>
+</blockquote>
+
+        <h5 id="G1-RSet记录">
+          <a href="#G1-RSet记录" class="heading-link"><i class="fas fa-link"></i></a><a href="#G1-RSet记录" class="headerlink" title="G1-RSet记录"></a>G1-RSet记录</h5>
+      <p>主要分析哪些引用的关系需要记录在RSet中；</p>
+<blockquote>
+<ul>
+<li>分区内部的引用</li>
+</ul>
+</blockquote>
+<p>无论是新生代还是老年代的分区内部的引用，都不需要记录引用关系。因为是针对一个分区进行的垃圾回收，要么这个分区被回收，要么不被回收。</p>
+<blockquote>
+<ul>
+<li>新生代引用新生代</li>
+</ul>
+</blockquote>
+<p>G1的三种回收算法（YGC/MIXED GC/FULL GC）都会全量处理新生代分区，所以新生代都会被遍历到。因此无需记录这种引用关系。</p>
+<blockquote>
+<ul>
+<li>新生代引用老年代</li>
+</ul>
+</blockquote>
+<p>无需记录。G1的YGC回收新生代，无需这个引用关系。<br><strong>混合GC时，G1会采用新生代分区作为根</strong>，那么在遍历新生代分区时就能找到老年代分区了，无需这个引用关系。<br>FGC时，所有分区都会被处理，也无需这个引用关系。</p>
+<blockquote>
+<ul>
+<li>老年代引用新生代</li>
+</ul>
+</blockquote>
+<p><strong>需要记录</strong>。YGC在回收新生代时，如果新生代的对象被老年代引用，那么需要标记为存活对象。即此时的根对象有两种，一个是栈空间/全局变量的引用，一个是老年代到新生代的引用。</p>
+<blockquote>
+<ul>
+<li>老年代引用老年代</li>
+</ul>
+</blockquote>
+<p><strong>需要记录</strong>。混合GC时，只会回收部分老年代，被回收的老年代需要正确的标记哪些对象存活。</p>
+
+        <h5 id="RSet的更新">
+          <a href="#RSet的更新" class="heading-link"><i class="fas fa-link"></i></a><a href="#RSet的更新" class="headerlink" title="RSet的更新"></a>RSet的更新</h5>
+      <p>G1中采用post-write barrier和concurrent refinement threads实现了RSet的更新。</p>
+<p>G1的RSet的更新是通过写屏障完成的，在写变更时，通过插入一条额外的代码把引用关系放入到DCQ（dirty card queue）队列中，随后refinement线程取出DCQ队列的引用关系，更新RSet。比如，每一次将一个老年代对象的引用修改为指向新生代对象时，都会被写屏障捕获，并且记录下来。</p>
+<p>对于一个写屏障来时，过滤掉不必要的写操作是十分必要的，G1进行以下过滤：</p>
+<blockquote>
+<ul>
+<li>不记录新生代到新生代的引用 或者 新生代到老年代的引用</li>
+<li>过滤一个分区内部的引用</li>
+<li>过滤空引用</li>
+</ul>
+</blockquote>
+
+        <h5 id="RSet的问题">
+          <a href="#RSet的问题" class="heading-link"><i class="fas fa-link"></i></a><a href="#RSet的问题" class="headerlink" title="RSet的问题"></a>RSet的问题</h5>
+      <p>我们得知应用线程只负责把更新字段所在的Card插入到dirty card queue中，然后由后台线程refinement threads负责RSet的更新操作，如果应用线程插入速度过快，refinement threads来不及处理，那么应用线程将接管RSet更新的任务，这是必须要避免的。<br>refinement threads线程数量可以通过<code>-XX:G1ConcRefinementThreads</code>或<code>-XX:ParallelGCThreads</code>参数设置</p>
+
+        <h4 id="Card-Table">
+          <a href="#Card-Table" class="heading-link"><i class="fas fa-link"></i></a><a href="#Card-Table" class="headerlink" title="Card Table"></a>Card Table</h4>
+      <p><strong>Card Table</strong>：Card Table（全局卡表）是一个位图，全局只有一个，每个Region又被分成了若干个大小为512字节的Card，这些Card都会记录在全局卡表中。<br>Card中的每个元素对应着其标识的内存区域中一块特定大小的内存块，这个内存块被称为卡页。一个卡页的内存中通常不止一个对象，只有要卡页中有一个及以上对象的字段存在着<strong>跨Region引用（老年代之间跨Region、老年代到年轻代之间跨Region）</strong>，这个对应的元素的值就标识为1。</p>
+<p>比如G1默认的Region有2048个，默认每个Region为2M，那每个Region对应的Card的每个元素对应的卡页的大小为2M / 512=4K，即这4K内存中只要有一个或一个以上的对象存在着跨Region对年轻代的引用，这个卡页对应的Card的元素值为1。</p>
+<p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="card.png" alt="card">
+      </p>
+<p>在Young GC时，只需要将脏的Region中的那个卡页加入GC Roots一并扫描即可。比起扫描老年代的所有对象，。<br>在做YGC的时候，只需要选定young generation region的RSet作为根集，这些RSet记录了old-&gt;young的跨代引用，避免了扫描整个old generation，大大减少了扫描的数据量，提升了效率。 而mixed gc的时候，old generation中记录了old-&gt;old的RSet，young-&gt;old的引用由扫描全部young generation region得到，这样也不用扫描全部old generation region。所以RSet的引入大大减少了GC的工作量。</p>
+<p><strong>Collection Set</strong>：CSet记录在一次GC中将被回收的区域集合。所有CSet区域中的存活对象都会被移动到新的区域中，这些区域可以是<strong>Eden、Survivor和Old代的，并且可以同时包含这几代分区的内容</strong>。CSet对JVM内存占用影响少于1%。</p>
+
+        <h3 id="停顿预测模型">
+          <a href="#停顿预测模型" class="heading-link"><i class="fas fa-link"></i></a><a href="#停顿预测模型" class="headerlink" title="停顿预测模型"></a>停顿预测模型</h3>
+      <p>&ensp;&ensp;&ensp;&ensp;G1不是实时垃圾收集器，它会尽量让停顿时间低于用户设置的停顿时间目标但不能保证一定如此。G1根据历史垃圾收集监测数据来预测每个区域的回收时间，然后根据用户设定的目标停顿时间决定每次GC时可以回收哪些区域。G1通过这种方式建立比较精确的区域回收时间预测模型。</p>
+
+        <h2 id="G1的两种GC模式">
+          <a href="#G1的两种GC模式" class="heading-link"><i class="fas fa-link"></i></a><a href="#G1的两种GC模式" class="headerlink" title="G1的两种GC模式"></a>G1的两种GC模式</h2>
+      <p>&ensp;&ensp;&ensp;&ensp;G1提供了两种GC模式：<strong>Young GC</strong>和<strong>Mixed GC</strong>，两种都是<strong>完全Stop The World</strong>的。无论是Young GC还是Mixed GC都是<strong>并发拷贝</strong>的。  </p>
+<ul>
+<li><strong>Young GC</strong>：选定所有年轻代里的Region。通过控制年轻代的region个数，即年轻代内存大小，来控制young GC的时间开销。</li>
+<li><strong>Mixed GC</strong>：选定所有年轻代里的Region，外加根据global concurrent marking统计得出收集收益高的若干老年代Region。在用户指定的开销目标范围内尽可能选择收益高的老年代Region。<br>Mixed GC不是full GC，它只能回收部分老年代的Region，如果mixed GC实在无法跟上程序分配内存的速度，导致老年代填满，无法继续进行Mixed GC，就会使用full GC来收集整个GC heap。</li>
+</ul>
+<p>&ensp;&ensp;&ensp;&ensp;G1的整体运行过程：会在Young GC和Mixed GC之间不断的切换运行，同时定期的做全局并发标记，在实在赶不上回收速度的情况下使用Full GC(Serial GC)。初始标记是搭在YoungGC上执行的，在进行全局并发标记的时候不会做Mix GC，在做Mixed GC的时候也不会启动初始标记阶段。当MixGC赶不上对象产生的速度的时候就退化成Full GC。</p>
+
+        <h3 id="Young-GC-模式">
+          <a href="#Young-GC-模式" class="heading-link"><i class="fas fa-link"></i></a><a href="#Young-GC-模式" class="headerlink" title="Young GC 模式"></a>Young GC 模式</h3>
+      <p>Young GC也可以被称为Minor GC。Young GC并不代表年轻代内存不足，它事实上只表示在Eden区上的GC，  </p>
+<p><strong>特性：</strong> </p>
+<blockquote>
+<ul>
+<li>会发生Stop The World事件</li>
+<li>GC线程可以并发执行</li>
+</ul>
+</blockquote>
+<p><strong>过程：</strong>  </p>
+<p>![young gc](young gc.png)</p>
+<p>&ensp;&ensp;&ensp;&ensp;Eden空间存活的对象会被复制移动到另外一个或是多个Survivor小堆区，如果Survivor空间不够，Eden空间的部分对象会直接晋升到老年代空间。Survivor区的对象移动到新的Survivor区中，也有部分对象(达到年龄=15)晋升到老年代空间中。上述的整个过程会发生STW事件（<em>在STW过程会同时计算出Eden的大小和Survivor的大小，为下一次Young GC做准备。Accounting信息会被保存用于计算大小</em>），最终Eden空间的数据会被清空，GC停止工作，应用线程继续执行。  </p>
+<p><strong>总结：</strong></p>
+<blockquote>
+<ul>
+<li>堆内存是一个单独的内存区域，被分为多个大小相同的区域</li>
+<li>新生代内存由一系列不连续的区域组成，按需调整内存大小很简单</li>
+<li>新生代垃圾回收（Young GC）需要STW，所有应用线程需要停顿</li>
+<li>Young GC多线程并行执行</li>
+<li>存活对象复制到新的survivor区或老年代区</li>
+<li>可以回收年轻代也可以是老年代区域</li>
+</ul>
+</blockquote>
+
+        <h3 id="Mixed-GC-模式">
+          <a href="#Mixed-GC-模式" class="heading-link"><i class="fas fa-link"></i></a><a href="#Mixed-GC-模式" class="headerlink" title="Mixed GC 模式"></a>Mixed GC 模式</h3>
+      
+        <h4 id="初始标记阶段（Initial-Marking-Phase）">
+          <a href="#初始标记阶段（Initial-Marking-Phase）" class="heading-link"><i class="fas fa-link"></i></a><a href="#初始标记阶段（Initial-Marking-Phase）" class="headerlink" title="初始标记阶段（Initial Marking Phase）"></a>初始标记阶段（Initial Marking Phase）</h4>
+      <p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="InitialMarking.png" alt="Initial Marking">
+      </p>
+<p>&ensp;&ensp;&ensp;&ensp;新生代垃圾收集捎带着一次存活对象的初始标记。在GC日志中打印为<code>GCpause(young)(inital-mark)</code>。<br>这个过程会发生STW事件。  </p>
+
+        <h4 id="并发标记阶段（Concurrent-Marking-Phase）">
+          <a href="#并发标记阶段（Concurrent-Marking-Phase）" class="heading-link"><i class="fas fa-link"></i></a><a href="#并发标记阶段（Concurrent-Marking-Phase）" class="headerlink" title="并发标记阶段（Concurrent Marking Phase）"></a>并发标记阶段（Concurrent Marking Phase）</h4>
+      <p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="ConcurrentMarking.png" alt="Concurrent Marking">
+      </p>
+<p>&ensp;&ensp;&ensp;&ensp;本阶段会与应用程序并发地查找存活的对象，如果找到了空的小堆区（图中标记为红叉的），他们会在<em>重新标记阶段</em>被马上清除。同时，计算各区域活跃度（回收优先级）的所需的信息在这个阶段统计。在标记过程中，应用程序也在运行，那么对象的指针就有可能改变。这样的话，我们就会遇到一个问题：对象丢失问题。</p>
+
+        <h4 id="重新标记阶段（Remark-Phase）">
+          <a href="#重新标记阶段（Remark-Phase）" class="heading-link"><i class="fas fa-link"></i></a><a href="#重新标记阶段（Remark-Phase）" class="headerlink" title="重新标记阶段（Remark Phase）"></a>重新标记阶段（Remark Phase）</h4>
+      <p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="Remark.png" alt="Remark">
+      </p>
+<p>&ensp;&ensp;&ensp;&ensp;这一阶段空区域被回收，计算出所有区域活跃度。它会短暂地停止应用线程(<strong>STW</strong>)，停止并发更新日志的写入，处理其中的少量信息，并标记所有在并发标记开始时未被标记的存活对象。这一阶段也执行某些额外的清理，如引用处理或者类卸载。</p>
+
+        <h4 id="复制-清除阶段（Copying-Cleanup-Phase）">
+          <a href="#复制-清除阶段（Copying-Cleanup-Phase）" class="heading-link"><i class="fas fa-link"></i></a><a href="#复制-清除阶段（Copying-Cleanup-Phase）" class="headerlink" title="复制/清除阶段（Copying/Cleanup Phase）"></a>复制/清除阶段（Copying/Cleanup Phase）</h4>
+      <p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="CopyingCleanup2.png" alt="CopyingCleanup">
+      </p>
+<p> &ensp;&ensp;&ensp;&ensp;<strong>清除阶段</strong>  </p>
+<blockquote>
+<ul>
+<li>执行存活对象的accounting和完全释放空的小堆区（<strong>STW</strong>）</li>
+<li>擦除RSets（<strong>STW</strong>）</li>
+<li>重置空的小堆区并将他们归还给free list，也就是空闲表（Concurrent）  </li>
+</ul>
+</blockquote>
+<p> &ensp;&ensp;&ensp;&ensp;<strong>复制阶段</strong>  </p>
+<blockquote>
+<ul>
+<li>本阶段在复制移动存活对象到新的未被使用的区域时，会有<strong>STW停顿</strong>。停顿时间的控制，是通过选择CSet的数量来达到控制时间长短的目标。在新生代小堆区完成时会被记录为 <code>[GC pause (young)]</code>，如果在新生代和老年代的小堆区一起执行时会被记录为<code>[GC Pause (mixed)]</code></li>
+</ul>
+</blockquote>
+<p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="CopyingCleanup1.png" alt="CopyingCleanup">
+        </p>
+<p>&ensp;&ensp;&ensp;&ensp;G1会优先选择活跃度最低的小堆区，因为这些区域会被最快地的回收。还有新生代和老年代都会在本阶段被回收。</p>
+
+        <h4 id="复制-清除阶段后期（After-Copying-Cleanup-Phase）">
+          <a href="#复制-清除阶段后期（After-Copying-Cleanup-Phase）" class="heading-link"><i class="fas fa-link"></i></a><a href="#复制-清除阶段后期（After-Copying-Cleanup-Phase）" class="headerlink" title="复制/清除阶段后期（After Copying/Cleanup Phase）"></a>复制/清除阶段后期（After Copying/Cleanup Phase）</h4>
+      <p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="AfterCopyingCleanup1.png" alt="After CopyingCleanup">
+      </p>
+<p>&ensp;&ensp;&ensp;&ensp;被选中区域的存活对象移动到新的区域中，原区域被回收加入空白列表。</p>
+<p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="AfterCopyingCleanup2.png" alt="After CopyingCleanup">
+      </p>
+
+        <h4 id="总结（Old-GC）">
+          <a href="#总结（Old-GC）" class="heading-link"><i class="fas fa-link"></i></a><a href="#总结（Old-GC）" class="headerlink" title="总结（Old GC）"></a>总结（Old GC）</h4>
+      <p>&ensp;&ensp;&ensp;&ensp;<strong>并发标记阶段</strong>  </p>
+<blockquote>
+<ul>
+<li>在应用程序运行时并发地计算活跃度信息</li>
+<li>活跃度信息甄别出哪个小堆区是在撤离暂停时最适合回收的  </li>
+</ul>
+</blockquote>
+<p>&ensp;&ensp;&ensp;&ensp;<strong>重新标记阶段</strong>  </p>
+<blockquote>
+<ul>
+<li>使用Snapshot-at-the-Beginning (SATB) 算法，这个算法比CMS所使用的要快得多</li>
+<li>回收空的小堆区  </li>
+</ul>
+</blockquote>
+<p>&ensp;&ensp;&ensp;&ensp;<strong>复制/清除阶段</strong>  </p>
+<blockquote>
+<ul>
+<li>新生代和老年代同时被回收</li>
+<li>老年代的小堆区会根据活跃度而进行部分的选定，确定回收优先级</li>
+</ul>
+</blockquote>
+
+        <h2 id="使用方式">
+          <a href="#使用方式" class="heading-link"><i class="fas fa-link"></i></a><a href="#使用方式" class="headerlink" title="使用方式"></a>使用方式</h2>
+      <ul>
+<li><p><code>-XX:+UseG1GC</code> 启用G1垃圾收集器</p>
+</li>
+<li><p><code>-XX:G1HeapRegionSize=n</code>参数可以设置Region的大小  </p>
+</li>
+<li><p><code>-XX:MaxGCPauseMillis=n</code>参数设置用户期待的应用程序暂停时间。暂停时间设置的太短，就会导致出现G1跟不上垃圾产生的速度，最终导致Full GC。一般情况下这个值设置到100-200，单位是ms。  </p>
+</li>
+<li><p><code>-XX:InitiatingHeapOccupancyPercent=45</code> 设置触发标记周期的 Java 堆占用率阈值。默认占用率是整个 Java 堆的 45%，达到这个阈值就会进行mixed gc</p>
+</li>
+<li><p><code>-XX:ParallelGCThreads=n</code>设置 STW 工作线程数的值。将n的值设置为逻辑处理器的数量。<strong>n 的值与逻辑处理器的数量相同，最多为 8</strong>。如果逻辑处理器不止8个，则将 n 的值设置为逻辑处理器数的 5/8 左右</p>
+</li>
+<li><p><code>-XX:ConcGCThreads=n</code>设置并行标记的线程数。将n设置为并行垃圾回收线程数(ParallelGCThreads) 的 1/4 左右。适当提高线程数，可尽可能避免转移失败。</p>
+</li>
+<li><p><code>-XX:G1ReservePercent=n</code>为堆内存设置虚拟使用上限，预留一部分空间防止to-space情况出现，以降低失败的可能性，默认值是 10。</p>
+</li>
+</ul>
+<p>开发人员仅仅需要声明以下参数即可：</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-XX:+UseG1GC -Xmx32g -XX:MaxGCPauseMillis=<span class="number">200</span></span><br></pre></td></tr></table></div></figure>
+<p><strong>NOTE：</strong>避免使用<code>-Xmn</code>选项或<code>-XX:NewRatio</code>等其他相关选项显式设置年轻代大小。固定年轻代的大小会覆盖暂停时间目标。</p>
+
+        <h3 id="参考资料">
+          <a href="#参考资料" class="heading-link"><i class="fas fa-link"></i></a><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3>
+      <ul>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000038430433">总结G1垃圾收集器面试题</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://blog.csdn.net/stone_yw/article/details/105982148">G1的RSet解读</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://www.jianshu.com/p/870abddaba41">G1垃圾收集器之RSet</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+</ul>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://focusss.github.io">cjwei</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://focusss.github.io/2018/09/19/JVM-G1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/">https://focusss.github.io/2018/09/19/JVM-G1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://focusss.github.io/tags/JVM/">JVM</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://focusss.github.io/tags/G1/">G1</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2018/09/19/JVM-G1%E5%92%8CCMS%E7%9A%84%E5%8C%BA%E5%88%AB/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">JVM-G1和CMS的区别</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2018/09/18/JVM-CMS%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/"><span class="paginator-prev__text">JVM-CMS垃圾收集器</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AE%80%E4%BB%8B"><span class="toc-number">1.</span> <span class="toc-text">
+          简介</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%A6%82%E5%BF%B5"><span class="toc-number">1.1.</span> <span class="toc-text">
+          概念</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A4%A7%E5%AF%B9%E8%B1%A1%E5%88%86%E9%85%8D"><span class="toc-number">1.2.</span> <span class="toc-text">
+          大对象分配</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="toc-number">1.3.</span> <span class="toc-text">
+          数据结构</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#RSet"><span class="toc-number">1.3.1.</span> <span class="toc-text">
+          RSet</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#GC%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E8%AE%B0%E5%BD%95%E8%B7%A8%E4%BB%A3%E7%9A%84%E5%BC%95%E7%94%A8"><span class="toc-number">1.3.1.1.</span> <span class="toc-text">
+          GC为什么需要记录跨代的引用</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#RSet%E5%B8%A6%E6%9D%A5%E7%9A%84%E9%97%AE%E9%A2%98"><span class="toc-number">1.3.1.2.</span> <span class="toc-text">
+          RSet带来的问题</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#G1-RSet%E8%AE%B0%E5%BD%95"><span class="toc-number">1.3.1.3.</span> <span class="toc-text">
+          G1-RSet记录</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#RSet%E7%9A%84%E6%9B%B4%E6%96%B0"><span class="toc-number">1.3.1.4.</span> <span class="toc-text">
+          RSet的更新</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#RSet%E7%9A%84%E9%97%AE%E9%A2%98"><span class="toc-number">1.3.1.5.</span> <span class="toc-text">
+          RSet的问题</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Card-Table"><span class="toc-number">1.3.2.</span> <span class="toc-text">
+          Card Table</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%81%9C%E9%A1%BF%E9%A2%84%E6%B5%8B%E6%A8%A1%E5%9E%8B"><span class="toc-number">1.4.</span> <span class="toc-text">
+          停顿预测模型</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#G1%E7%9A%84%E4%B8%A4%E7%A7%8DGC%E6%A8%A1%E5%BC%8F"><span class="toc-number">2.</span> <span class="toc-text">
+          G1的两种GC模式</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Young-GC-%E6%A8%A1%E5%BC%8F"><span class="toc-number">2.1.</span> <span class="toc-text">
+          Young GC 模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Mixed-GC-%E6%A8%A1%E5%BC%8F"><span class="toc-number">2.2.</span> <span class="toc-text">
+          Mixed GC 模式</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%9D%E5%A7%8B%E6%A0%87%E8%AE%B0%E9%98%B6%E6%AE%B5%EF%BC%88Initial-Marking-Phase%EF%BC%89"><span class="toc-number">2.2.1.</span> <span class="toc-text">
+          初始标记阶段（Initial Marking Phase）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%B9%B6%E5%8F%91%E6%A0%87%E8%AE%B0%E9%98%B6%E6%AE%B5%EF%BC%88Concurrent-Marking-Phase%EF%BC%89"><span class="toc-number">2.2.2.</span> <span class="toc-text">
+          并发标记阶段（Concurrent Marking Phase）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%87%8D%E6%96%B0%E6%A0%87%E8%AE%B0%E9%98%B6%E6%AE%B5%EF%BC%88Remark-Phase%EF%BC%89"><span class="toc-number">2.2.3.</span> <span class="toc-text">
+          重新标记阶段（Remark Phase）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%A4%8D%E5%88%B6-%E6%B8%85%E9%99%A4%E9%98%B6%E6%AE%B5%EF%BC%88Copying-Cleanup-Phase%EF%BC%89"><span class="toc-number">2.2.4.</span> <span class="toc-text">
+          复制&#x2F;清除阶段（Copying&#x2F;Cleanup Phase）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%A4%8D%E5%88%B6-%E6%B8%85%E9%99%A4%E9%98%B6%E6%AE%B5%E5%90%8E%E6%9C%9F%EF%BC%88After-Copying-Cleanup-Phase%EF%BC%89"><span class="toc-number">2.2.5.</span> <span class="toc-text">
+          复制&#x2F;清除阶段后期（After Copying&#x2F;Cleanup Phase）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%80%BB%E7%BB%93%EF%BC%88Old-GC%EF%BC%89"><span class="toc-number">2.2.6.</span> <span class="toc-text">
+          总结（Old GC）</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8%E6%96%B9%E5%BC%8F"><span class="toc-number">3.</span> <span class="toc-text">
+          使用方式</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">3.1.</span> <span class="toc-text">
+          参考资料</span></a></li></ol></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/images/headImg.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">平安大赚 财丁兴旺</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">69</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">19</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">25</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>cjwei</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.4.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lazyload@2.0.0-rc.2/lazyload.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>

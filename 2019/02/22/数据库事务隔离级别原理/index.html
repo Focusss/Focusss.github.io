@@ -1,0 +1,663 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="据库事务隔离级别有以下四种：读未提交、读已提交、可重复读、可串行化">
+<meta property="og:type" content="article">
+<meta property="og:title" content="数据库事务隔离级别原理">
+<meta property="og:url" content="https://focusss.github.io/2019/02/22/%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E5%8E%9F%E7%90%86/index.html">
+<meta property="og:site_name" content="Focusss&#39;s Blog">
+<meta property="og:description" content="据库事务隔离级别有以下四种：读未提交、读已提交、可重复读、可串行化">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://focusss.github.io/2019/02/22/%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E5%8E%9F%E7%90%86/%E5%BF%AB%E7%85%A7%E8%AF%BB1.png">
+<meta property="og:image" content="https://focusss.github.io/2019/02/22/%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E5%8E%9F%E7%90%86/%E5%BF%AB%E7%85%A7%E8%AF%BB2.png">
+<meta property="og:image" content="https://focusss.github.io/2019/02/22/%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E5%8E%9F%E7%90%86/%E5%BF%AB%E7%85%A7%E8%AF%BB3.png">
+<meta property="og:image" content="https://focusss.github.io/2019/02/22/%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E5%8E%9F%E7%90%86/%E5%BF%AB%E7%85%A7%E8%AF%BB4.png">
+<meta property="og:image" content="https://focusss.github.io/2019/02/22/%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E5%8E%9F%E7%90%86/%E5%BF%AB%E7%85%A7%E8%AF%BB5.png">
+<meta property="og:image" content="https://focusss.github.io/2019/02/22/%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E5%8E%9F%E7%90%86/%E9%97%B4%E9%9A%99%E9%94%81.png">
+<meta property="article:published_time" content="2019-02-22T15:59:54.000Z">
+<meta property="article:modified_time" content="2021-12-11T16:56:06.364Z">
+<meta property="article:author" content="cjwei">
+<meta property="article:tag" content="数据库">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://focusss.github.io/2019/02/22/%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E5%8E%9F%E7%90%86/%E5%BF%AB%E7%85%A7%E8%AF%BB1.png"><title>数据库事务隔离级别原理 | Focusss's Blog</title><link ref="canonical" href="https://focusss.github.io/2019/02/22/%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E5%8E%9F%E7%90%86/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"carbon","highlight":"light","wordWrap":true},
+  reward: false,
+  fancybox: true,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: true,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Focusss's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">数据库事务隔离级别原理</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2019-02-22</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-12-12</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h3 id="什么是事务">
+          <a href="#什么是事务" class="heading-link"><i class="fas fa-link"></i></a><a href="#什么是事务" class="headerlink" title="什么是事务"></a>什么是事务</h3>
+      <p>单个逻辑工作单元执行的一系列操作，要么完全地执行，要么完全地不执行。简单的说，事务就是并发控制的单位，是用户定义的一个操作序列。</p>
+
+        <h3 id="事务的ACID">
+          <a href="#事务的ACID" class="heading-link"><i class="fas fa-link"></i></a><a href="#事务的ACID" class="headerlink" title="事务的ACID"></a>事务的ACID</h3>
+      
+        <h4 id="原子性（Atomicity）">
+          <a href="#原子性（Atomicity）" class="heading-link"><i class="fas fa-link"></i></a><a href="#原子性（Atomicity）" class="headerlink" title="原子性（Atomicity）"></a>原子性（Atomicity）</h4>
+      <p>原子性是指事务是一个不可再分割的工作单元，事务中的操作要么都发生，要么都不发生。可采用“A向B转账”这个例子来说明解释在DBMS中，默认情况下一条SQL就是一个单独事务，事务是自动提交的。只有显式的使用start transaction开启一个事务，才能将一个代码块放在事务中执行。</p>
+
+        <h4 id="一致性（Consistent）">
+          <a href="#一致性（Consistent）" class="heading-link"><i class="fas fa-link"></i></a><a href="#一致性（Consistent）" class="headerlink" title="一致性（Consistent）"></a>一致性（Consistent）</h4>
+      <p>一致性是指在事务开始之前和事务结束以后，数据库的完整性约束没有被破坏。这是说数据库事务不能破坏关系数据的完整性以及业务逻辑上的一致性。</p>
+<p>如A给B转账，不论转账的事务操作是否成功，其两者的存款总额不变（这是业务逻辑的一致性，至于数据库关系约束的完整性就更好理解了）。</p>
+<p>保障机制（也从两方面着手）：数据库层面会在一个事务执行之前和之后，数据会符合你设置的约束（唯一约束，外键约束,check约束等)和触发器设置；此外，数据库的内部数据结构（如 B 树索引或双向链表）都必须是正确的。业务的一致性一般由开发人员进行保证，亦可转移至数据库层面。 </p>
+
+        <h4 id="隔离性-Isolation">
+          <a href="#隔离性-Isolation" class="heading-link"><i class="fas fa-link"></i></a><a href="#隔离性-Isolation" class="headerlink" title="隔离性 (Isolation)"></a>隔离性 (Isolation)</h4>
+      <p>多个事务并发访问时，事务之间是隔离的，一个事务不应该影响其它事务运行效果。</p>
+<p>在并发环境中，当不同的事务同时操纵相同的数据时，每个事务都有各自的完整数据空间。由并发事务所做的修改必须与任何其他并发事务所做的修改隔离。事务查看数据更新时，数据所处的状态要么是另一事务修改它之前的状态，要么是另一事务修改它之后的状态，事务不会查看到中间状态的数据。</p>
+<p>事务最复杂问题都是由事务隔离性引起的。完全的隔离性是不现实的，完全的隔离性要求数据库同一时间只执行一条事务（串行化），这样会严重影响性能。</p>
+
+        <h4 id="持久性（Durability）">
+          <a href="#持久性（Durability）" class="heading-link"><i class="fas fa-link"></i></a><a href="#持久性（Durability）" class="headerlink" title="持久性（Durability）"></a>持久性（Durability）</h4>
+      <p>意味着在事务完成以后，该事务所对数据库所作的更改便持久的保存在数据库之中，并不会被回滚。（完成的事务是系统永久的部分，对系统的影响是永久性的，该修改即使出现致命的系统故障也将一直保持）。</p>
+
+        <h3 id="事务的隔离级别">
+          <a href="#事务的隔离级别" class="heading-link"><i class="fas fa-link"></i></a><a href="#事务的隔离级别" class="headerlink" title="事务的隔离级别"></a>事务的隔离级别</h3>
+      
+        <h4 id="Read-uncommitted（读未提交）">
+          <a href="#Read-uncommitted（读未提交）" class="heading-link"><i class="fas fa-link"></i></a><a href="#Read-uncommitted（读未提交）" class="headerlink" title="Read uncommitted（读未提交）"></a>Read uncommitted（读未提交）</h4>
+      <p><strong>一个事务可以读取另一个未提交事务的数据</strong>。<br>事例：老板要给程序员发工资，程序员的工资是3.6万/月。但是发工资时老板不小心按错了数字，按成3.9万/月，该钱已经打到程序员的户口，但是事务还没有提交，就在这时，程序员去查看自己这个月的工资，发现比往常多了3千元，以为涨工资了非常高兴。但是老板及时发现了不对，马上回滚差点就提交了的事务，将数字改成3.6万再提交。</p>
+<p>分析：实际程序员这个月的工资还是3.6万，但是程序员看到的是3.9万。他看到的是老板还没提交事务时的数据。这就是脏读。</p>
+<p>那怎么解决脏读呢？<strong>Read committed-读提交</strong>，能解决脏读问题。</p>
+
+        <h4 id="Read-committed-（读已提交）">
+          <a href="#Read-committed-（读已提交）" class="heading-link"><i class="fas fa-link"></i></a><a href="#Read-committed-（读已提交）" class="headerlink" title="Read committed （读已提交）"></a>Read committed （读已提交）</h4>
+      <p>一个事务要等另一个事务提交后才能读取数据。</p>
+<p>事例：程序员拿着信用卡去享受生活（卡里当然是只有3.6万），当他埋单时（程序员事务开启），收费系统事先检测到他的卡里有3.6万，就在这个时候！！程序员的妻子要把钱全部转出充当家用，并提交。当收费系统准备扣款时，再检测卡里的金额，发现已经没钱了（第二次检测金额当然要等待妻子转出金额事务提交完）。程序员就会很郁闷，明明卡里是有钱的。</p>
+<p>分析：这就是读提交，若有事务对数据进行更新（UPDATE）操作时，<strong>读操作事务要等待这个更新操作事务提交后才能读取数据，可以解决脏读问题</strong>。但在这个事例中，出现了一个事务范围内两个相同的查询却返回了不同数据，这就是不可重复读。</p>
+
+        <h4 id="Repeatable-read-可重复读">
+          <a href="#Repeatable-read-可重复读" class="heading-link"><i class="fas fa-link"></i></a><a href="#Repeatable-read-可重复读" class="headerlink" title="Repeatable read (可重复读)"></a>Repeatable read (可重复读)</h4>
+      <p>重复读，就是在开始读取数据（事务开启）时，不再允许修改操作。</p>
+<p>事例：程序员拿着信用卡去享受生活（卡里当然是只有3.6万），当他埋单时（事务开启，不允许其他事务的UPDATE修改操作），收费系统事先检测到他的卡里有3.6万。这个时候他的妻子不能转出金额了。接下来收费系统就可以扣款了。</p>
+<p>分析：重复读可以解决不可重复读问题。写到这里，应该明白的一点就是，<strong>不可重复读对应的是修改，即UPDATE和DELETE操作当前数据项</strong>。但是可能还会有幻读问题。因为幻读问题对应的是插入INSERT操作，而不是UPDATE和DELETE操作当前数据项。</p>
+<p><strong>什么时候会出现幻读？</strong></p>
+<p>事例：程序员某一天去消费，花了2千元，然后他的妻子去查看他今天的消费记录（全表扫描FTS，妻子事务开启），看到确实是花了2千元，就在这个时候，程序员花了1万买了一部电脑，即新增INSERT了一条消费记录，并提交。当妻子打印程序员的消费记录清单时（妻子事务提交），发现花了1.2万元，似乎出现了幻觉，这就是幻读。</p>
+<p>那怎么解决幻读问题？Serializable！</p>
+
+        <h4 id="Serializable-序列化">
+          <a href="#Serializable-序列化" class="heading-link"><i class="fas fa-link"></i></a><a href="#Serializable-序列化" class="headerlink" title="Serializable 序列化"></a>Serializable 序列化</h4>
+      <p>Serializable 是最高的事务隔离级别，在该级别下，“写”会加“写锁”，“读”会加“读锁”。当出现读写锁冲突的时候，后访问的事务必须等前一个事务执行完成，才能继续执行。事务串行化顺序执行，可以避免脏读、不可重复读与幻读。但是这种事务隔离级别效率低下，比较耗数据库性能，一般不使用。</p>
+<p>大多数数据库默认的事务隔离级别是Read committed，比如Sql Server , Oracle。Mysql的默认隔离级别是Repeatable read。<br>在库存系统中，如果数据库是用Oracle，不能用一个数据记录代表一个库存，因为存在不可重复读，会因为其他事务delete或insert库存记录，导致库存不准确，可以是提高隔离级别为Repeatable read或使用Mysql数据库。</p>
+
+        <h3 id="MySQL隔离级别的实现">
+          <a href="#MySQL隔离级别的实现" class="heading-link"><i class="fas fa-link"></i></a><a href="#MySQL隔离级别的实现" class="headerlink" title="MySQL隔离级别的实现"></a>MySQL隔离级别的实现</h3>
+      <p>事务的机制是通过<strong>视图（read-view）</strong>来实现的并发版本控制（MVCC），不同的事务隔离级别创建读视图的时间点不同。</p>
+<ul>
+<li>可重复读是每个事务重建读视图，整个事务存在期间都用这个视图。</li>
+<li>读已提交是每条 SQL 创建读视图，在每个 SQL 语句开始执行的时候创建的。隔离作用域仅限该条 SQL 语句。</li>
+<li>读未提交是不创建，直接返回记录上的最新值</li>
+<li>串行化隔离级别下直接用加锁的方式来避免并行访问。<br>这里的视图可以理解为数据副本，每次创建视图时，将当前已持久化的数据创建副本，后续直接从副本读取，从而达到数据隔离效果。</li>
+</ul>
+
+        <h4 id="undo-log">
+          <a href="#undo-log" class="heading-link"><i class="fas fa-link"></i></a><a href="#undo-log" class="headerlink" title="undo log"></a>undo log</h4>
+      <p>数据表其实有一些隐藏的属性，比如每一行的事务id，所以每一行数据可能会有多个版本，每一个修改过它的事务都会有一个事务id，并且还会有关联的 undo log，表示这个操作原来的数据是什么，可以用它做回滚。</p>
+<blockquote>
+<ul>
+<li>undo log 中存储的是老版本数据。假设修改表中 id=2 的行数据，把 Name=‘B’ 修改为 Name = ‘B2’ ，那么 undo 日志就会用来存放 Name=‘B’ 的记录，如果这个修改出现异常，可以使用 undo 日志来实现回滚操作，保证事务的一致性。</li>
+<li>当一个旧的事务需要读取数据时，为了能读取到老版本的数据，需要顺着 undo 链找到满足其可见性的记录。当版本链很长时，通常可以认为这是个比较耗时的操作。</li>
+<li>另外，在回滚段中的 undo log 分为: insert undo log 和 update undo log：</li>
+<li>1、insert undo log : 事务对 insert 新记录时产生的 undo log，只在事务回滚时需要，并且在事务提交后就可以立即丢弃。（谁会对刚插入的数据有可见性需求呢！！）</li>
+<li>2、update undo log : 事务对记录进行 delete 和 update 操作时产生的 undo log。不仅在事务回滚时需要，一致性读也需要，所以不能随便删除，只有当数据库所使用的快照中不涉及该日志记录，对应的回滚日志才会被 purge 线程删除。</li>
+</ul>
+</blockquote>
+<p><strong>何时删除？</strong><br>在不需要的时候才删除。也就是说，系统会判断，当没有事务再需要用到这些回滚日志时，回滚日志会被删除。</p>
+<p>就是当系统里没有比这个回滚日志更早的 read-view 的时候。</p>
+
+        <h4 id="长事务">
+          <a href="#长事务" class="heading-link"><i class="fas fa-link"></i></a><a href="#长事务" class="headerlink" title="长事务"></a>长事务</h4>
+      <p>长事务意味着系统里面会存在很老的事务视图。<br><strong>危害：</strong><br>1、由于这些事务随时可能访问数据库里面的任何数据，所以这个事务提交之前，数据库里面它可能用到的 undo log 都必须保留，这就会导致大量占用存储空间。<br>2、长事务还占用锁资源，也可能拖垮整个库。</p>
+
+        <h4 id="InnoDB可重复读">
+          <a href="#InnoDB可重复读" class="heading-link"><i class="fas fa-link"></i></a><a href="#InnoDB可重复读" class="headerlink" title="InnoDB可重复读"></a>InnoDB可重复读</h4>
+      <p>在RC（Read Committed）和RR（Repeatable Read）两种事务隔离级别下，InnoDB存在两种数据读取方式：</p>
+
+        <h5 id="快照读（Snapshot-Read）">
+          <a href="#快照读（Snapshot-Read）" class="heading-link"><i class="fas fa-link"></i></a><a href="#快照读（Snapshot-Read）" class="headerlink" title="快照读（Snapshot Read）"></a>快照读（Snapshot Read）</h5>
+      <p>在InnoDB引擎下是基于undo log中保存的快照数据。<br>假设有这样一个表：</p>
+<figure class="highlight sql"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 表结构</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> `innodb_test` (</span><br><span class="line">    `id` <span class="type">INT</span>(<span class="number">11</span>) <span class="keyword">NOT</span> <span class="keyword">NULL</span> AUTO_INCREMENT,</span><br><span class="line">    `name` <span class="type">VARCHAR</span>(<span class="number">100</span>) <span class="keyword">NOT</span> <span class="keyword">NULL</span> <span class="keyword">DEFAULT</span> <span class="string">&#x27;0&#x27;</span>,</span><br><span class="line">    `age` <span class="type">INT</span>(<span class="number">11</span>) <span class="keyword">NOT</span> <span class="keyword">NULL</span> <span class="keyword">DEFAULT</span> <span class="string">&#x27;0&#x27;</span>,</span><br><span class="line">    <span class="keyword">PRIMARY</span> KEY (`id`),</span><br><span class="line">    INDEX `idx_age` (`age`)</span><br><span class="line">)</span><br><span class="line">ENGINE<span class="operator">=</span>InnoDB;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 初始数据</span></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> `innodb_test` (`id`, `name`, `age`) <span class="keyword">VALUES</span> (<span class="number">1</span>, <span class="string">&#x27;貂蝉&#x27;</span>, <span class="number">100</span>),(<span class="number">2</span>, <span class="string">&#x27;庄周&#x27;</span>, <span class="number">120</span>),(<span class="number">3</span>, <span class="string">&#x27;项羽&#x27;</span>, <span class="number">130</span>);</span><br></pre></td></tr></table></div></figure>
+<ul>
+<li><p>id=1的初始数据行<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E5%BF%AB%E7%85%A7%E8%AF%BB1.png">
+      </p>
+</li>
+<li><p>事务A执行如下语句</p>
+<figure class="highlight sql"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">UPDATE innodb_test <span class="keyword">SET</span> name<span class="operator">=</span><span class="string">&#x27;嬴政&#x27;</span>, age<span class="operator">=</span><span class="number">90</span> <span class="keyword">WHERE</span> id<span class="operator">=</span><span class="number">1</span>;</span><br></pre></td></tr></table></div></figure>
+<p>此时innodb会做如下操作：</p>
+</li>
+</ul>
+<p>1、把该行修改前的值Copy到undo log（Copy on write）；<br>2、修改当前行的值，填写事务编号，使回滚指针指向undo log中的修改前的行。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E5%BF%AB%E7%85%A7%E8%AF%BB2.png">
+      </p>
+<ul>
+<li>事务B执行如下语句<figure class="highlight sql"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">UPDATE innodb_test <span class="keyword">SET</span> name<span class="operator">=</span><span class="string">&#x27;甄姬&#x27;</span>, age<span class="operator">=</span><span class="number">91</span> <span class="keyword">WHERE</span> id<span class="operator">=</span><span class="number">1</span>;</span><br></pre></td></tr></table></div></figure>
+此时undo log中有2条记录，它们通过回滚指针相连。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E5%BF%AB%E7%85%A7%E8%AF%BB3.png">
+      </li>
+</ul>
+<p>undo log的存在解决了两个问题，一是数据回滚，二是实现了MVCC (Multi-Version Concurrency Control) ，快照读读取的就是undo log中的数据，所以这种读取是不需要加锁的，避免了读写冲突。常见的快照读语句就是最常见的SELECT，比如：</p>
+<figure class="highlight sql"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> innodb_test <span class="keyword">WHERE</span> id<span class="operator">=</span><span class="number">1</span>;</span><br><span class="line"></span><br></pre></td></tr></table></div></figure>
+<p>快照读在RC和RR隔离级别下的表现却是不一样的，为了方便说明，现在将数据还原到初始数据，然后按照下表的顺序操作。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E5%BF%AB%E7%85%A7%E8%AF%BB4.png">
+      </p>
+<blockquote>
+<ul>
+<li>RC<br>输出的是最新提交的结果（1-嬴政-90），RC级别的快照读遵循以下规则：</li>
+</ul>
+</blockquote>
+<ol>
+<li>优先读取当前事务修改的数据，自己修改的，当然可以读到了；</li>
+<li>其次读取最新已提交数据。<br>会出现前后读取结果不一样的情况，但读取的是最新数据。</li>
+</ol>
+<blockquote>
+<ul>
+<li>RR<br>输出结果和第一次查询是一样的（1-貂蝉-100），RR级别的快照读遵循以下规则：</li>
+</ul>
+</blockquote>
+<ol>
+<li>优先读取当前事务修改的数据，和RC一样；</li>
+<li>其次读取小于当前事务id的最新一条已提交数据，此时数据版本已经确定了，后面的快照读取始终读取这个版本。</li>
+</ol>
+<p>通过这样的机制，保证了快照读的可重复读，但读取到的数据很可能已经过期了。</p>
+
+        <h5 id="当前读（Current-Read）">
+          <a href="#当前读（Current-Read）" class="heading-link"><i class="fas fa-link"></i></a><a href="#当前读（Current-Read）" class="headerlink" title="当前读（Current Read）"></a>当前读（Current Read）</h5>
+      <p>当前读，<strong>读取的是最新已提交数据，并且都会加行锁</strong>，如下语句都会产生当前读：</p>
+<figure class="highlight sql"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> balabala LOCK <span class="keyword">IN</span> SHARE MODE;</span><br><span class="line"><span class="keyword">SELECT</span> balabala <span class="keyword">FOR</span> UPDATE;</span><br><span class="line"><span class="keyword">INSERT</span> balabala;</span><br><span class="line">UPDATE balabala;</span><br><span class="line"><span class="keyword">DELETE</span> balabala;</span><br></pre></td></tr></table></div></figure>
+<p>当前读需要保证其他并发事务不能修改当前记录，对读取记录加锁。其中，第一条语句，对读取记录加S锁（共享锁），其他的操作，都加的是X锁（排它锁）。当前读在RC和RR隔离级别下的表现也是不一样的，为了方便说明，现在将数据还原到初始数据，然后按照下表的顺序操作。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E5%BF%AB%E7%85%A7%E8%AF%BB5.png">
+      </p>
+<blockquote>
+<ul>
+<li>RC<br>成功执行，但会造成事务1的幻读，前后两次读取结果不一样。</li>
+</ul>
+</blockquote>
+<blockquote>
+<ul>
+<li>RR<br>会锁等待，在RR隔离级别下，事务1的sql不仅会对该记录加X锁，还会<strong>对上下两个数据间隙加间隙锁</strong>，以此确保在数据读取期间，其它事物不会在该间隙内增加数据，从而保证可重复读。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E9%97%B4%E9%9A%99%E9%94%81.png">
+      </li>
+</ul>
+</blockquote>
+
+        <h4 id="小结">
+          <a href="#小结" class="heading-link"><i class="fas fa-link"></i></a><a href="#小结" class="headerlink" title="小结"></a>小结</h4>
+      <p>RR隔离级别下，快照读通过undo log来保证可重复读，当前读通过X（S）锁+GAP锁来保证可重复读。<br>RR隔离级别下，假设有两个事务A和B共同对同一个数据项进行update，那么只有其中一个事务执行commit操作，另外一个事务才能进行update，否则另外一个事务将一直阻塞，等待释放锁。这是因为select不加锁，update时才对数据项加行锁。另外，<strong>第一个执行update的事务将以undo log中的值为准，而后执行update的事务将以最新事务commit的值为准，即数据库中的最新值。select的值为当前事务最新修改的值。</strong></p>
+
+        <h3 id="读未提交（READ-UNCOMMITED）">
+          <a href="#读未提交（READ-UNCOMMITED）" class="heading-link"><i class="fas fa-link"></i></a><a href="#读未提交（READ-UNCOMMITED）" class="headerlink" title="读未提交（READ_UNCOMMITED）"></a>读未提交（READ_UNCOMMITED）</h3>
+      
+        <h4 id="原理">
+          <a href="#原理" class="heading-link"><i class="fas fa-link"></i></a><a href="#原理" class="headerlink" title="原理"></a>原理</h4>
+      <p>&#8194;&#8194;&#8194;&#8194;1、事务对当前被读取的数据不加锁。<br>&#8194;&#8194;&#8194;&#8194;2、事务在更新某数据的瞬间（就是发生更新的瞬间），必须先对其加行级共享锁，直到事务结束才释放。</p>
+
+        <h4 id="现象">
+          <a href="#现象" class="heading-link"><i class="fas fa-link"></i></a><a href="#现象" class="headerlink" title="现象"></a>现象</h4>
+      <p>&#8194;&#8194;&#8194;&#8194;事务1读取某行记录时，事务2也能对这行记录进行读取、更新（因为事务1并未对数据增加任何锁）<br>当事务2对该记录进行更新时，事务1再次读取该记录，能读到事务2对该记录的修改版本（因为事务2只增加了共享读锁，事务1可以再增加共享读锁读取数据），即使该修改尚未被提交。<br>&#8194;&#8194;&#8194;&#8194;事务1更新某行记录时，事务2不能对这行记录做更新，直到事务1结束。（因为事务1对数据增加了共享读锁，事务2不能增加排他写锁进行数据的修改）。</p>
+
+        <h3 id="读已提交（READ-COMMITED）">
+          <a href="#读已提交（READ-COMMITED）" class="heading-link"><i class="fas fa-link"></i></a><a href="#读已提交（READ-COMMITED）" class="headerlink" title="读已提交（READ_COMMITED）"></a>读已提交（READ_COMMITED）</h3>
+      
+        <h4 id="原理-1">
+          <a href="#原理-1" class="heading-link"><i class="fas fa-link"></i></a><a href="#原理-1" class="headerlink" title="原理"></a>原理</h4>
+      <p>&#8194;&#8194;&#8194;&#8194;1、事务对当前被读取的数据加行级共享锁（当读到时才加锁），一旦读完该行，立即释放该行级共享锁。<br>&#8194;&#8194;&#8194;&#8194;2、事务在更新某数据的瞬间（就是发生更新的瞬间），必须先对其加行级排他锁，直到事务结束才释放。</p>
+
+        <h4 id="现象-1">
+          <a href="#现象-1" class="heading-link"><i class="fas fa-link"></i></a><a href="#现象-1" class="headerlink" title="现象"></a>现象</h4>
+      <p>&#8194;&#8194;&#8194;&#8194;事务1在读取某行记录的整个过程中，事务2都可以对该行记录进行读取（因为事务1对该行记录增加行级共享锁的情况下，事务2同样可以对该数据增加共享锁来读数据）。</p>
+<p>&#8194;&#8194;&#8194;&#8194;事务1读取某行的一瞬间，事务2不能修改该行数据，但是，只要事务1读取完修改行数据，事务2就可以对该行数据进行修改。（事务1在读取的一瞬间会对数据增加共享锁，任何其他事务都不能对该行数据增加排他锁。但事务1只要读完该行数据，就会释放行级共享锁，一旦锁释放，事务2就可以对数据增加排他锁并修改数据）。</p>
+<p>&#8194;&#8194;&#8194;&#8194;事务1更新某行记录时，事务2不能对这行记录做更新，直到事务1结束。（事务1在更新数据的时候，会对该行数据增加排他锁，知道事务结束才会释放锁，所以在事务2没有提交之前，事务1都不能对数据增加共享锁进行数据的读取。所以提交读可以解决脏读的现象）。</p>
+
+        <h3 id="可重复读（REPEATABLE-READ）">
+          <a href="#可重复读（REPEATABLE-READ）" class="heading-link"><i class="fas fa-link"></i></a><a href="#可重复读（REPEATABLE-READ）" class="headerlink" title="可重复读（REPEATABLE_READ）"></a>可重复读（REPEATABLE_READ）</h3>
+      
+        <h4 id="原理-2">
+          <a href="#原理-2" class="heading-link"><i class="fas fa-link"></i></a><a href="#原理-2" class="headerlink" title="原理"></a>原理</h4>
+      <p>&#8194;&#8194;&#8194;&#8194;1、事务在读取某数据的瞬间（就是开始读取的瞬间），必须先对其加行级共享锁，直到事务结束才释放。<br>&#8194;&#8194;&#8194;&#8194;2、事务在更新某数据的瞬间（就是发生更新的瞬间），必须先对其加行级排他锁，直到事务结束才释放。</p>
+
+        <h4 id="现象-2">
+          <a href="#现象-2" class="heading-link"><i class="fas fa-link"></i></a><a href="#现象-2" class="headerlink" title="现象"></a>现象</h4>
+      <p>&#8194;&#8194;&#8194;&#8194;事务1在读取某行记录的整个过程中，事务2都可以对该行记录进行读取（因为事务1对该行记录增加行级共享锁的情况下，事务2同样可以对该数据增加共享锁来读数据）。</p>
+<p>&#8194;&#8194;&#8194;&#8194;事务1在读取某行记录的整个过程中，事务2都不能修改该行数据（事务1在读取的整个过程会对数据增加共享锁，直到事务提交才会释放锁，所以整个过程中，任何其他事务都不能对该行数据增加排他锁。所以，可重复读能够解决不可重复读的读现象）。</p>
+<p>&#8194;&#8194;&#8194;&#8194;事务1更新某行记录时，事务2不能对这行记录做更新，直到事务1结束。（事务1在更新数据时，会对该行数据增加排他锁，直到事务结束才会释放锁，所以，在事务2没有提交之前，事务1都不能对数据增加共享锁进行数据的读取。所以提交读可以解决脏读的现象）。</p>
+
+        <h3 id="可串行化（SERIALIZABLE）">
+          <a href="#可串行化（SERIALIZABLE）" class="heading-link"><i class="fas fa-link"></i></a><a href="#可串行化（SERIALIZABLE）" class="headerlink" title="可串行化（SERIALIZABLE）"></a>可串行化（SERIALIZABLE）</h3>
+      
+        <h4 id="原理-3">
+          <a href="#原理-3" class="heading-link"><i class="fas fa-link"></i></a><a href="#原理-3" class="headerlink" title="原理"></a>原理</h4>
+      <p>&#8194;&#8194;&#8194;&#8194;1、事务在读取数据时，必须先对其加表级共享锁，直到事务结束才释放。<br>&#8194;&#8194;&#8194;&#8194;2、事务在更新数据时，必须先对其加表级排他锁，直到事务结束才释放。</p>
+
+        <h4 id="现象-3">
+          <a href="#现象-3" class="heading-link"><i class="fas fa-link"></i></a><a href="#现象-3" class="headerlink" title="现象"></a>现象</h4>
+      <p>&#8194;&#8194;&#8194;&#8194;事务1正在读取A表中的记录时，则事务2也能读取A表，但不能对A表做更新、新增、删除，直到事务1结束。（因为事务1对表增加了表级共享锁，其他事务只能增加共享锁读取数据，不能进行其他任何操作）。</p>
+<p>&#8194;&#8194;&#8194;&#8194;事务1正在更新A表中的记录时，则事务2不能读取A表的任何记录，更不可能对A表做更新、新增、删除，直到事务1结束。（事务1 对表增加了表级排他锁，其他事务不能对表增加共享锁或排他锁，也就无法进行任何操作）。</p>
+
+        <h3 id="隔离级别相关疑点">
+          <a href="#隔离级别相关疑点" class="heading-link"><i class="fas fa-link"></i></a><a href="#隔离级别相关疑点" class="headerlink" title="隔离级别相关疑点"></a>隔离级别相关疑点</h3>
+      
+        <h4 id="幻读和不可重复读区别">
+          <a href="#幻读和不可重复读区别" class="heading-link"><i class="fas fa-link"></i></a><a href="#幻读和不可重复读区别" class="headerlink" title="幻读和不可重复读区别"></a>幻读和不可重复读区别</h4>
+      <p>1、幻读和不可重复读都是读取了另一条已经提交的事务（这点就脏读不同），所不同的是不可重复读查询的都是同一个数据项，而幻读针对的是一批数据整体（比如数据的个数）。对于前者, 只需要锁住满足条件的记录；对于后者, 要锁住满足条件及其相近的记录。</p>
+<p>2、不可重复读重点在于update和delete，而幻读的重点在于insert。</p>
+<p>如果使用锁机制来实现这两种隔离级别，在可重复读中，该sql第一次读取到数据后，就将这些数据加锁，其它事务无法修改这些数据，就可以实现可重复 读了。但这种方法却无法锁住insert的数据，所以当事务A先前读取了数据，或者修改了全部数据，事务B还是可以insert数据提交，这时事务A就会 发现莫名其妙多了一条之前没有的数据，这就是幻读，不能通过行锁来避免。需要Serializable隔离级别 ，读用读锁，写用写锁，读锁和写锁互斥，这么做可以有效的避免幻读、不可重复读、脏读等问题，但会极大的降低数据库的并发能力。</p>
+<p>所以说不可重复读和幻读最大的区别，就在于如何通过锁机制来解决他们产生的问题。</p>
+<p>上文说的，是使用悲观锁机制来处理这两种问题，但是<strong>MySQL、ORACLE、PostgreSQL等成熟的数据库，出于性能考虑，都是使用了以乐观锁为理论基础的MVCC（多版本并发控制）来避免这两种问题</strong>。</p>
+
+        <h4 id="InnoDB的RR可以避免不可重复读和幻象读，那么与串行化有什么区别呢？">
+          <a href="#InnoDB的RR可以避免不可重复读和幻象读，那么与串行化有什么区别呢？" class="heading-link"><i class="fas fa-link"></i></a><a href="#InnoDB的RR可以避免不可重复读和幻象读，那么与串行化有什么区别呢？" class="headerlink" title="InnoDB的RR可以避免不可重复读和幻象读，那么与串行化有什么区别呢？"></a>InnoDB的RR可以避免不可重复读和幻象读，那么与串行化有什么区别呢？</h4>
+      <p>RR隔离级别的防止幻象主要是针对写操作的，即只保证写操作的可串行化，因为只有写操作影响Binlog；而读操作是通过MVCC来保证一致性读（无幻象）。然而，可串行化隔离级别要求读写可串行化。由于在串行化下，查询操作不在使用MVCC来保证一致读，而是使用S锁来阻塞其他写操作。因此做到读写可串行化，然而换来就是并发性能的大大降低。</p>
+
+        <h4 id="MySQL的可重复读">
+          <a href="#MySQL的可重复读" class="heading-link"><i class="fas fa-link"></i></a><a href="#MySQL的可重复读" class="headerlink" title="MySQL的可重复读"></a>MySQL的可重复读</h4>
+      <p><strong>MySQL的可重复读是通过MVCC版本控制的</strong>，在当前整个事务的过程中如果没有执行update或delete操作，则select的值将还是undo log中的值。否则执行update或delete时，当前事务将会从数据库获取最新的值进行update或delete，则select的值则是undo log最新的值。MySQL不支持对同一数据项进行并发修改。除了保证可重复读，MySQL的RR还一定程度上避免了幻象读。</p>
+
+        <h4 id="MySQL使用可重复读作为默认隔离级别的原因之一">
+          <a href="#MySQL使用可重复读作为默认隔离级别的原因之一" class="heading-link"><i class="fas fa-link"></i></a><a href="#MySQL使用可重复读作为默认隔离级别的原因之一" class="headerlink" title="MySQL使用可重复读作为默认隔离级别的原因之一"></a>MySQL使用可重复读作为默认隔离级别的原因之一</h4>
+      <p>MySQL使用可重复读来作为默认隔离级别的主要原因是语句级的Binlog。RR能提供SQL语句的写可串行化，保证了绝大部分情况（不安全语句除外）的DB/DR一致。</p>
+
+        <h3 id="参考资料">
+          <a href="#参考资料" class="heading-link"><i class="fas fa-link"></i></a><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3>
+      <ul>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://www.jianshu.com/p/443581ddfa3c">深入理解Mysql事务隔离级别</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://www.cnblogs.com/heyboom/p/9167394.html">数据库隔离级别实现原理</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://blog.csdn.net/qq_35433593/article/details/86094028">事物级别，不可重复读和幻读的区别</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://www.jianshu.com/p/17967b72139a">探究InnoDB可重复读</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://blog.csdn.net/zxk364961978/article/details/51564832">MySQL使用可重复读作为默认隔离级别的原因之一</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://blog.csdn.net/whoamiyang/article/details/51901888">轻松理解MYSQL MVCC 实现机制</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://www.cnblogs.com/chenpingzhao/p/5065316.html">【mysql】关于innodb中MVCC的一些理解</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+</ul>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://focusss.github.io">cjwei</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://focusss.github.io/2019/02/22/%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E5%8E%9F%E7%90%86/">https://focusss.github.io/2019/02/22/%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E5%8E%9F%E7%90%86/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://focusss.github.io/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2019/02/27/Thread-join-%E5%8E%9F%E7%90%86/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">Thread.join()原理</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2019/02/15/top%E5%91%BD%E4%BB%A4/"><span class="paginator-prev__text">top命令</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E4%BA%8B%E5%8A%A1"><span class="toc-number">1.</span> <span class="toc-text">
+          什么是事务</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BA%8B%E5%8A%A1%E7%9A%84ACID"><span class="toc-number">2.</span> <span class="toc-text">
+          事务的ACID</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%8E%9F%E5%AD%90%E6%80%A7%EF%BC%88Atomicity%EF%BC%89"><span class="toc-number">2.1.</span> <span class="toc-text">
+          原子性（Atomicity）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%80%E8%87%B4%E6%80%A7%EF%BC%88Consistent%EF%BC%89"><span class="toc-number">2.2.</span> <span class="toc-text">
+          一致性（Consistent）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%9A%94%E7%A6%BB%E6%80%A7-Isolation"><span class="toc-number">2.3.</span> <span class="toc-text">
+          隔离性 (Isolation)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%8C%81%E4%B9%85%E6%80%A7%EF%BC%88Durability%EF%BC%89"><span class="toc-number">2.4.</span> <span class="toc-text">
+          持久性（Durability）</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BA%8B%E5%8A%A1%E7%9A%84%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB"><span class="toc-number">3.</span> <span class="toc-text">
+          事务的隔离级别</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Read-uncommitted%EF%BC%88%E8%AF%BB%E6%9C%AA%E6%8F%90%E4%BA%A4%EF%BC%89"><span class="toc-number">3.1.</span> <span class="toc-text">
+          Read uncommitted（读未提交）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Read-committed-%EF%BC%88%E8%AF%BB%E5%B7%B2%E6%8F%90%E4%BA%A4%EF%BC%89"><span class="toc-number">3.2.</span> <span class="toc-text">
+          Read committed （读已提交）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Repeatable-read-%E5%8F%AF%E9%87%8D%E5%A4%8D%E8%AF%BB"><span class="toc-number">3.3.</span> <span class="toc-text">
+          Repeatable read (可重复读)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Serializable-%E5%BA%8F%E5%88%97%E5%8C%96"><span class="toc-number">3.4.</span> <span class="toc-text">
+          Serializable 序列化</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#MySQL%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="toc-number">4.</span> <span class="toc-text">
+          MySQL隔离级别的实现</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#undo-log"><span class="toc-number">4.1.</span> <span class="toc-text">
+          undo log</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%95%BF%E4%BA%8B%E5%8A%A1"><span class="toc-number">4.2.</span> <span class="toc-text">
+          长事务</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#InnoDB%E5%8F%AF%E9%87%8D%E5%A4%8D%E8%AF%BB"><span class="toc-number">4.3.</span> <span class="toc-text">
+          InnoDB可重复读</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%BF%AB%E7%85%A7%E8%AF%BB%EF%BC%88Snapshot-Read%EF%BC%89"><span class="toc-number">4.3.1.</span> <span class="toc-text">
+          快照读（Snapshot Read）</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%BD%93%E5%89%8D%E8%AF%BB%EF%BC%88Current-Read%EF%BC%89"><span class="toc-number">4.3.2.</span> <span class="toc-text">
+          当前读（Current Read）</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93"><span class="toc-number">4.4.</span> <span class="toc-text">
+          小结</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AF%BB%E6%9C%AA%E6%8F%90%E4%BA%A4%EF%BC%88READ-UNCOMMITED%EF%BC%89"><span class="toc-number">5.</span> <span class="toc-text">
+          读未提交（READ_UNCOMMITED）</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%8E%9F%E7%90%86"><span class="toc-number">5.1.</span> <span class="toc-text">
+          原理</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%8E%B0%E8%B1%A1"><span class="toc-number">5.2.</span> <span class="toc-text">
+          现象</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AF%BB%E5%B7%B2%E6%8F%90%E4%BA%A4%EF%BC%88READ-COMMITED%EF%BC%89"><span class="toc-number">6.</span> <span class="toc-text">
+          读已提交（READ_COMMITED）</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%8E%9F%E7%90%86-1"><span class="toc-number">6.1.</span> <span class="toc-text">
+          原理</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%8E%B0%E8%B1%A1-1"><span class="toc-number">6.2.</span> <span class="toc-text">
+          现象</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%AF%E9%87%8D%E5%A4%8D%E8%AF%BB%EF%BC%88REPEATABLE-READ%EF%BC%89"><span class="toc-number">7.</span> <span class="toc-text">
+          可重复读（REPEATABLE_READ）</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%8E%9F%E7%90%86-2"><span class="toc-number">7.1.</span> <span class="toc-text">
+          原理</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%8E%B0%E8%B1%A1-2"><span class="toc-number">7.2.</span> <span class="toc-text">
+          现象</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%AF%E4%B8%B2%E8%A1%8C%E5%8C%96%EF%BC%88SERIALIZABLE%EF%BC%89"><span class="toc-number">8.</span> <span class="toc-text">
+          可串行化（SERIALIZABLE）</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%8E%9F%E7%90%86-3"><span class="toc-number">8.1.</span> <span class="toc-text">
+          原理</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%8E%B0%E8%B1%A1-3"><span class="toc-number">8.2.</span> <span class="toc-text">
+          现象</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E7%9B%B8%E5%85%B3%E7%96%91%E7%82%B9"><span class="toc-number">9.</span> <span class="toc-text">
+          隔离级别相关疑点</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%B9%BB%E8%AF%BB%E5%92%8C%E4%B8%8D%E5%8F%AF%E9%87%8D%E5%A4%8D%E8%AF%BB%E5%8C%BA%E5%88%AB"><span class="toc-number">9.1.</span> <span class="toc-text">
+          幻读和不可重复读区别</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#InnoDB%E7%9A%84RR%E5%8F%AF%E4%BB%A5%E9%81%BF%E5%85%8D%E4%B8%8D%E5%8F%AF%E9%87%8D%E5%A4%8D%E8%AF%BB%E5%92%8C%E5%B9%BB%E8%B1%A1%E8%AF%BB%EF%BC%8C%E9%82%A3%E4%B9%88%E4%B8%8E%E4%B8%B2%E8%A1%8C%E5%8C%96%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%E5%91%A2%EF%BC%9F"><span class="toc-number">9.2.</span> <span class="toc-text">
+          InnoDB的RR可以避免不可重复读和幻象读，那么与串行化有什么区别呢？</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#MySQL%E7%9A%84%E5%8F%AF%E9%87%8D%E5%A4%8D%E8%AF%BB"><span class="toc-number">9.3.</span> <span class="toc-text">
+          MySQL的可重复读</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#MySQL%E4%BD%BF%E7%94%A8%E5%8F%AF%E9%87%8D%E5%A4%8D%E8%AF%BB%E4%BD%9C%E4%B8%BA%E9%BB%98%E8%AE%A4%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E7%9A%84%E5%8E%9F%E5%9B%A0%E4%B9%8B%E4%B8%80"><span class="toc-number">9.4.</span> <span class="toc-text">
+          MySQL使用可重复读作为默认隔离级别的原因之一</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">10.</span> <span class="toc-text">
+          参考资料</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/images/headImg.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">平安大赚 财丁兴旺</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">69</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">19</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">25</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>cjwei</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.4.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lazyload@2.0.0-rc.2/lazyload.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>

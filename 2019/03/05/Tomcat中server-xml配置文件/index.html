@@ -1,0 +1,487 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="Tomcat服务器是由一系列可以配置的组件构成，其中核心组件是Catalina Servlet,它是最顶层组件。Tomcat各组件是在server.xml(CATALINA_HOME\conf\server.xml)配置的。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Tomcat中server.xml配置文件">
+<meta property="og:url" content="https://focusss.github.io/2019/03/05/Tomcat%E4%B8%ADserver-xml%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6/index.html">
+<meta property="og:site_name" content="Focusss&#39;s Blog">
+<meta property="og:description" content="Tomcat服务器是由一系列可以配置的组件构成，其中核心组件是Catalina Servlet,它是最顶层组件。Tomcat各组件是在server.xml(CATALINA_HOME\conf\server.xml)配置的。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://focusss.github.io/2019/03/05/Tomcat%E4%B8%ADserver-xml%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6/server%E7%BB%93%E6%9E%84.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/05/Tomcat%E4%B8%ADserver-xml%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6/%E8%AF%B7%E6%B1%82%E6%B5%81%E7%A8%8B.png">
+<meta property="article:published_time" content="2019-03-05T03:02:14.000Z">
+<meta property="article:modified_time" content="2021-12-11T17:22:11.239Z">
+<meta property="article:author" content="cjwei">
+<meta property="article:tag" content="Tomcat">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://focusss.github.io/2019/03/05/Tomcat%E4%B8%ADserver-xml%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6/server%E7%BB%93%E6%9E%84.png"><title>Tomcat中server.xml配置文件 | Focusss's Blog</title><link ref="canonical" href="https://focusss.github.io/2019/03/05/Tomcat%E4%B8%ADserver-xml%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"carbon","highlight":"light","wordWrap":true},
+  reward: false,
+  fancybox: true,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: true,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Focusss's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">Tomcat中server.xml配置文件</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2019-03-05</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-12-12</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h3 id="简介">
+          <a href="#简介" class="heading-link"><i class="fas fa-link"></i></a><a href="#简介" class="headerlink" title="简介"></a>简介</h3>
+      <p>Tomcat服务器是由一系列可以配置的组件构成，其中核心组件是Catalina Servlet,它是最顶层组件。<br>Tomcat各组件是在server.xml(CATALINA_HOME\conf\server.xml)配置的。<br>其详细的配置文件结构如下：</p>
+<figure class="highlight xml"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version=&#x27;1.0&#x27; encoding=&#x27;utf-8&#x27;?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">Server</span> <span class="attr">port</span>=<span class="string">&quot;8005&quot;</span> <span class="attr">shutdown</span>=<span class="string">&quot;SHUTDOWN&quot;</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Listener</span> <span class="attr">className</span>=<span class="string">&quot;org.apache.catalina.startup.VersionLoggerListener&quot;</span> /&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Listener</span> <span class="attr">className</span>=<span class="string">&quot;org.apache.catalina.core.AprLifecycleListener&quot;</span> <span class="attr">SSLEngine</span>=<span class="string">&quot;on&quot;</span> /&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Listener</span> <span class="attr">className</span>=<span class="string">&quot;org.apache.catalina.core.JasperListener&quot;</span> /&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Listener</span> <span class="attr">className</span>=<span class="string">&quot;org.apache.catalina.core.JreMemoryLeakPreventionListener&quot;</span> /&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Listener</span> <span class="attr">className</span>=<span class="string">&quot;org.apache.catalina.mbeans.GlobalResourcesLifecycleListener&quot;</span> /&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Listener</span> <span class="attr">className</span>=<span class="string">&quot;org.apache.catalina.core.ThreadLocalLeakPreventionListener&quot;</span> /&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="tag">&lt;<span class="name">GlobalNamingResources</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Resource</span> <span class="attr">name</span>=<span class="string">&quot;UserDatabase&quot;</span> <span class="attr">auth</span>=<span class="string">&quot;Container&quot;</span> <span class="attr">type</span>=<span class="string">&quot;org.apache.catalina.UserDatabase&quot;</span> <span class="attr">description</span>=<span class="string">&quot;User database that can be updated and saved&quot;</span> <span class="attr">factory</span>=<span class="string">&quot;org.apache.catalina.users.MemoryUserDatabaseFactory&quot;</span> <span class="attr">pathname</span>=<span class="string">&quot;conf/tomcat-users.xml&quot;</span> /&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">GlobalNamingResources</span>&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="tag">&lt;<span class="name">Service</span> <span class="attr">name</span>=<span class="string">&quot;Catalina&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Connector</span> <span class="attr">port</span>=<span class="string">&quot;8080&quot;</span> <span class="attr">protocol</span>=<span class="string">&quot;HTTP/1.1&quot;</span> <span class="attr">connectionTimeout</span>=<span class="string">&quot;20000&quot;</span> <span class="attr">redirectPort</span>=<span class="string">&quot;8443&quot;</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Connector</span> <span class="attr">port</span>=<span class="string">&quot;8009&quot;</span> <span class="attr">protocol</span>=<span class="string">&quot;AJP/1.3&quot;</span> <span class="attr">redirectPort</span>=<span class="string">&quot;8443&quot;</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Engine</span> <span class="attr">name</span>=<span class="string">&quot;Catalina&quot;</span> <span class="attr">defaultHost</span>=<span class="string">&quot;localhost&quot;</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">Realm</span> <span class="attr">className</span>=<span class="string">&quot;org.apache.catalina.realm.LockOutRealm&quot;</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Realm</span> <span class="attr">className</span>=<span class="string">&quot;org.apache.catalina.realm.UserDatabaseRealm&quot;</span></span></span><br><span class="line"><span class="tag">               <span class="attr">resourceName</span>=<span class="string">&quot;UserDatabase&quot;</span>/&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">Realm</span>&gt;</span></span><br><span class="line"></span><br><span class="line">      <span class="tag">&lt;<span class="name">Host</span> <span class="attr">name</span>=<span class="string">&quot;localhost&quot;</span>  <span class="attr">appBase</span>=<span class="string">&quot;/opt/project/webapps&quot;</span> <span class="attr">unpackWARs</span>=<span class="string">&quot;true&quot;</span> <span class="attr">autoDeploy</span>=<span class="string">&quot;true&quot;</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Valve</span> <span class="attr">className</span>=<span class="string">&quot;org.apache.catalina.valves.AccessLogValve&quot;</span> <span class="attr">directory</span>=<span class="string">&quot;logs&quot;</span> <span class="attr">prefix</span>=<span class="string">&quot;localhost_access_log.&quot;</span> <span class="attr">suffix</span>=<span class="string">&quot;.txt&quot;</span> <span class="attr">pattern</span>=<span class="string">&quot;%h %l %u %t <span class="symbol">&amp;quot;</span>%r<span class="symbol">&amp;quot;</span> %s %b&quot;</span> /&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">Host</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">Engine</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">Service</span>&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="tag">&lt;<span class="name">Service</span> <span class="attr">name</span>=<span class="string">&quot;Catalina2&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Connector</span> <span class="attr">port</span>=<span class="string">&quot;8084&quot;</span> <span class="attr">protocol</span>=<span class="string">&quot;HTTP/1.1&quot;</span> <span class="attr">connectionTimeout</span>=<span class="string">&quot;20000&quot;</span> <span class="attr">redirectPort</span>=<span class="string">&quot;8443&quot;</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Connector</span> <span class="attr">port</span>=<span class="string">&quot;8010&quot;</span> <span class="attr">protocol</span>=<span class="string">&quot;AJP/1.3&quot;</span> <span class="attr">redirectPort</span>=<span class="string">&quot;8443&quot;</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Engine</span> <span class="attr">name</span>=<span class="string">&quot;Catalina2&quot;</span> <span class="attr">defaultHost</span>=<span class="string">&quot;localhost&quot;</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">Realm</span> <span class="attr">className</span>=<span class="string">&quot;org.apache.catalina.realm.LockOutRealm&quot;</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Realm</span> <span class="attr">className</span>=<span class="string">&quot;org.apache.catalina.realm.UserDatabaseRealm&quot;</span></span></span><br><span class="line"><span class="tag">               <span class="attr">resourceName</span>=<span class="string">&quot;UserDatabase&quot;</span>/&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">Realm</span>&gt;</span></span><br><span class="line"></span><br><span class="line">      <span class="tag">&lt;<span class="name">Host</span> <span class="attr">name</span>=<span class="string">&quot;localhost&quot;</span>  <span class="attr">appBase</span>=<span class="string">&quot;/opt/project/webapps2&quot;</span> <span class="attr">unpackWARs</span>=<span class="string">&quot;true&quot;</span> <span class="attr">autoDeploy</span>=<span class="string">&quot;true&quot;</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Valve</span> <span class="attr">className</span>=<span class="string">&quot;org.apache.catalina.valves.AccessLogValve&quot;</span> <span class="attr">directory</span>=<span class="string">&quot;logs&quot;</span> <span class="attr">prefix</span>=<span class="string">&quot;localhost_access_log.&quot;</span> <span class="attr">suffix</span>=<span class="string">&quot;.txt&quot;</span> <span class="attr">pattern</span>=<span class="string">&quot;%h %l %u %t <span class="symbol">&amp;quot;</span>%r<span class="symbol">&amp;quot;</span> %s %b&quot;</span> /&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">Host</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">Engine</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">Service</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">Server</span>&gt;</span></span><br></pre></td></tr></table></div></figure>
+<p>其抽离的配置文件结构如下：</p>
+<figure class="highlight xml"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Server</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Listener</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">GlobaNamingResources</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">GlobaNamingResources</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Service</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Connector</span> /&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">Engine</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">Logger</span> /&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">Realm</span> /&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">host</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">Logger</span> /&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">Context</span> /&gt;</span></span><br><span class="line">                <span class="tag">&lt;/<span class="name">host</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">Engine</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">Service</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">Server</span>&gt;</span></span><br></pre></td></tr></table></div></figure>
+<p>其关系结构图如下：</p>
+<p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="server%E7%BB%93%E6%9E%84.png" alt="server结构">
+       </p>
+
+        <h3 id="组件">
+          <a href="#组件" class="heading-link"><i class="fas fa-link"></i></a><a href="#组件" class="headerlink" title="组件"></a>组件</h3>
+      
+        <h4 id="server">
+          <a href="#server" class="heading-link"><i class="fas fa-link"></i></a><a href="#server" class="headerlink" title="server"></a>server</h4>
+      <p>Server即Catalina Servlet组件，它是server.xml的最外层元素<br><strong>常用属性</strong></p>
+<blockquote>
+<p>Address—Tomcat监听shutdown命令的地址，默认为localhost<br>className—指定实现org.apache.catalina.Server接口的类，默认值为org.apache.catalina.core.StandardServer<br>port－Tomcat监听shutdown命令的端口。设置为-1，则禁止通过端口关闭Tomcat，同时shutdown.bat也不能使用<br>shutdown－通过指定的地址（Address）、端口（port）关闭Tomcat所需的字符串。修改shutdown的值，对shutdown.bat无影响</p>
+</blockquote>
+
+        <h4 id="Listener">
+          <a href="#Listener" class="heading-link"><i class="fas fa-link"></i></a><a href="#Listener" class="headerlink" title="Listener"></a>Listener</h4>
+      <p>Listener即监听器，负责监听特定的事件，当特定事件触发时，Listener会捕捉到该事件，并做出相应处理。Listener通常用在Tomcat的启动和关闭过程。Listener可嵌在Server、Engine、Host、Context内<br><strong>常用属性</strong></p>
+<blockquote>
+<p>className－指定实现org.apache.catalina.LifecycleListener接口的类</p>
+</blockquote>
+
+        <h4 id="GlobalNamingResources">
+          <a href="#GlobalNamingResources" class="heading-link"><i class="fas fa-link"></i></a><a href="#GlobalNamingResources" class="headerlink" title="GlobalNamingResources"></a>GlobalNamingResources</h4>
+      <p>GlobalNamingResources用于配置JNDI</p>
+
+        <h4 id="Service">
+          <a href="#Service" class="heading-link"><i class="fas fa-link"></i></a><a href="#Service" class="headerlink" title="Service"></a>Service</h4>
+      <p>Service包装Executor、Connector、Engine，以组成一个完整的服务。一个Service可以包含多个Connector，但是只能包含一个Engine。<br><strong>常用属性</strong></p>
+<blockquote>
+<p>className—指定实现org.apache.catalina. Service接口的类，默认值为org.apache.catalina.core.StandardService<br>name—Service的名字</p>
+</blockquote>
+<p>Server可以包含多个Service组件</p>
+
+        <h4 id="Executor">
+          <a href="#Executor" class="heading-link"><i class="fas fa-link"></i></a><a href="#Executor" class="headerlink" title="Executor"></a>Executor</h4>
+      <p>Executor即Service提供的线程池，供Service内各组件使用<br><strong>常用属性</strong></p>
+<blockquote>
+<p>className－指定实现org.apache.catalina. Executor接口的类，默认值为org.apache.catalina.core. StandardThreadExecutor<br>name－线程池的名字<br>daemon－是否为守护线程，默认值为true<br>maxIdleTime－总线程数高于minSpareThreads时，空闲线程的存活时间（单位：ms），默认值为60000，即1min<br>maxQueueSize－任务队列上限，默认值为Integer.MAX_VALUE(2147483647)，超过此值，将拒绝<br>maxThreads－线程池内线程数上限，默认值为200<br>minSpareThreads－线程池内线程数下限，默认值为25<br>namePrefix－线程名字的前缀。线程名字通常为namePrefix+ threadNumber<br>prestartminSpareThreads－是否在Executor启动时，就生成minSpareThreads个线程。默认为false<br>threadPriority－Executor内线程的优先级，默认值为5(Thread.NORM_PRIORITY)<br>threadRenewalDelay－重建线程的时间间隔。重建线程池内的线程时，为了避免线程同时重建，每隔threadRenewalDelay（单位：ms）重建一个线程。默认值为1000，设置为负则不重建</p>
+</blockquote>
+
+        <h4 id="Connector">
+          <a href="#Connector" class="heading-link"><i class="fas fa-link"></i></a><a href="#Connector" class="headerlink" title="Connector"></a>Connector</h4>
+      <p>Connector是Tomcat接收请求的入口，每个Connector有自己专属的监听端口<br>Connector有两种：HTTP Connector和AJP Connector</p>
+
+        <h5 id="HTTP-Connector-HTTP-1-1">
+          <a href="#HTTP-Connector-HTTP-1-1" class="heading-link"><i class="fas fa-link"></i></a><a href="#HTTP-Connector-HTTP-1-1" class="headerlink" title="HTTP Connector(HTTP/1.1)"></a>HTTP Connector(HTTP/1.1)</h5>
+      <p>port : 在端口号8080处侦听来自客户browser的HTTP1.1请求.如果把8080改成80,则只要输入<span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="http://localhost/%E5%8D%B3%E5%8F%AF">http://localhost/即可</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span><br>protocol:设定Http协议,默认值为HTTP/1.1<br>minSpareThreads: 该Connector先创建5个线程等待客户请求，每个请求由一个线程负责<br>maxSpareThread:设定在监听端口的线程的最大数目,这个值也决定了服务器可以同时响应客户请求的最大数目.默认值为200<br>redirectport : 当客户请求是https时，把该请求转发到端口8443去<br>enableLookups:如果设为true,表示支持域名解析,可以把IP地址解析为主机名.WEB应用中调用request.getRemoteHost方法返回客户机主机名.默认值为true<br>connectionTimeout:定义建立客户连接超时的时间.如果为-1,表示不限制建立客户连接的时间<br>allowTrace：是否允许HTTP的TRACE方法，默认为false<br>emptySessionPath：如果设置为true，用户的所有路径都将设置为/，默认为false。<br>enableLookups：调用request、getRemoteHost()执行DNS查询，以返回远程主机的主机名，如果设置为false，则直接返回IP地址。<br>maxPostSize：指定POST方式请求的最大量，没有指定默认为2097152。<br>protocol：值必须为HTTP1.1，如果使用AJP处理器，该值必须为AJP/1.3<br>proxyName：如这个连接器正在一个代理配置中被使用，指定这个属性，在request.getServerName()时返回<br>redirectPort：如连接器不支持SSL请求，如收到SSL请求，Catalina容器将会自动重定向指定的端口号，让其进行处理。<br>scheme：设置协议的名字，在request.getScheme()时返回，SSL连接器设为”https”，默认为”http”<br>secure：在SSL连接器可将其设置为true，默认为false<br>URIEncoding：用于解码URL的字符编码，没有指定默认值为ISO-8859-1<br>useBodyEncodingForURI：主要用于Tomcat4.1.x中，指示是否使用在contentType中指定的编码来取代URIEncoding，用于解码URI查询参数，默认为false<br>xpoweredBy：为true时，Tomcat使用规范建议的报头表明支持Servlet的规范版本，默认为false<br>acceptCount：当所有的可能处理的线程都正在使用时，在队列中排队请求的最大数目。当队列已满，任何接收到的请求都会被拒绝，默认值为10<br>bufferSize：设由连接器创建输入流缓冲区的大小，以字节为单位。默认情况下，缓存区大的大小为2048字节<br>compressableMimeType：MIME的列表，默认以逗号分隔。默认值是text/html，text/xml，text/plain<br>compression：指定是否对响应的数据进行压缩。off：表示禁止压缩、on：表示允许压缩（文本将被压缩）、force：表示所有情况下都进行压缩，默认值为off<br>connectionTimeout：设置连接的超时值，以毫秒为单位。默认值为60000=60秒<br>disableUploadTimeOut：允许Servlet容器，正在执行使用一个较长的连接超时值，以使Servlet有较长的时间来完成它的执行，默认值为false<br>maxHttpHeaderSize：HTTP请求和响应头的最大量，以字节为单位，默认值为4096字节<br>maxKeepAliveRequest：服务器关闭之前，客户端发送的流水线最大数目。默认值为100<br>maxSpareThreads：允许存在空闲线程的最大数目，默认值为50<br>minSpareThreads：设当连接器第一次启动创建线程的数目，确保至少有这么多的空闲线程可用。默认值为4<br>port：服务端套接字监听的TCP端口号，默认值为8080（必须）<br>socketBuffer：设Socket输出缓冲区的大小（以字节为单位），-1表示禁止缓冲，默认值为9000字节<br>toNoDelay：为true时，可以提高性能。默认值为true<br>threadPriority：设JVM中请求处理线程优先级。默认值为NORMAL-PRIORITY<br>executor－指定线程池</p>
+
+        <h5 id="AJP-Connector-AJP-1-3">
+          <a href="#AJP-Connector-AJP-1-3" class="heading-link"><i class="fas fa-link"></i></a><a href="#AJP-Connector-AJP-1-3" class="headerlink" title="AJP Connector(AJP/1.3)"></a>AJP Connector(AJP/1.3)</h5>
+      <p>用于将Apache与Tomcat集成在一起，当Apache接收到动态内容请求时，通过在配置中指定的端口号将请求发送给在此端口号上监听的AJP连接器组件。</p>
+<p>backlog：当所有可能的请求处理线程都在使用时，队列中排队的请求最大数目。默认为10，当队列已满，任何请求都将被拒绝<br>maxSpareThread：允许存在空闲线程的最大数目，默认值为50<br>maxThread：最大线程数，默认值为200<br>minSpareThreads：设当连接器第一次启动时创建线程的数目，确保至少有这么多的空闲线程可用，默认值为4<br>port：服务端套接字的TCP端口号，默认值为8089（必须）<br>topNoDelay：为true时，可以提高性能，默认值为true<br>soTimeout：超时值<br>executor－指定线程池</p>
+
+        <h4 id="Engine">
+          <a href="#Engine" class="heading-link"><i class="fas fa-link"></i></a><a href="#Engine" class="headerlink" title="Engine"></a>Engine</h4>
+      <p>Engine负责处理Service内的所有请求。它接收来自Connector的请求，并决定传给哪个Host来处理，Host处理完请求后，将结果返回给Engine，Engine再将结果返回给Connector<br><strong>常用属性：</strong><br>name－Engine的名字<br>defaultHost－指定默认Host。Engine接收来自Connector的请求，然后将请求传递给defaultHost，defaultHost 负责处理请求<br>className－指定实现org.apache.catalina. Engine接口的类，<br>默认值为org.apache.catalina.core. StandardEngine<br>backgroundProcessorDelay－Engine及其部分子组件（Host、Context）调用backgroundProcessor方法的时间间隔。backgroundProcessorDelay为负，将不调用backgroundProcessor。<br>backgroundProcessorDelay的默认值为10<br>注：Tomcat启动后，Engine、Host、Context会启动一个后台线程，定期调用backgroundProcessor方法。backgroundProcessor方法主要用于重新加载Web应用程序的类文件和资源、扫描Session过期<br>jvmRoute－Tomcat集群节点的id。部署Tomcat集群时会用到该属性，<br>Service内必须包含一个Engine组件<br>Service包含一个或多个Connector组件，Service内的Connector共享一个Engine</p>
+
+        <h4 id="Host">
+          <a href="#Host" class="heading-link"><i class="fas fa-link"></i></a><a href="#Host" class="headerlink" title="Host"></a>Host</h4>
+      <p>Host负责管理一个或多个Web项目<br>常用属性：<br>name－Host的名字<br>appBase－存放Web项目的目录（绝对路径、相对路径均可）<br>unpackWARs－当appBase下有WAR格式的项目时，是否将其解压（解成目录结构的Web项目）。设成false，则直接从WAR文件运行Web项目<br>autoDeploy－是否开启自动部署。设为true，Tomcat检测到appBase有新添加的Web项目时，会自动将其部署<br>startStopThreads－线程池内的线程数量。Tomcat启动时，Host提供一个线程池，用于部署Web项目<br>startStopThreads为0，并行线程数=系统CPU核数<br>startStopThreads为负数，并行线程数=系统CPU核数+startStopThreads，如果（系统CPU核数+startStopThreads）小于1，并行线程数设为1<br>startStopThreads为正数，并行线程数= startStopThreads<br>startStopThreads默认值为1<br>startStopThreads为默认值时，Host只提供一个线程，用于部署Host下的所有Web项目。如果Host下的Web项目较多，由于只有一个线程负责部署这些项目，因此这些项目将依次部署，最终导致Tomcat的启动时间较长。此时，修改startStopThreads值，增加Host部署Web项目的并行线程数，可降低Tomcat的启动时间</p>
+
+        <h4 id="Context">
+          <a href="#Context" class="heading-link"><i class="fas fa-link"></i></a><a href="#Context" class="headerlink" title="Context"></a>Context</h4>
+      <p>Context代表一个运行在Host上的Web项目。一个Host上可以有多个Context<br>将一个Web项目（D:\MyApp）添加到Tomcat，在Host标签内，添加Context标签</p>
+<p>常用属性：<br>path－该Web项目的URL入口。path设置为””，输入<a href="http://localhost:8080即可访问MyApp；path设置为”/test/MyApp”，输入http://localhost:8080/test/MyApp才能访问MyApp">http://localhost:8080即可访问MyApp；path设置为”/test/MyApp”，输入http://localhost:8080/test/MyApp才能访问MyApp</a><br>docBase－Web项目的路径，绝对路径、相对路径均可<br>（相对路径是相对于CATALINA_HOME\webapps）<br>reloadable－设置为true，Tomcat会自动监控Web项目的/WEB-INF/classes/和/WEB-INF/lib变化，当检测到变化时，会重新部署Web项目。reloadable默认值为false。通常项目开发过程中设为true，项目发布的则设为false<br>crossContext－设置为true，该Web项目的Session信息可以共享给同一host下的其他Web项目。默认为false</p>
+
+        <h3 id="Tomcat-Server处理一个http请求的过程">
+          <a href="#Tomcat-Server处理一个http请求的过程" class="heading-link"><i class="fas fa-link"></i></a><a href="#Tomcat-Server处理一个http请求的过程" class="headerlink" title="Tomcat Server处理一个http请求的过程"></a>Tomcat Server处理一个http请求的过程</h3>
+      <p>假设来自客户的请求为：<span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="http://localhost:8080/wsota/wsota_index.jsp">http://localhost:8080/wsota/wsota_index.jsp</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<ol>
+<li>请求被发送到本机端口8080，被在那里侦听的Coyote HTTP/1.1 Connector获得</li>
+<li>Connector把该请求交给它所在的Service的Engine来处理，并等待来自Engine的回应</li>
+<li>Engine获得请求localhost/wsota/wsota_index.jsp，匹配它所拥有的所有虚拟主机Host</li>
+<li>Engine匹配到名为localhost的Host（即使匹配不到也把请求交给该Host处理，因为该Host被定义为该Engine的默认主机）</li>
+<li>localhost Host获得请求/wsota/wsota_index.jsp，匹配它所拥有的所有Context</li>
+<li>Host匹配到路径为/wsota的Context（如果匹配不到就把该请求交给路径名为””的Context去处理）</li>
+<li>path=”/wsota”的Context获得请求/wsota_index.jsp，在它的mapping table中寻找对应的servlet</li>
+<li>Context匹配到URL PATTERN为<code>*</code>.jsp的servlet，对应于JspServlet类</li>
+<li>构造HttpServletRequest对象和HttpServletResponse对象，作为参数调用JspServlet的doGet或doPost方法</li>
+<li>Context把执行完了之后的HttpServletResponse对象返回给Host</li>
+<li>Host把HttpServletResponse对象返回给Engine</li>
+<li>Engine把HttpServletResponse对象返回给Connector</li>
+<li>Connector把HttpServletResponse对象返回给客户browser</li>
+</ol>
+<p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E8%AF%B7%E6%B1%82%E6%B5%81%E7%A8%8B.png" alt="请求流程.png">
+      </p>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://focusss.github.io">cjwei</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://focusss.github.io/2019/03/05/Tomcat%E4%B8%ADserver-xml%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6/">https://focusss.github.io/2019/03/05/Tomcat%E4%B8%ADserver-xml%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://focusss.github.io/tags/Tomcat/">Tomcat</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2019/03/07/%E4%B8%BB%E5%8A%A8%E5%BC%95%E7%94%A8%E4%B8%8E%E8%A2%AB%E5%8A%A8%E5%BC%95%E7%94%A8/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">主动引用与被动引用</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2019/03/05/String-intern%E6%B5%85%E6%9E%90/"><span class="paginator-prev__text">String.intern浅析</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AE%80%E4%BB%8B"><span class="toc-number">1.</span> <span class="toc-text">
+          简介</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BB%84%E4%BB%B6"><span class="toc-number">2.</span> <span class="toc-text">
+          组件</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#server"><span class="toc-number">2.1.</span> <span class="toc-text">
+          server</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Listener"><span class="toc-number">2.2.</span> <span class="toc-text">
+          Listener</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#GlobalNamingResources"><span class="toc-number">2.3.</span> <span class="toc-text">
+          GlobalNamingResources</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Service"><span class="toc-number">2.4.</span> <span class="toc-text">
+          Service</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Executor"><span class="toc-number">2.5.</span> <span class="toc-text">
+          Executor</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Connector"><span class="toc-number">2.6.</span> <span class="toc-text">
+          Connector</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#HTTP-Connector-HTTP-1-1"><span class="toc-number">2.6.1.</span> <span class="toc-text">
+          HTTP Connector(HTTP&#x2F;1.1)</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#AJP-Connector-AJP-1-3"><span class="toc-number">2.6.2.</span> <span class="toc-text">
+          AJP Connector(AJP&#x2F;1.3)</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Engine"><span class="toc-number">2.7.</span> <span class="toc-text">
+          Engine</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Host"><span class="toc-number">2.8.</span> <span class="toc-text">
+          Host</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Context"><span class="toc-number">2.9.</span> <span class="toc-text">
+          Context</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Tomcat-Server%E5%A4%84%E7%90%86%E4%B8%80%E4%B8%AAhttp%E8%AF%B7%E6%B1%82%E7%9A%84%E8%BF%87%E7%A8%8B"><span class="toc-number">3.</span> <span class="toc-text">
+          Tomcat Server处理一个http请求的过程</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/images/headImg.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">平安大赚 财丁兴旺</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">69</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">19</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">25</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>cjwei</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.4.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lazyload@2.0.0-rc.2/lazyload.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>

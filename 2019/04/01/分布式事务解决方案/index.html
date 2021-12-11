@@ -1,0 +1,795 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="分布式事务就是指事务的参与者、支持事务的服务器、资源服务器以及事务管理器分别位于不同的分布式系统的不同节点之上。简单的说，就是一次大的操作由不同的小操作组成，这些小的操作分布在不同的服务器上，且属于不同的应用，分布式事务需要保证这些小操作要么全部成功，要么全部失败。本质上来说，分布式事务就是为了保证不同数据库的数据一致性。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="分布式事务解决方案">
+<meta property="og:url" content="https://focusss.github.io/2019/04/01/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/index.html">
+<meta property="og:site_name" content="Focusss&#39;s Blog">
+<meta property="og:description" content="分布式事务就是指事务的参与者、支持事务的服务器、资源服务器以及事务管理器分别位于不同的分布式系统的不同节点之上。简单的说，就是一次大的操作由不同的小操作组成，这些小的操作分布在不同的服务器上，且属于不同的应用，分布式事务需要保证这些小操作要么全部成功，要么全部失败。本质上来说，分布式事务就是为了保证不同数据库的数据一致性。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://focusss.github.io/2019/04/01/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/%E9%85%B8%E7%A2%B1%E5%B9%B3%E8%A1%A1.png">
+<meta property="og:image" content="https://focusss.github.io/2019/04/01/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/2PC%E5%8D%8F%E8%AE%AE.png">
+<meta property="og:image" content="https://focusss.github.io/2019/04/01/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/3PC%E5%8D%8F%E8%AE%AE.png">
+<meta property="og:image" content="https://focusss.github.io/2019/04/01/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/2PC%E6%8F%90%E4%BA%A4.jpg">
+<meta property="og:image" content="https://focusss.github.io/2019/04/01/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/2PC%E5%9B%9E%E6%BB%9A.jpg">
+<meta property="og:image" content="https://focusss.github.io/2019/04/01/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/%E6%9C%80%E7%BB%88%E4%B8%80%E8%87%B4%E6%80%A7.jpg">
+<meta property="og:image" content="https://focusss.github.io/2019/04/01/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/%E4%B8%AD%E9%97%B4%E4%BB%B6%E6%9C%80%E7%BB%88%E4%B8%80%E8%87%B4%E6%80%A7.jpg">
+<meta property="og:image" content="https://focusss.github.io/2019/04/01/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/RocketMQ%E4%BA%8B%E5%8A%A1%E6%B6%88%E6%81%AF.jpg">
+<meta property="og:image" content="https://focusss.github.io/2019/04/01/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/TCC%E4%BA%8B%E5%8A%A1%E6%8F%90%E4%BA%A4.jpg">
+<meta property="og:image" content="https://focusss.github.io/2019/04/01/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/TCC%E4%BA%8B%E5%8A%A1%E5%9B%9E%E6%BB%9A.jpg">
+<meta property="og:image" content="https://focusss.github.io/2019/04/01/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/%E4%BA%8B%E5%8A%A1%E8%A1%A8%E7%BB%93%E6%9E%84.png">
+<meta property="og:image" content="https://focusss.github.io/2019/04/01/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/%E7%94%B5%E5%95%86%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%B8%8B%E5%8D%95%E5%9C%BA%E6%99%AF.jpg">
+<meta property="article:published_time" content="2019-04-01T06:35:20.000Z">
+<meta property="article:modified_time" content="2021-12-11T11:10:46.124Z">
+<meta property="article:author" content="cjwei">
+<meta property="article:tag" content="分布式">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://focusss.github.io/2019/04/01/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/%E9%85%B8%E7%A2%B1%E5%B9%B3%E8%A1%A1.png"><title>分布式事务解决方案 | Focusss's Blog</title><link ref="canonical" href="https://focusss.github.io/2019/04/01/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"carbon","highlight":"light","wordWrap":true},
+  reward: false,
+  fancybox: true,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: true,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Focusss's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">分布式事务解决方案</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2019-04-01</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-12-11</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h3 id="分布式事务">
+          <a href="#分布式事务" class="heading-link"><i class="fas fa-link"></i></a><a href="#分布式事务" class="headerlink" title="分布式事务"></a>分布式事务</h3>
+      <p>分布式事务就是指事务的参与者、支持事务的服务器、资源服务器以及事务管理器分别位于不同的分布式系统的不同节点之上。简单的说，就是一次大的操作由不同的小操作组成，这些小的操作分布在不同的服务器上，且属于不同的应用，分布式事务需要保证这些小操作要么全部成功，要么全部失败。本质上来说，分布式事务就是为了保证不同数据库的数据一致性。</p>
+
+        <h3 id="CAP理论">
+          <a href="#CAP理论" class="heading-link"><i class="fas fa-link"></i></a><a href="#CAP理论" class="headerlink" title="CAP理论"></a>CAP理论</h3>
+      <p> CAP原则又称CAP定理，指的是在一个分布式系统中， Consistency（一致性）、 Availability（可用性）、Partition tolerance（分区容错性），三者不可得兼。</p>
+<ul>
+<li>一致性（C）：在分布式系统中的所有数据备份，在同一时刻是否同样的值。（等同于所有节点访问同一份最新的数据副本）</li>
+<li>可用性（A）：在集群中一部分节点故障后，集群整体是否还能响应客户端的读写请求。（对数据更新具备高可用性）</li>
+<li>分区容忍性（P）：以实际效果而言，分区相当于对通信的时限要求。系统如果不能在时限内达成数据一致性，就意味着发生了分区的情况，必须就当前操作在C和A之间做出选择。</li>
+</ul>
+
+        <h3 id="BASE理论">
+          <a href="#BASE理论" class="heading-link"><i class="fas fa-link"></i></a><a href="#BASE理论" class="headerlink" title="BASE理论"></a>BASE理论</h3>
+      <p>BASE是Basically Available（基本可用）、Soft state（软状态）和Eventually consistent（最终一致性）三个短语的简写，<strong>BASE是对CAP中一致性和可用性权衡的结果</strong>，其来源于对大规模互联网系统分布式实践的结论，是基于CAP定理逐步演化而来的，其核心思想是即使无法做到强一致性（Strong consistency），但每个应用都可以根据自身的业务特点，<strong>采用适当的方式来使系统达到最终一致性（Eventual consistency）</strong>。接下来我们着重对BASE中的三要素进行详细讲解。</p>
+
+        <h4 id="基本可用">
+          <a href="#基本可用" class="heading-link"><i class="fas fa-link"></i></a><a href="#基本可用" class="headerlink" title="基本可用"></a>基本可用</h4>
+      <p>基本可用是指分布式系统在出现不可预知故障的时候，允许损失部分可用性——但请注意，这绝不等价于系统不可用，以下两个就是“基本可用”的典型例子。</p>
+<blockquote>
+<ul>
+<li>响应时间上的损失：正常情况下，一个在线搜索引擎需要0.5秒内返回给用户相应的查询结果，但由于出现异常（比如系统部分机房发生断电或断网故障），查询结果的响应时间增加到了1-2秒。</li>
+</ul>
+</blockquote>
+<blockquote>
+<ul>
+<li>功能上的损失：正常情况下，在一个电子商务网站上进行购物，消费者几乎能够顺利地完成每一笔订单，但是在一些节日大促购物高峰的时候，由于消费者的购物行为激增，为了保护购物系统的稳定性，部分消费者可能会被引导到一个降级页面。</li>
+</ul>
+</blockquote>
+
+        <h4 id="弱状态">
+          <a href="#弱状态" class="heading-link"><i class="fas fa-link"></i></a><a href="#弱状态" class="headerlink" title="弱状态"></a>弱状态</h4>
+      <p>弱状态也称为软状态，和硬状态相对，是指允许系统中的数据存在中间状态，并认为该中间状态的存在不会影响系统的整体可用性，即允许系统在不同节点的数据副本之间进行数据同步的过程存在延时。</p>
+
+        <h4 id="最终一致性">
+          <a href="#最终一致性" class="heading-link"><i class="fas fa-link"></i></a><a href="#最终一致性" class="headerlink" title="最终一致性"></a>最终一致性</h4>
+      <p>最终一致性强调的是系统中所有的数据副本，在经过一段时间的同步后，最终能够达到一个一致的状态。因此，最终一致性的本质是需要系统保证最终数据能够达到一致，而不需要实时保证系统数据的强一致性。</p>
+<p>在实际工程实践中，最终一致性存在以下五类主要变种:</p>
+<ol>
+<li><p>因果一致性<br>如果进程A在更新完某个数据项后通知了进程B，那么进程B之后对该数据项的访问都应该能够获取到进程A更新后的最新值，并且如果进程B要对该数据项进行更新操作的话，务必基于进程A更新后的最新值，即不能发生丢失更新情况。与此同时，与进程A无因果关系的进程C的数据访问则没有这样的限制。</p>
+</li>
+<li><p>读己之所写</p>
+</li>
+</ol>
+<p>进程A更新一个数据项之后，它自己总是能够访问到更新过的最新值，而不会看到旧值。也就是说，对于单个数据获取者而言，其读取到的数据一定不会比自己上次写入的值旧。因此，读己之所写也可以看作是一种特殊的因果一致性。</p>
+<ol start="3">
+<li><p>会话一致性<br>会话一致性将对系统数据的访问过程框定在了一个会话当中：系统能保证在同一个有效的会话中实现“读己之所写”的一致性，也就是说，执行更新操作之后，客户端能够在同一个会话中始终读取到该数据项的最新值。</p>
+</li>
+<li><p>单调读一致性<br>单调读一致性是指如果一个进程从系统中读取出一个数据项的某个值后，那么系统对于该进程后续的任何数据访问都不应该返回更旧的值。</p>
+</li>
+<li><p>单调写一致性</p>
+</li>
+</ol>
+<p>  单调写一致性是指，一个系统需要能够保证来自同一个进程的写操作被顺序地执行。</p>
+<p>以上就是最终一致性的五类常见的变种。事实上，最终一致性并不是只有那些大型分布式系统才设计的特性，许多现代的关系型数据库都采用了最终一致性模型。在现代关系型数据库中，大多都会采用同步和异步方式来实现主备数据复制技术。在同步方式中，数据的复制通常是更新事务的一部分，因此在事务完成后，主备数据库的数据就会达到一致。而在异步方式中，备库的更新往往存在延时，这取决于事务日志在主备数据库之间传输的时间长短，如果传输时间过长或者甚至在日志传输过程中出现异常导致无法及时将事务应用到备库上，那么很显然，从备库中读取的数据将是旧的，因此就出现了不一致的情况。当然，无论是采用多次重试还是认为数据订正，关系型数据库还是能保证最终数据达到一致——这就是系统提供最终一致性保证的经典案例。</p>
+<p>总的来说，BASE理论面向的是大型高可用可扩展的分布式系统，和传统事务的ACID特性是相反的，<strong>它完全不同于ACID的强一致性模型，而是提出通过牺牲强一致性来获得可用性，并允许数据在一段时间内是不一致的，但最终达到一致状态</strong>。但同时，在实际的分布式场景中，不同业务单元和组件对数据一致性的要求是不同的，因此在具体的分布式系统架构设计过程中，ACID特性与BASE理论往往又会结合在一起使用。</p>
+
+        <h3 id="酸碱平衡">
+          <a href="#酸碱平衡" class="heading-link"><i class="fas fa-link"></i></a><a href="#酸碱平衡" class="headerlink" title="酸碱平衡"></a>酸碱平衡</h3>
+      <p>如果非要说酸碱，或者说酸碱平衡，那就是平衡于CAP理论。在不考虑分区的情况下，CA问题依然是系统设计的难点。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E9%85%B8%E7%A2%B1%E5%B9%B3%E8%A1%A1.png">
+      <br>可用性并不是简单的网络连通，服务可以访问，数据可以读取就是可用性，对于互联网业务，可用性是完整的用户体验，甚至会延伸到用户现实生活中（补偿）。有的系统必须容忍大规模可靠分布式系统中的数据不一致，其中原因就是为了在高并发条件下提高读写性能。</p>
+<p>必须容忍大规模可靠分布式系统中的数据不一致，有两个原因：在高并发条件下提高读写性能， 并要区分物理上导致的不一致和协议规定的不一致。</p>
+<p>节点已经宕机，副本无法访问（物理）</p>
+<p>法定数模型会使部分系统不可用的分区情况，即使节点已启动并运行（paxos协议）</p>
+<p>网络断开，节点孤立（物理）</p>
+<p>所以，保证不发生分区，CA也不是免费午餐：尽管保证了网络可靠性，尽量不发生分区，同时获得CA也不是一件简单的事情。</p>
+<p>CA系统才是真正的难点。</p>
+
+        <h3 id="数据一致性问题">
+          <a href="#数据一致性问题" class="heading-link"><i class="fas fa-link"></i></a><a href="#数据一致性问题" class="headerlink" title="数据一致性问题"></a>数据一致性问题</h3>
+      <p>下面举一些常见例子。比如在更新数据的时候，先更新了数据库，后更新了缓存，一旦缓存更新失败，此时数据库和缓存数据会不一致。反过来，如果先更新缓存，再更新数据库，一旦缓存更新成功，数据库更新失败，数据还是不一致；</p>
+<p>比如数据库中的参照完整性，从表引用了主表的主键，对从表来说，也就是外键。当主表的记录删除后，从表是字段置空，还是级联删除。同样，当要创建从表记录时，主表记录是否要先创建，还是可以直接创建从表的记录；</p>
+<p>比如数据库中的原子性：同时修改两条记录，一条记录修改成功了，一条记录没有修改成功，数据就会不一致，此时必须回滚，否则会出现脏数据。</p>
+<p>比如数据库的Master-Slave异步复制，Master宕机切换到Slave，导致部分数据丢失，数据会不一致。</p>
+<p>发送方发送了消息1、2、3、4、5，因为消息中间件的不稳定，导致丢了消息4，接收方只收到了消息1、2、3、5，发送方和接收方数据会不一致。</p>
+<p>一致性问题分为了两大类：事务一致性和多副本一致性。这两类一致性问题基本涵盖了实践中所遇到的绝大部分场景。</p>
+
+        <h3 id="分布式事务问题">
+          <a href="#分布式事务问题" class="heading-link"><i class="fas fa-link"></i></a><a href="#分布式事务问题" class="headerlink" title="分布式事务问题"></a>分布式事务问题</h3>
+      <p>在微服务时代，服务的粒度拆得更细，导致一个无法避免的问题：数据库的事务机制不管用了，因为数据库本身只能保证单机事务，对于分布式事务，只能靠业务系统解决。</p>
+<p>例如做一个服务，最初底下只有一个数据库，用数据库本身的事务来保证数据一致性。随着数据量增长到一定规模，进行了分库，这时数据库的事务就不管用了，如何保证多个库之间的数据一致性呢？</p>
+<p>凡是一个业务操作，需要调用多个服务，并且都是写操作的时候，就可能会出现有的服务调用成功，有的服务调用失败，导致只部分数据写入成功，也就出现了服务之间的数据不一致性。</p>
+
+        <h3 id="分布式事务协议">
+          <a href="#分布式事务协议" class="heading-link"><i class="fas fa-link"></i></a><a href="#分布式事务协议" class="headerlink" title="分布式事务协议"></a>分布式事务协议</h3>
+      <p>常见的分布式事务协议分为两阶段提交和三阶段提交。</p>
+
+        <h4 id="两阶段提交">
+          <a href="#两阶段提交" class="heading-link"><i class="fas fa-link"></i></a><a href="#两阶段提交" class="headerlink" title="两阶段提交"></a>两阶段提交</h4>
+      <p>两阶段提交协议是协调所有分布式原子事务参与者，并决定提交或取消（回滚）的分布式算法。</p>
+
+        <h5 id="协议参与者">
+          <a href="#协议参与者" class="heading-link"><i class="fas fa-link"></i></a><a href="#协议参与者" class="headerlink" title="协议参与者"></a>协议参与者</h5>
+      <p>在两阶段提交协议中，系统一般包含两类机器（或节点）：一类为协调者（coordinator），通常一个系统中只有一个；另一类为事务参与者（participants，cohorts或workers），一般包含多个，在数据存储系统中可以理解为数据副本的个数。协议中假设每个节点都会记录写前日志（write-ahead log）并持久性存储，即使节点发生故障日志也不会丢失。协议中同时假设节点不会发生永久性故障而且任意两个节点都可以互相通信。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="2PC%E5%8D%8F%E8%AE%AE.png">
+      </p>
+
+        <h5 id="2PC执行">
+          <a href="#2PC执行" class="heading-link"><i class="fas fa-link"></i></a><a href="#2PC执行" class="headerlink" title="2PC执行"></a>2PC执行</h5>
+      <ol>
+<li><p>请求阶段（commit-request phase，或称表决阶段，voting phase）在请求阶段，协调者将通知事务参与者准备提交或取消事务，然后进入表决过程。在表决过程中，参与者将告知协调者自己的决策：同意（事务参与者本地作业执行成功）或取消（本地作业执行故障）。<br>即参与者能够执行事务的提交，先执行事务操作，然后返回YES，如果没有成功执行事务操作，就返回NO。</p>
+</li>
+<li><p>提交阶段（commit phase）在该阶段，协调者将基于第一个阶段的投票结果进行决策：提交或取消。当且仅当所有的参与者同意提交事务协调者才通知所有的参与者提交事务，否则协调者将通知所有的参与者取消事务。参与者在接收到协调者发来的消息后将执行响应的操作。</p>
+</li>
+</ol>
+
+        <h5 id="2PC缺点">
+          <a href="#2PC缺点" class="heading-link"><i class="fas fa-link"></i></a><a href="#2PC缺点" class="headerlink" title="2PC缺点"></a>2PC缺点</h5>
+      <ol>
+<li><p>同步阻塞问题。执行过程中，所有参与节点都是事务阻塞型的。当参与者占有公共资源时，其他第三方节点访问公共资源不得不处于阻塞状态。</p>
+</li>
+<li><p>单点故障。由于协调者的重要性，一旦协调者发生故障。参与者会一直阻塞下去。尤其在第二阶段，协调者发生故障，那么所有的参与者还都处于锁定事务资源的状态中，而无法继续完成事务操作。（如果是协调者挂掉，可以重新选举一个协调者，但是无法解决因为协调者宕机导致的参与者处于阻塞状态的问题）</p>
+</li>
+<li><p>数据不一致。在二阶段提交的阶段二中，当协调者向参与者发送commit请求之后，发生了局部网络异常或者在发送commit请求过程中协调者发生了故障，这会导致只有一部分参与者接受到了commit请求。而在这部分参与者接到commit请求之后就会执行commit操作。但是其他部分未接到commit请求的机器则无法执行事务提交。于是整个分布式系统便出现了数据部一致性的现象。</p>
+</li>
+</ol>
+
+        <h5 id="2PC无法解决的问题">
+          <a href="#2PC无法解决的问题" class="heading-link"><i class="fas fa-link"></i></a><a href="#2PC无法解决的问题" class="headerlink" title="2PC无法解决的问题"></a>2PC无法解决的问题</h5>
+      <p>当协调者出错，同时参与者也出错时，两阶段无法保证事务执行的完整性。考虑协调者再发出commit消息之后宕机，而唯一接收到这条消息的参与者同时也宕机了。那么即使协调者通过选举协议产生了新的协调者，这条事务的状态也是不确定的，没人知道事务是否被已经提交。</p>
+
+        <h4 id="三阶段提交">
+          <a href="#三阶段提交" class="heading-link"><i class="fas fa-link"></i></a><a href="#三阶段提交" class="headerlink" title="三阶段提交"></a>三阶段提交</h4>
+      <p>三阶段提交协议在协调者和参与者中都<strong>引入超时机制</strong>，并且把两阶段提交协议的第一个阶段拆分成了两步：<strong>询问，然后再锁资源，最后真正提交。3PC最关键要解决的就是协调者和参与者同时挂掉的问题</strong>。</p>
+<p>三阶段提交有CanCommit、PreCommit、DoCommit三个阶段。在第一阶段，只是询问所有参与者是否可以执行事务操作，并不在本阶段执行事务操作。当协调者收到所有的参与者都返回YES时，在第二阶段才执行事务操作，然后在第三阶段在执行commit或者rollback。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="3PC%E5%8D%8F%E8%AE%AE.png">
+      </p>
+
+        <h5 id="3PC的执行">
+          <a href="#3PC的执行" class="heading-link"><i class="fas fa-link"></i></a><a href="#3PC的执行" class="headerlink" title="3PC的执行"></a>3PC的执行</h5>
+      <ol>
+<li><p>CanCommit阶段<strong>3PC的CanCommit阶段其实和2PC的准备阶段很像</strong>。协调者向参与者发送commit请求，参与者如果可以提交就返回Yes响应，否则返回No响应。</p>
+</li>
+<li><p>PreCommit阶段Coordinator根据Cohort的反应情况来决定是否可以继续事务的PreCommit操作。<br>根据响应情况，有以下两种可能:<br>A. 假如Coordinator从所有的Cohort获得的反馈都是Yes响应，那么就会进行事务的预执行：发送预提交请求。Coordinator向Cohort发送PreCommit请求，并进入Prepared阶段。事务预提交。<strong>Cohort接收到PreCommit请求后，会执行事务操作，并将undo和redo信息记录到事务日志中</strong>。响应反馈。如果Cohort成功的执行了事务操作，则返回ACK响应，同时开始等待最终指令。</p>
+</li>
+</ol>
+<p>B. 假如有任何一个Cohort向Coordinator发送了No响应，或者等待超时之后，Coordinator都没有接到Cohort的响应，那么就中断事务：发送中断请求。Coordinator向所有Cohort发送abort请求。中断事务。Cohort收到来自Coordinator的abort请求之后（或超时之后，仍未收到Cohort的请求），执行事务的中断。</p>
+<ol start="3">
+<li>DoCommit阶段</li>
+</ol>
+<p>该阶段进行真正的事务提交，也可以分为以下两种情况:</p>
+<p>(1)、执行提交</p>
+<p>A.发送提交请求。Coordinator接收到Cohort发送的ACK响应，那么他将从预提交状态进入到提交状态。并向所有Cohort发送doCommit请求。<br>B.事务提交。Cohort接收到doCommit请求之后，执行正式的事务提交。并在完成事务提交之后释放所有事务资源。<br>C.响应反馈。事务提交完之后，向Coordinator发送ACK响应。<br>D.完成事务。Coordinator接收到所有Cohort的ACK响应之后，完成事务。</p>
+<p>(2)、中断事务</p>
+<p>Coordinator没有接收到Cohort发送的ACK响应（可能是接受者发送的不是ACK响应，也可能响应超时），那么就会执行中断事务。</p>
+
+        <h4 id="缺点">
+          <a href="#缺点" class="heading-link"><i class="fas fa-link"></i></a><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4>
+      <p>如果进入PreCommit后，Coordinator发出的是abort请求，假设只有一个Cohort收到并进行了abort操作，而其他对于系统状态未知的Cohort会根据3PC选择继续Commit，此时系统状态发生不一致性。</p>
+
+        <h4 id="三阶段提交协议和两阶段提交协议的不同">
+          <a href="#三阶段提交协议和两阶段提交协议的不同" class="heading-link"><i class="fas fa-link"></i></a><a href="#三阶段提交协议和两阶段提交协议的不同" class="headerlink" title="三阶段提交协议和两阶段提交协议的不同"></a>三阶段提交协议和两阶段提交协议的不同</h4>
+      <p>对于协调者(Coordinator)和参与者(Cohort)都设置了超时机制（在2PC中，只有协调者拥有超时机制，即如果在一定时间内没有收到cohort的消息则默认失败）。在2PC的准备阶段和提交阶段之间，插入预提交阶段，使3PC拥有CanCommit、PreCommit、DoCommit三个阶段。PreCommit是一个缓冲，保证了在最后提交阶段之前各参与节点的状态是一致的。</p>
+
+        <h4 id="3PC为什么比2PC好？">
+          <a href="#3PC为什么比2PC好？" class="heading-link"><i class="fas fa-link"></i></a><a href="#3PC为什么比2PC好？" class="headerlink" title="3PC为什么比2PC好？"></a>3PC为什么比2PC好？</h4>
+      <p>场景：协调者和参与者都挂的情况。<br>第二阶段协调者和参与者挂了，挂了的这个参与者在挂之前已经执行了操作。但是由于他挂了，没有人知道他执行了什么操作。</p>
+<p>这种情况下，当新的协调者被选出来之后，他同样是询问所有的参与者的情况来觉得是commit还是roolback。这看上去和二阶段提交一样啊？他是怎么解决一致性问题的呢？</p>
+<p>看上去和二阶段提交的那种数据不一致的情况的现象是一样的，但仔细分析所有参与者的状态的话就会发现其实并不一样。我们假设挂掉的那台参与者执行的操作是commit。那么其他没挂的操作者的状态应该是什么？他们的状态要么是prepare-commit要么是commit。因为3PC的第三阶段一旦有机器执行了commit，那必然第一阶段大家都是同意commit。所以，这时，新选举出来的协调者一旦发现未挂掉的参与者中有人处于commit状态或者是prepare-commit的话，那就执行commit操作。否则就执行rollback操作。这样挂掉的参与者恢复之后就能和其他机器保持数据一致性了。</p>
+<p>如果挂掉的那台机器已经执行了commit，那么协调者可以从所有未挂掉的参与者的状态中分析出来，并执行commit。如果挂掉的那个参与者执行了rollback，那么协调者和其他的参与者执行的肯定也是rollback操作。</p>
+
+        <h3 id="分布式事务解决方案汇总">
+          <a href="#分布式事务解决方案汇总" class="heading-link"><i class="fas fa-link"></i></a><a href="#分布式事务解决方案汇总" class="headerlink" title="分布式事务解决方案汇总"></a>分布式事务解决方案汇总</h3>
+      <p>以支付宝为例，要把一笔钱从支付宝的余额转账到余额宝，支付宝的余额在系统A，背后有对应的DB1；余额宝在系统B，背后有对应的DB2；蚂蚁借呗在系统C，背后有对应的DB3，这些系统之间都要支持相关转账。所谓“转账”，就是转出方的系统里面账号要扣钱，转入方的系统里面账号要加钱，如何保证两个操作在两个系统中同时成功呢？</p>
+
+        <h3 id="2PC（底层数据库之间直接交互）">
+          <a href="#2PC（底层数据库之间直接交互）" class="heading-link"><i class="fas fa-link"></i></a><a href="#2PC（底层数据库之间直接交互）" class="headerlink" title="2PC（底层数据库之间直接交互）"></a>2PC（底层数据库之间直接交互）</h3>
+      
+        <h4 id="理论">
+          <a href="#理论" class="heading-link"><i class="fas fa-link"></i></a><a href="#理论" class="headerlink" title="理论"></a>理论</h4>
+      <p>2PC是应用在两个数据库或两个系统之间。<br>在MySQL Binlog和Redo  Log两个日志文件之间的数据一致性时，也用到了2PC的理论来解决。</p>
+<p>2PC有两个角色：事务协调者和事务参与者。具体到数据库的实现来说，每一个数据库就是一个参与者，调用方也就是协调者。2PC是指事务的提交分为两个阶段：</p>
+<ul>
+<li>阶段1：准备阶段。协调者向各个参与者发起询问，说要执行一个事务，各参与者可能回复YES、NO或超时。</li>
+<li>阶段2：提交阶段。如果所有参与者都回复的是YES，则事务协调者向所有参与者发起事务提交操作，即Commit操作，所有参与者各自执行事务，然后发送ACK。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="2PC%E6%8F%90%E4%BA%A4.jpg">
+      <br>如果有一个参与者回复的是NO，或者超时了，则事务协调者向所有参与者发起事务回滚操作，所有参与者各自回滚事务，然后发送ACK。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="2PC%E5%9B%9E%E6%BB%9A.jpg">
+      <br>所以，无论事务提交，还是事务回滚，都是两个阶段。</li>
+</ul>
+
+        <h4 id="实现方式">
+          <a href="#实现方式" class="heading-link"><i class="fas fa-link"></i></a><a href="#实现方式" class="headerlink" title="实现方式"></a>实现方式</h4>
+      <p>要实现2PC，所有参与者都要实现三个接口：Prepare、Commit、Rollback，这也就是XA协议，在Java中对应的接口是javax.transaction.xa.XAResource，通常的数据库也都实现了这个协议。开源的Atomikos也基于该协议提供了2PC的解决方案。</p>
+
+        <h4 id="问题">
+          <a href="#问题" class="heading-link"><i class="fas fa-link"></i></a><a href="#问题" class="headerlink" title="问题"></a>问题</h4>
+      <ul>
+<li>问题1：性能问题。在阶段1，锁定资源之后，要等所有节点返回，然后才能一起进入阶段2，不能很好地应对高并发场景。</li>
+<li>问题2：阶段1完成之后，如果在阶段2事务协调者宕机，则所有的参与者接收不到Commit或Rollback指令，将处于“悬而不决”状态。</li>
+<li>问题3：阶段1完成之后，在阶段2，事务协调者向所有的参与者发送了Commit指令，但其中一个参与者超时或出错了（没有正确返回ACK），则其他参与者提交还是回滚呢？ 也不能确定。</li>
+</ul>
+<p>为了解决2PC的问题，又引入了3PC。3PC存在类似宕机如何解决的问题。<br>2PC除本身的算法局限外，还有一个使用上的限制，就是它主要用在两个数据库之间（数据库实现了XA协议）。但以支付宝的转账为例，是两个系统之间的转账，而不是底层两个数据库之间直接交互，所以没有办法使用2PC。</p>
+<p>不仅支付宝，其他业务场景基本都采用了微服务架构，不会直接在底层的两个业务数据库之间做一致性，而是在两个服务上面实现一致性。</p>
+<p>正因为2PC有诸多问题和不便，在实践中一般很少使用，而是采用下面要讲的各种方案。</p>
+
+        <h3 id="最终一致性（消息中间件）">
+          <a href="#最终一致性（消息中间件）" class="heading-link"><i class="fas fa-link"></i></a><a href="#最终一致性（消息中间件）" class="headerlink" title="最终一致性（消息中间件）"></a>最终一致性（消息中间件）</h3>
+      <p>系统A收到用户的转账请求，系统A先自己扣钱，也就是更新DB1；然后通过消息中间件给系统B发送一条加钱的消息，系统B收到此消息，对自己的账号进行加钱，也就是更新DB2。</p>
+<p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E6%9C%80%E7%BB%88%E4%B8%80%E8%87%B4%E6%80%A7.jpg">
+      <br>这里面有一个关键的技术问题：</p>
+<blockquote>
+<ul>
+<li>系统A给消息中间件发消息，是一次网络交互；更新DB1，也是一次网络交互。系统A是先更新DB1，后发送消息，还是先发送消息，后更新DB1？</li>
+</ul>
+</blockquote>
+<p>假设先更新DB1成功，发送消息网络失败，重发又失败，怎么办？又假设先发送消息成功，更新DB1失败。消息已经发出去了，又不能撤回，怎么办？或者消息中间件提供了消息撤回的接口，但是又调用失败怎么办？</p>
+<p>因为这是两次网络调用，两个操作不是原子的，无论谁先谁后，都是有问题的。</p>
+
+        <h4 id="最终一致性的几种具体实现思路">
+          <a href="#最终一致性的几种具体实现思路" class="heading-link"><i class="fas fa-link"></i></a><a href="#最终一致性的几种具体实现思路" class="headerlink" title="最终一致性的几种具体实现思路"></a>最终一致性的几种具体实现思路</h4>
+      
+        <h6 id="同一事务">
+          <a href="#同一事务" class="heading-link"><i class="fas fa-link"></i></a><a href="#同一事务" class="headerlink" title="同一事务"></a>同一事务</h6>
+      <p>将“发送加钱消息”这个<strong>网络调用和更新DB1放在同一个事务里面</strong>，如果发送消息失败，更新DB自动回滚。这样不就可以保证两个操作的原子性了吗？</p>
+<p>这个方案看似正确，其实是错误的，原因有两点：</p>
+<p>（1）网络的2将军问题：发送消息失败，发送方并不知道是消息中间件没有收到消息，还是消息已经收到了，只是返回response的时候失败了？</p>
+<p>如果已经收到消息了，而发送端认为没有收到，执行update DB的回滚操作，则会导致账户A的钱没有扣，账户B的钱却被加了。</p>
+<p>（2）把网络调用放在数据库事务里面，可能会因为网络的延时导致数据库长事务。严重的会阻塞整个数据库，风险很大。</p>
+
+        <h6 id="非事务消息">
+          <a href="#非事务消息" class="heading-link"><i class="fas fa-link"></i></a><a href="#非事务消息" class="headerlink" title="非事务消息"></a>非事务消息</h6>
+      <p>消息中间件实现最终一致性示意图如图所示。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E4%B8%AD%E9%97%B4%E4%BB%B6%E6%9C%80%E7%BB%88%E4%B8%80%E8%87%B4%E6%80%A7.jpg">
+      </p>
+<ol>
+<li><p>系统A增加一张消息表，系统A不再直接给消息中间件发送消息，而是把消息写入到这张消息表中。<strong>把DB1的扣钱操作（表1）和写入消息表（表2）这两个操作放在一个数据库事务里</strong>，保证两者的原子性。</p>
+</li>
+<li><p>系统A准备一个后台程序，源源不断地把消息表中的消息传送给消息中间件。如果失败了，也不断尝试重传。因为网络的2将军问题，系统A发送给消息中间件的消息网络超时了，消息中间件可能已经收到了消息，也可能没有收到。系统A会再次发送该消息，直到消息中间件返回成功。所以，系统A允许消息重复，但消息不会丢失，顺序也不会打乱。</p>
+</li>
+<li><p>通过上面的两个步骤，系统A保证了消息不丢失，但消息可能重复。系统B对消息的消费要解决下面两个问题：</p>
+</li>
+</ol>
+<blockquote>
+<p>问题1：丢失消费。系统B从消息中间件取出消息（此时还在内存里面），如果处理了一半，系统B宕机并再次重启，此时这条消息未处理成功，怎么办？</p>
+</blockquote>
+<p>答案是通过消息中间件的ACK机制，凡是发送ACK的消息，系统B重启之后消息中间件不会再次推送；凡是没有发送ACK的消息，系统B重启之后消息中间件会再次推送。</p>
+<p>但这又会引发一个新问题，就是下面问题2的重复消费：即使系统B把消息处理成功了，但是正要发送ACK的时候宕机了，消息中间件以为这条消息没有处理成功，系统B再次重启的时候又会收到这条消息，系统B就会重复消费这条消息（对应加钱类的场景，账号里面的钱就会加两次）</p>
+<blockquote>
+<p>问题2：重复消费。除了ACK机制，可能会引起重复消费；系统A的后台任务也可能给消息中间件重复发送消息。<br>可以使用数据库的唯一性索引和Redis的分布式锁实现幂等消费。</p>
+</blockquote>
+<p>但这种方案有一个缺点：系统A需要增加消息表，同时还需要一个后台任务，不断扫描此消息表，会导致消息的处理和业务逻辑耦合，额外增加业务方的开发负担。</p>
+
+        <h6 id="事务消息">
+          <a href="#事务消息" class="heading-link"><i class="fas fa-link"></i></a><a href="#事务消息" class="headerlink" title="事务消息"></a>事务消息</h6>
+      <p>为了能通过消息中间件解决该问题，同时又不和业务耦合，RocketMQ提出了“事务消息”<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="RocketMQ%E4%BA%8B%E5%8A%A1%E6%B6%88%E6%81%AF.jpg">
+      <br>RocketMQ不是提供一个单一的“发送”接口，而是把消息的发送拆成了两个阶段，Prepare阶段（消息预发送）和Confirm阶段（确认发送）。具体使用方法如下：</p>
+<p>步骤1：系统A调用Prepare接口，预发送消息。此时消息保存在消息中间件里，但消息中间件不会把消息给消费方消费，消息只是暂存在那。<br>步骤2：系统A更新数据库，进行扣钱操作。<br>步骤3：系统A调用Comfirm接口，确认发送消息。此时消息中间件才会把消息给消费方进行消费。</p>
+<p>显然，这里有两种异常场景：</p>
+<p>场景1：步骤1成功，步骤2成功，步骤3失败或超时，怎么处理？<br>场景2：步骤1成功，步骤2失败或超时，步骤3不会执行。怎么处理？</p>
+<p>这就涉及RocketMQ的关键点：RocketMQ会定期（默认是1min）扫描所有的预发送但还没有确认的消息，回调给发送方，询问这条消息是要发出去，还是取消。发送方根据自己的业务数据，知道这条消息是应该发出去（DB更新成功了），还是应该取消（DB更新失败）。</p>
+<p>对比最终一致性的两种实现方案会发现，RocketMQ最大的改变其实是把“扫描消息表”这件事不让业务方做，而是让消息中间件完成。</p>
+<p>至于消息表，其实还是没有省掉。因为消息中间件要询问发送方事物是否执行成功，还需要一个“变相的本地消息表”，记录事务执行状态和消息发送状态。</p>
+<p>同时对于消费方，还是没有解决系统重启可能导致的重复消费问题，这只能由消费方解决。需要设计判重机制，实现消息消费的幂等。</p>
+
+        <h3 id="人工介入">
+          <a href="#人工介入" class="heading-link"><i class="fas fa-link"></i></a><a href="#人工介入" class="headerlink" title="人工介入"></a>人工介入</h3>
+      <p>无论方案1，还是方案2，发送端把消息成功放入了队列中，但如果消费端消费失败怎么办？</p>
+<p>如果消费失败了，则可以重试，但还一直失败怎么办？是否要自动回滚整个流程？</p>
+<p>答案是人工介入。从工程实践角度来讲，这种整个流程自动回滚的代价是非常巨大的，不但实现起来很复杂，还会引入新的问题。比如自动回滚失败，又如何处理？</p>
+<p>对应这种发生概率极低的事件，采取人工处理会比实现一个高复杂的自动化回滚系统更加可靠，也更加简单。</p>
+
+        <h3 id="TCC">
+          <a href="#TCC" class="heading-link"><i class="fas fa-link"></i></a><a href="#TCC" class="headerlink" title="TCC"></a>TCC</h3>
+      <p>2PC通常用来解决两个数据库之间的分布式事务问题，比较局限。现在企业采用的是各式各样的SOA服务，更需要解决两个服务之间的分布式事务问题。</p>
+<p>为了解决SOA系统中的分布式事务问题，支付宝提出了TCC。TCC是Try、Confirm、Cancel三个单词的缩写，其实是一个应用层面的2PC协议，Confirm对应2PC中的事务提交操作，Cancel对应2PC中的事务回滚操作。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="TCC%E4%BA%8B%E5%8A%A1%E6%8F%90%E4%BA%A4.jpg">
+      <br>（1）准备阶段：调用方调用所有服务方提供的Try接口，该阶段各调用方做资源检查和资源锁定，为接下来的阶段2做准备。<br>（2）提交阶段：如果所有服务方都返回YES，则进入提交阶段，调用方调用各服务方的Confirm接口，各服务方进行事务提交。如果有一个服务方在阶段1返回NO或者超时了，则调用方调用各服务方的Cancel接口<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="TCC%E4%BA%8B%E5%8A%A1%E5%9B%9E%E6%BB%9A.jpg">
+      <br>这里有一个关键问题：TCC既然也借鉴2PC的思路，那么它是如何解决2PC的问题的呢？也就是说，在阶段2，调用方发生宕机，或者某个服务超时了，如何处理呢？</p>
+<p>答案是：不断重试！不管是Confirm失败了，还是Cancel失败了，都不断重试。这就要求Confirm和Cancel都必须是幂等操作。注意，这里的重试是由TCC的框架来执行的，而不是让业务方自己去做。</p>
+<p>下面以一个转账的事件为例，来说明TCC的过程。假设有三个账号A、B、C，通过SOA提供的转账服务操作。A、B同时分别要向C转30元、50元，最后C的账号+80元，A、B各减30元、50元。</p>
+<p>阶段1：分别对账号A、B、C执行Try操作，A、B、C三个账号在三个不同的SOA服务里面，也就是分别调用三个服务的Try接口。具体来说，就是账号A锁定30元，账号B锁定50元，检查账号C的合法性，比如账号C是否违法被冻结，账号C是否已注销。</p>
+<p>所以，在这个场景里面，对应的“扣钱”的Try操作就是“锁定”，对应的“加钱”的Try操作就是检查账号合法性，为的是保证接下来的阶段2扣钱可扣、加钱可加！</p>
+<p>阶段2：A、B、C的Try操作都成功，执行Confirm操作，即分别调用三个SOA服务的Confirm接口。A、B扣钱，C加钱。如果任意一个失败，则不断重试，直到成功为止。</p>
+<p>从案例可以看出，Try操作主要是为了“保证业务操作的前置条件都得到满足”，然后在Confirm阶段，因为前置条件都满足了，所以可以不断重试保证成功。</p>
+
+        <h3 id="事务状态表-调用方重试-接收方幂等">
+          <a href="#事务状态表-调用方重试-接收方幂等" class="heading-link"><i class="fas fa-link"></i></a><a href="#事务状态表-调用方重试-接收方幂等" class="headerlink" title="事务状态表+调用方重试+接收方幂等"></a>事务状态表+调用方重试+接收方幂等</h3>
+      <p>同样以转账为例，介绍一种类似于TCC的方法。TCC的方法通过TCC框架内部来做，下面介绍的方法是业务方自己实现的。</p>
+<p>调用方维护一张事务状态表（或者说事务日志、日志流水），在每次调用之前，落盘一条事务流水，生成一个全局的事务ID。事务状态表的表结构如下：<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E4%BA%8B%E5%8A%A1%E8%A1%A8%E7%BB%93%E6%9E%84.png">
+      <br>初始是状态1，每调用成功1个服务则更新1次状态，最后所有系统调用成功，状态更新到状态4，状态2、3是中间状态。当然，也可以不保存中间状态，只设置两个状态：Begin和End。事务开始之前的状态是Begin，全部结束之后的状态是End。如果某个事务一直停留在Begin状态，则说明该事务没有执行完毕。</p>
+<p>然后有一个后台任务，扫描状态表，在过了某段时间后（假设1次事务执行成功通常最多花费30s），状态没有变为最终的状态4，说明这条事务没有执行成功。于是重新调用系统A、B、C。保证这条流水的最终状态是状态4（或End状态）。当然，系统A、B、C根据全局的事务ID做幂等操作，所以即使重复调用也没有关系。</p>
+<p>补充说明：</p>
+<p>（1）如果后台任务重试多次仍然不能成功，要为状态表加一个Error状态，通过人工介入干预。<br>（2）对于调用方的同步调用，如果部分成功，此时给客户端返回什么呢？<br>答案是不确定，或者说暂时未知。只能告诉用户该笔钱转账超时，请稍后再来确认。<br>（3）对于同步调用，调用方调用A或B失败的时候，可以重试三次。如果重试三次还不成功，则放弃操作，再交由后台任务后续处理。</p>
+
+        <h3 id="对账">
+          <a href="#对账" class="heading-link"><i class="fas fa-link"></i></a><a href="#对账" class="headerlink" title="对账"></a>对账</h3>
+      <p>把上一节的方案扩展一下，岂止事务有状态，系统中的各种数据对象都有状态，或者说都有各自完整的生命周期，同时数据与数据之间存在着关联关系。我们可以很好地利用这种完整的生命周期和数据之间的关联关系，来实现系统的一致性，这就是“对账”。</p>
+<p>在前面，我们把注意力都放在了“过程”中，而在“对账”的思路中，将把注意力转移到“结果”中。什么意思呢？</p>
+<p>在前面的方案中，无论最终一致性，还是TCC、事务状态表，都是为了保证“过程的原子性”，也就是多个系统操作（或系统调用），要么全部成功，要么全部失败。</p>
+<p>但所有的“过程”都必然产生“结果”，过程是我们所说的“事务”，结果就是业务数据。一个过程如果部分执行成功、部分执行失败，则意味着结果是不完整的。从结果也可以反推出过程出了问题，从而对数据进行修补，这就是“对账”的思路！</p>
+<p>下面举几个对账的例子。</p>
+<p>案例1：电商网站的订单履约系统。一张订单从“已支付”，到“下发给仓库”，到“出仓完成”。假定从“已支付”到“下发给仓库”最多用1个小时；从“下发给仓库”到“出仓完成”最多用8个小时。意味着只要发现1个订单的状态过了1个小时之后还处于“已支付”状态，就认为订单下发没有成功，需要重新下发，也就是“重试”。同样，只要发现订单过了8个小时还未出仓，这时可能会发出报警，仓库的作业系统是否出了问题……诸如此类。</p>
+<p>这个案例跟事务的状态很类似：一旦发现系统中的某个数据对象过了一个限定时间生命周期仍然没有走完，仍然处在某个中间状态，就说明系统不一致了，要进行某种补偿操作（比如重试或报警）。</p>
+<p>更复杂一点：订单有状态，库存系统的库存也有状态，优惠系统的优惠券也有状态，根据业务规则，这些状态之间进行比对，就能发现系统某个地方不一致，做相应的补偿。</p>
+<p>案例2：微博的关注关系。需要存两张表，一张是关注表，一张是粉丝表，这两张表各自都是分库分表的。假设A关注了B，需要先以A为主键进行分库，存入关注表；再以B为主键进行分库，存入粉丝表。也就是说，一次业务操作，要向两个数据库中写入两条数据，如何保证原子性？</p>
+<p>案例3：电商的订单系统也是分库分表的。订单通常有两个常用的查询维度，一个是买家，一个是卖家。如果按买家分库，按卖家查询就不好做；如果按卖家分库，按买家查询就不好做。这种通常会把订单数据冗余一份，按买家进行分库分表存一份，按卖家再分库分表存一份。和案例2存在同样的问题：一个订单要向两个数据库中写入两条数据，如何保证原子性？</p>
+<p>如果把案例2、案例3的问题看作为一个分布式事务的话，可以用最终一致性、TCC、事务状态表去实现，但这些方法都太重，一个简单的方法是“对账”。</p>
+<p>因为两个库的数据是冗余的，可以先保证一个库的数据是准确的，以该库为基准校对另外一个库。</p>
+<p>对账又分为全量对账和增量对账：</p>
+<p>（1）全量对账。比如每天晚上运作一个定时任务，比对两个数据库。<br>（2）增量对账。可以是一个定时任务，基于数据库的更新时间；也可以基于消息中间件，每一次业务操作都抛出一个消息到消息中间件，然后由一个消费者消费这条消息，对两个数据库中的数据进行比对（当然，消息可能丢失，无法百分之百地保证，还是需要全量对账来兜底）。</p>
+<p>总之，对账的关键是要找出“数据背后的数学规律”。有些规律比较直接，谁都能看出来，比如案例2、案例3的冗余数据库；有些规律隐含一些，比如案例1的订单履约的状态。找到了规律就可以基于规律进行数据的比对，发现问题，然后补偿。</p>
+
+        <h3 id="妥协方案：弱一致性-基于状态的补偿">
+          <a href="#妥协方案：弱一致性-基于状态的补偿" class="heading-link"><i class="fas fa-link"></i></a><a href="#妥协方案：弱一致性-基于状态的补偿" class="headerlink" title="妥协方案：弱一致性+基于状态的补偿"></a>妥协方案：弱一致性+基于状态的补偿</h3>
+      <ul>
+<li>“最终一致性”是一种异步的方法，数据有一定延迟；</li>
+<li>TCC是一种同步方法，但TCC需要两个阶段，性能损耗较大；</li>
+<li>事务状态表也是一种同步方法，但每次要记事务流水，要更新事务状态，很烦琐，性能也有损耗；</li>
+<li>“对账”也是一个事后过程。</li>
+</ul>
+<p>如果需要一个同步的方案，既要让系统之间保持一致性，又要有很高的性能，支持高并发，应该怎么处理呢？</p>
+<p>电商网站的下单至少需要两个操作：创建订单和扣库存。订单系统有订单的数据库和服务，库存系统有库存的数据库和服务。先创建订单，后扣库存，可能会创建订单成功，扣库存失败；反过来，先扣库存，后创建订单，可能会扣库存成功，创建订单失败。如何保证创建订单 + 扣库存两个操作的原子性，同时还要能抵抗线上的高并发流量？<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E7%94%B5%E5%95%86%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%B8%8B%E5%8D%95%E5%9C%BA%E6%99%AF.jpg">
+      </p>
+<p>如果用最终一致性方案，因为是异步操作，如果库存扣减不及时会导致超卖，因此最终一致性的方案不可行；如果用TCC方案，则意味着一个用户请求要调用两次（Try和Confirm）订单服务、两次（Try和Confirm）库存服务，性能又达不到要求。如果用事务状态表，要写事务状态，也存在性能问题。</p>
+<p>既要满足高并发，又要达到一致性，鱼和熊掌不能兼得。可以利用业务的特性，采用一种弱一致的方案。</p>
+<p>对于该需求，有一个关键特性：对于电商的购物来讲，允许少卖，但不能超卖。比如有100件东西，卖给99个人，有1件没有卖出去，这是可以接受的；但如果卖给了101个人，其中1个人拿不到货，平台违约，这就不能接受。而该处就利用了这个特性，具体做法如下。</p>
+
+        <h4 id="方案1：先扣库存，后创建订单">
+          <a href="#方案1：先扣库存，后创建订单" class="heading-link"><i class="fas fa-link"></i></a><a href="#方案1：先扣库存，后创建订单" class="headerlink" title="方案1：先扣库存，后创建订单"></a>方案1：先扣库存，后创建订单</h4>
+      <p>有三种情况：</p>
+<ol>
+<li>扣库存成功，提交订单成功，返回成功。</li>
+<li>扣库存成功，提交订单失败，返回失败，调用方重试（此处可能会多扣库存）。</li>
+<li>扣库存失败，不再提交订单，返回失败，调用方重试（此处可能会多扣库存）。</li>
+</ol>
+
+        <h4 id="方案2：先创建订单，后扣库存">
+          <a href="#方案2：先创建订单，后扣库存" class="heading-link"><i class="fas fa-link"></i></a><a href="#方案2：先创建订单，后扣库存" class="headerlink" title="方案2：先创建订单，后扣库存"></a>方案2：先创建订单，后扣库存</h4>
+      <p>也有三种情况：</p>
+<ol>
+<li>提交订单成功，扣库存成功，返回成功。</li>
+<li>提交订单成功，扣库存失败，返回失败，调用方重试（此处可能会多扣库存）。</li>
+<li>提交订单失败，不再扣库存，调用方重试。</li>
+</ol>
+<p>无论方案1，还是方案2，只要最终保证库存可以多扣，不能少扣即可。</p>
+<p>但是，库存多扣了，数据不一致，怎么补偿呢？</p>
+<p>库存每扣一次，都会生成一条流水记录。这条记录的初始状态是“占用”，等订单支付成功后，会把状态改成“释放”。</p>
+<p>对于那些过了很长时间一直是占用，而不释放的库存，要么是因为前面多扣造成的，要么是因为用户下了单但没有支付。</p>
+<p>通过比对，得到库存系统的“占用又没有释放的库存流水”与订单系统的未支付的订单，就可以回收这些库存，同时把对应的订单取消。类似12306网站，过一定时间不支付，订单会取消，将库存释放。</p>
+
+        <h3 id="妥协方案：重试-回滚-报警-人工修复">
+          <a href="#妥协方案：重试-回滚-报警-人工修复" class="heading-link"><i class="fas fa-link"></i></a><a href="#妥协方案：重试-回滚-报警-人工修复" class="headerlink" title="妥协方案：重试+回滚+报警+人工修复"></a>妥协方案：重试+回滚+报警+人工修复</h3>
+      <p>上文介绍了基于订单的状态 +库存流水的状态做补偿（或者说叫对账）。如果业务很复杂，状态的维护也很复杂，就可以采用下面这种更加妥协而简单的方法。</p>
+<p>按方案1，先扣库存，后创建订单。不做状态补偿，为库存系统提供一个回滚接口。创建订单如果失败了，先重试。如果重试还不成功，则回滚库存的扣减。如回滚也失败，则发报警，进行人工干预修复。</p>
+<p>总之，根据业务逻辑，通过三次重试或回滚的方法，最大限度地保证一致。实在不一致，就发报警，让人工干预。只要日志流水记录得完整，人工肯定可以修复！通常只要业务逻辑本身没问题，重试、回滚之后还失败的概率会比较低，所以这种办法虽然丑陋，但很实用。</p>
+
+        <h3 id="总结">
+          <a href="#总结" class="heading-link"><i class="fas fa-link"></i></a><a href="#总结" class="headerlink" title="总结"></a>总结</h3>
+      <p>解决分布式事务问题，比较可靠的七种方法：两种最终一致性的方案，两种妥协办法(2PC、3PC)，两种基于状态 + 重试 + 幂等的方法（TCC，状态机+重试+幂等），还有一种对账方法。</p>
+<p>在实现层面，妥协和对账的办法最容易，最终一致性次之，TCC最复杂。</p>
+
+        <h3 id="参考资料">
+          <a href="#参考资料" class="heading-link"><i class="fas fa-link"></i></a><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3>
+      <ul>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/7u5zfrLzk38tDwOfDEkuqw">实践丨分布式事务解决方案汇总：2PC、消息中间件、TCC、状态机+重试+幂等</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/YDbqZFcliHrILk9w0sCx8Q">深入分布式事务</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://blog.csdn.net/w372426096/article/details/80449695">[分布式]：深入理解分布式系统的2PC和3PC</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+</ul>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://focusss.github.io">cjwei</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://focusss.github.io/2019/04/01/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/">https://focusss.github.io/2019/04/01/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://focusss.github.io/tags/%E5%88%86%E5%B8%83%E5%BC%8F/">分布式</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2019/04/04/Redis%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">Redis数据结构</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2019/03/29/MySQL-%E4%B8%AD%E7%9A%84%E9%87%8D%E5%81%9A%E6%97%A5%E5%BF%97%EF%BC%8C%E5%9B%9E%E6%BB%9A%E6%97%A5%E5%BF%97-%EF%BC%8C%E4%BB%A5%E5%8F%8A%E4%BA%8C%E8%BF%9B%E5%88%B6%E6%97%A5%E5%BF%97%E7%9A%84%E7%AE%80%E5%8D%95%E6%80%BB%E7%BB%93/"><span class="paginator-prev__text">MySQL 中的重做日志，回滚日志 ，以及二进制日志的简单总结</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1"><span class="toc-number">1.</span> <span class="toc-text">
+          分布式事务</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CAP%E7%90%86%E8%AE%BA"><span class="toc-number">2.</span> <span class="toc-text">
+          CAP理论</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#BASE%E7%90%86%E8%AE%BA"><span class="toc-number">3.</span> <span class="toc-text">
+          BASE理论</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%9F%BA%E6%9C%AC%E5%8F%AF%E7%94%A8"><span class="toc-number">3.1.</span> <span class="toc-text">
+          基本可用</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%BC%B1%E7%8A%B6%E6%80%81"><span class="toc-number">3.2.</span> <span class="toc-text">
+          弱状态</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%9C%80%E7%BB%88%E4%B8%80%E8%87%B4%E6%80%A7"><span class="toc-number">3.3.</span> <span class="toc-text">
+          最终一致性</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%85%B8%E7%A2%B1%E5%B9%B3%E8%A1%A1"><span class="toc-number">4.</span> <span class="toc-text">
+          酸碱平衡</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7%E9%97%AE%E9%A2%98"><span class="toc-number">5.</span> <span class="toc-text">
+          数据一致性问题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98"><span class="toc-number">6.</span> <span class="toc-text">
+          分布式事务问题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%8D%8F%E8%AE%AE"><span class="toc-number">7.</span> <span class="toc-text">
+          分布式事务协议</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%A4%E9%98%B6%E6%AE%B5%E6%8F%90%E4%BA%A4"><span class="toc-number">7.1.</span> <span class="toc-text">
+          两阶段提交</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%8D%8F%E8%AE%AE%E5%8F%82%E4%B8%8E%E8%80%85"><span class="toc-number">7.1.1.</span> <span class="toc-text">
+          协议参与者</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#2PC%E6%89%A7%E8%A1%8C"><span class="toc-number">7.1.2.</span> <span class="toc-text">
+          2PC执行</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#2PC%E7%BC%BA%E7%82%B9"><span class="toc-number">7.1.3.</span> <span class="toc-text">
+          2PC缺点</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#2PC%E6%97%A0%E6%B3%95%E8%A7%A3%E5%86%B3%E7%9A%84%E9%97%AE%E9%A2%98"><span class="toc-number">7.1.4.</span> <span class="toc-text">
+          2PC无法解决的问题</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%89%E9%98%B6%E6%AE%B5%E6%8F%90%E4%BA%A4"><span class="toc-number">7.2.</span> <span class="toc-text">
+          三阶段提交</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#3PC%E7%9A%84%E6%89%A7%E8%A1%8C"><span class="toc-number">7.2.1.</span> <span class="toc-text">
+          3PC的执行</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BC%BA%E7%82%B9"><span class="toc-number">7.3.</span> <span class="toc-text">
+          缺点</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%89%E9%98%B6%E6%AE%B5%E6%8F%90%E4%BA%A4%E5%8D%8F%E8%AE%AE%E5%92%8C%E4%B8%A4%E9%98%B6%E6%AE%B5%E6%8F%90%E4%BA%A4%E5%8D%8F%E8%AE%AE%E7%9A%84%E4%B8%8D%E5%90%8C"><span class="toc-number">7.4.</span> <span class="toc-text">
+          三阶段提交协议和两阶段提交协议的不同</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#3PC%E4%B8%BA%E4%BB%80%E4%B9%88%E6%AF%942PC%E5%A5%BD%EF%BC%9F"><span class="toc-number">7.5.</span> <span class="toc-text">
+          3PC为什么比2PC好？</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E6%B1%87%E6%80%BB"><span class="toc-number">8.</span> <span class="toc-text">
+          分布式事务解决方案汇总</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2PC%EF%BC%88%E5%BA%95%E5%B1%82%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B9%8B%E9%97%B4%E7%9B%B4%E6%8E%A5%E4%BA%A4%E4%BA%92%EF%BC%89"><span class="toc-number">9.</span> <span class="toc-text">
+          2PC（底层数据库之间直接交互）</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%90%86%E8%AE%BA"><span class="toc-number">9.1.</span> <span class="toc-text">
+          理论</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0%E6%96%B9%E5%BC%8F"><span class="toc-number">9.2.</span> <span class="toc-text">
+          实现方式</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%97%AE%E9%A2%98"><span class="toc-number">9.3.</span> <span class="toc-text">
+          问题</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9C%80%E7%BB%88%E4%B8%80%E8%87%B4%E6%80%A7%EF%BC%88%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6%EF%BC%89"><span class="toc-number">10.</span> <span class="toc-text">
+          最终一致性（消息中间件）</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%9C%80%E7%BB%88%E4%B8%80%E8%87%B4%E6%80%A7%E7%9A%84%E5%87%A0%E7%A7%8D%E5%85%B7%E4%BD%93%E5%AE%9E%E7%8E%B0%E6%80%9D%E8%B7%AF"><span class="toc-number">10.1.</span> <span class="toc-text">
+          最终一致性的几种具体实现思路</span></a><ol class="toc-child"><li class="toc-item toc-level-6"><a class="toc-link" href="#%E5%90%8C%E4%B8%80%E4%BA%8B%E5%8A%A1"><span class="toc-number">10.1.0.1.</span> <span class="toc-text">
+          同一事务</span></a></li><li class="toc-item toc-level-6"><a class="toc-link" href="#%E9%9D%9E%E4%BA%8B%E5%8A%A1%E6%B6%88%E6%81%AF"><span class="toc-number">10.1.0.2.</span> <span class="toc-text">
+          非事务消息</span></a></li><li class="toc-item toc-level-6"><a class="toc-link" href="#%E4%BA%8B%E5%8A%A1%E6%B6%88%E6%81%AF"><span class="toc-number">10.1.0.3.</span> <span class="toc-text">
+          事务消息</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BA%BA%E5%B7%A5%E4%BB%8B%E5%85%A5"><span class="toc-number">11.</span> <span class="toc-text">
+          人工介入</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#TCC"><span class="toc-number">12.</span> <span class="toc-text">
+          TCC</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BA%8B%E5%8A%A1%E7%8A%B6%E6%80%81%E8%A1%A8-%E8%B0%83%E7%94%A8%E6%96%B9%E9%87%8D%E8%AF%95-%E6%8E%A5%E6%94%B6%E6%96%B9%E5%B9%82%E7%AD%89"><span class="toc-number">13.</span> <span class="toc-text">
+          事务状态表+调用方重试+接收方幂等</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AF%B9%E8%B4%A6"><span class="toc-number">14.</span> <span class="toc-text">
+          对账</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A6%A5%E5%8D%8F%E6%96%B9%E6%A1%88%EF%BC%9A%E5%BC%B1%E4%B8%80%E8%87%B4%E6%80%A7-%E5%9F%BA%E4%BA%8E%E7%8A%B6%E6%80%81%E7%9A%84%E8%A1%A5%E5%81%BF"><span class="toc-number">15.</span> <span class="toc-text">
+          妥协方案：弱一致性+基于状态的补偿</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%96%B9%E6%A1%881%EF%BC%9A%E5%85%88%E6%89%A3%E5%BA%93%E5%AD%98%EF%BC%8C%E5%90%8E%E5%88%9B%E5%BB%BA%E8%AE%A2%E5%8D%95"><span class="toc-number">15.1.</span> <span class="toc-text">
+          方案1：先扣库存，后创建订单</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%96%B9%E6%A1%882%EF%BC%9A%E5%85%88%E5%88%9B%E5%BB%BA%E8%AE%A2%E5%8D%95%EF%BC%8C%E5%90%8E%E6%89%A3%E5%BA%93%E5%AD%98"><span class="toc-number">15.2.</span> <span class="toc-text">
+          方案2：先创建订单，后扣库存</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A6%A5%E5%8D%8F%E6%96%B9%E6%A1%88%EF%BC%9A%E9%87%8D%E8%AF%95-%E5%9B%9E%E6%BB%9A-%E6%8A%A5%E8%AD%A6-%E4%BA%BA%E5%B7%A5%E4%BF%AE%E5%A4%8D"><span class="toc-number">16.</span> <span class="toc-text">
+          妥协方案：重试+回滚+报警+人工修复</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">17.</span> <span class="toc-text">
+          总结</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">18.</span> <span class="toc-text">
+          参考资料</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/images/headImg.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">平安大赚 财丁兴旺</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">69</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">19</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">25</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>cjwei</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.4.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lazyload@2.0.0-rc.2/lazyload.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>

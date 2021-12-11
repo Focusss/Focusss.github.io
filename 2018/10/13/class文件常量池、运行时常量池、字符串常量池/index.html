@@ -1,0 +1,559 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="常量池是为了避免频繁的创建和销毁对象而影响系统性能，其实现了对象的共享。例如字符串常量池，在编译阶段就把所有的字符串文字放到一个常量池中">
+<meta property="og:type" content="article">
+<meta property="og:title" content="class文件常量池、运行时常量池、字符串常量池">
+<meta property="og:url" content="https://focusss.github.io/2018/10/13/class%E6%96%87%E4%BB%B6%E5%B8%B8%E9%87%8F%E6%B1%A0%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6%E5%B8%B8%E9%87%8F%E6%B1%A0%E3%80%81%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%B8%B8%E9%87%8F%E6%B1%A0/index.html">
+<meta property="og:site_name" content="Focusss&#39;s Blog">
+<meta property="og:description" content="常量池是为了避免频繁的创建和销毁对象而影响系统性能，其实现了对象的共享。例如字符串常量池，在编译阶段就把所有的字符串文字放到一个常量池中">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://focusss.github.io/2018/10/13/class%E6%96%87%E4%BB%B6%E5%B8%B8%E9%87%8F%E6%B1%A0%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6%E5%B8%B8%E9%87%8F%E6%B1%A0%E3%80%81%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%B8%B8%E9%87%8F%E6%B1%A0/class%E5%B8%B8%E9%87%8F%E6%B1%A01.png">
+<meta property="og:image" content="https://focusss.github.io/2018/10/13/class%E6%96%87%E4%BB%B6%E5%B8%B8%E9%87%8F%E6%B1%A0%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6%E5%B8%B8%E9%87%8F%E6%B1%A0%E3%80%81%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%B8%B8%E9%87%8F%E6%B1%A0/class%E5%B8%B8%E9%87%8F%E6%B1%A02.png">
+<meta property="og:image" content="https://focusss.github.io/2018/10/13/class%E6%96%87%E4%BB%B6%E5%B8%B8%E9%87%8F%E6%B1%A0%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6%E5%B8%B8%E9%87%8F%E6%B1%A0%E3%80%81%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%B8%B8%E9%87%8F%E6%B1%A0/class%E5%B8%B8%E9%87%8F%E6%B1%A03.png">
+<meta property="article:published_time" content="2018-10-13T02:53:39.000Z">
+<meta property="article:modified_time" content="2021-12-11T17:20:10.172Z">
+<meta property="article:author" content="cjwei">
+<meta property="article:tag" content="JVM">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://focusss.github.io/2018/10/13/class%E6%96%87%E4%BB%B6%E5%B8%B8%E9%87%8F%E6%B1%A0%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6%E5%B8%B8%E9%87%8F%E6%B1%A0%E3%80%81%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%B8%B8%E9%87%8F%E6%B1%A0/class%E5%B8%B8%E9%87%8F%E6%B1%A01.png"><title>class文件常量池、运行时常量池、字符串常量池 | Focusss's Blog</title><link ref="canonical" href="https://focusss.github.io/2018/10/13/class%E6%96%87%E4%BB%B6%E5%B8%B8%E9%87%8F%E6%B1%A0%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6%E5%B8%B8%E9%87%8F%E6%B1%A0%E3%80%81%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%B8%B8%E9%87%8F%E6%B1%A0/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"carbon","highlight":"light","wordWrap":true},
+  reward: false,
+  fancybox: true,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: true,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Focusss's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">class文件常量池、运行时常量池、字符串常量池</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2018-10-13</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-12-12</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h2 id="简介">
+          <a href="#简介" class="heading-link"><i class="fas fa-link"></i></a><a href="#简介" class="headerlink" title="简介"></a>简介</h2>
+      <p>常量池是为了避免频繁的创建和销毁对象而影响系统性能，其实现了对象的共享。例如字符串常量池，在编译阶段就把所有的字符串文字放到一个常量池中。</p>
+<blockquote>
+<p>节省内存空间：常量池中所有相同的字符串常量被合并，只占用一个空间。<br>节省运行时间：比较字符串时，==比equals()快。对于两个引用变量，只用==判断引用是否相等，也就可以判断实际值是否相等。</p>
+</blockquote>
+
+        <h2 id="class文件常量池（静态常量池）">
+          <a href="#class文件常量池（静态常量池）" class="heading-link"><i class="fas fa-link"></i></a><a href="#class文件常量池（静态常量池）" class="headerlink" title="class文件常量池（静态常量池）"></a>class文件常量池（静态常量池）</h2>
+      <p>class文件常量池是指编译生成的class字节码文件结构中的一个常量池（Constant Pool Table），用于存放编译期间生成的各种字面量和符号引用，这部分内容将在类加载后，存放于方法区的运行时常量池。</p>
+<blockquote>
+<ul>
+<li>字面量指的是<strong>字符串字面量和声明为final的常量值（基本数据类型）</strong>。</li>
+<li>&ensp;&ensp;字符串字面量除了类中所有双引号括起来的字符串（包括方法体内的），还包括所有用到的类名、方法名和这些类与方法的字符串描述、字段（成员变量）的名称和描述符</li>
+<li>&ensp;&ensp;声明为final的常量值指的是成员变量，不包含本地变量，本地变量是属于方法的。</li>
+<li>符号引用包括类和接口的全限定名（包括包路径的完整名）、字段的名称和描述符、方法的名称和描述。只不过是以一组符号来描述所引用的目标，和内存并无关，所以称为符号引用，直接指向内存中某一地址的引用称为直接引用  </li>
+</ul>
+</blockquote>
+
+        <h3 id="常量池结构">
+          <a href="#常量池结构" class="heading-link"><i class="fas fa-link"></i></a><a href="#常量池结构" class="headerlink" title="常量池结构"></a>常量池结构</h3>
+      <p>前端的两个字节占有的位置叫做常量池计数器(constant_pool_count)，它记录着常量池的组成元素-常量池项(cp_info)的个数（从１开始，将０表示不引用任何常量）。紧接着会排列着constant_pool_count-1个常量池项(cp_info)。每个常量池项(cp_info) 都会对应记录着class文件中的某种类型的字面量。cp_info项的结构如下：</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cp_info&#123;</span><br><span class="line">	u1 tag;</span><br><span class="line">	u1 info[];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>JVM会根据tag的值来确定当前常量池项表示什么类型的字面量。  </p>
+<div class="table-container"><table>
+<thead>
+<tr>
+<th>Tag</th>
+<th align="right">类型</th>
+<th align="center">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td align="right">CONSTANT_utf8_info</td>
+<td align="center">UTF-8编码的字符串字面量</td>
+</tr>
+<tr>
+<td>3</td>
+<td align="right">CONSTANT_Integer_info</td>
+<td align="center">整型字面量</td>
+</tr>
+<tr>
+<td>4</td>
+<td align="right">CONSTANT_Float_info</td>
+<td align="center">浮点型字面量</td>
+</tr>
+<tr>
+<td>5</td>
+<td align="right">CONSTANT_Long_info</td>
+<td align="center">长整型字面量</td>
+</tr>
+<tr>
+<td>6</td>
+<td align="right">CONSTANT_Double_info</td>
+<td align="center">双精度浮点型字面量</td>
+</tr>
+<tr>
+<td>7</td>
+<td align="right">CONSTANT_Class_info</td>
+<td align="center">类或接口的符号引用</td>
+</tr>
+<tr>
+<td>8</td>
+<td align="right">CONSTANT_String_info</td>
+<td align="center">字符串类型字面量</td>
+</tr>
+<tr>
+<td>9</td>
+<td align="right">CONSTANT_Fieldref_info</td>
+<td align="center">字段的符号引用</td>
+</tr>
+<tr>
+<td>10</td>
+<td align="right">CONSTANT_Methodref_info</td>
+<td align="center">类中方法的符号引用</td>
+</tr>
+<tr>
+<td>11</td>
+<td align="right">CONSTANT_InterfaceMethodref_info</td>
+<td align="center">接口中方法的符号引用</td>
+</tr>
+<tr>
+<td>12</td>
+<td align="right">CONSTANT_NameAndType_info</td>
+<td align="center">字段或方法的符号引用</td>
+</tr>
+<tr>
+<td>15</td>
+<td align="right">CONSTANT_MethodHandle_info</td>
+<td align="center">表示方法句柄</td>
+</tr>
+<tr>
+<td>16</td>
+<td align="right">CONSTANT_MothodType_info</td>
+<td align="center">表示方法类型</td>
+</tr>
+<tr>
+<td>18</td>
+<td align="right">CONSTANT_InvokeDynamic_info</td>
+<td align="center">表示一个动态方法调用点</td>
+</tr>
+</tbody></table></div>
+
+        <h3 id="基本数据类型常量在常量池存储">
+          <a href="#基本数据类型常量在常量池存储" class="heading-link"><i class="fas fa-link"></i></a><a href="#基本数据类型常量在常量池存储" class="headerlink" title="基本数据类型常量在常量池存储"></a>基本数据类型常量在常量池存储</h3>
+      <p>通过下面的例子来讲解下</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;  </span><br><span class="line">      </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> a = <span class="number">10</span>;  </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> b = <span class="number">10</span>;  </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">float</span> c = <span class="number">11f</span>;  </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">float</span> d = <span class="number">11f</span>;  </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">float</span> e = <span class="number">11f</span>;  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String s1 = <span class="string">&quot;JVM原理&quot;</span>;  </span><br><span class="line">    <span class="keyword">private</span> String s2 = <span class="string">&quot;JVM原理&quot;</span>;  </span><br><span class="line">      </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></div></figure>
+<p>创建完上面的java文件后，执行<code>javac Test.java</code>Test.class文件，再执行<code>javap -v Test</code> 查看class文件。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="class%E5%B8%B8%E9%87%8F%E6%B1%A01.png" alt="class常量池">
+      <br>从上面的结果我们可以看到在常量池中，只有一个常量10 、一个常量11f、一个常量JVM原理。代码中所有用到 int 类型 10 的地方，会使用指向常量池的指针值#16（符号引用）定位到第#16个常量池项(cp_info)，即值为 10的结构体CONSTANT_Integer_info，而用到float类型的11f时，也会指向常量池的指针值#4来定位到第#4个常量池项(cp_info) 即值为11f的结构体CONSTANT_Float_info。我们可以看到CONSTANT_String_info结构体位于常量池的第#8个索引位置，且该结构体直接存储了指针值#37，用来指向第#37个常量池项。而存放”JVM原理”字符串的UTF-8编码格式的字节数组被放到CONSTANT_Utf8_info结构体中，该结构体位于常量池的第#37个索引位置。</p>
+
+        <h3 id="类文件中定义的类名和类中使用到的类常量在常量池存储">
+          <a href="#类文件中定义的类名和类中使用到的类常量在常量池存储" class="heading-link"><i class="fas fa-link"></i></a><a href="#类文件中定义的类名和类中使用到的类常量在常量池存储" class="headerlink" title="类文件中定义的类名和类中使用到的类常量在常量池存储"></a>类文件中定义的类名和类中使用到的类常量在常量池存储</h3>
+      <p>CONSTANT_Class_info结构体中，存在一个索引值，用于指向存储了[类二进制形式的完全限定名称]字符串的CONSTANT_String_info结构体。该索引值占两个字节大小，所以它能表示的最大索引是65535（2的16次方-1），也就是说常量池中最多能容纳65535个常量项。所在在定义类时要注意类的大小。  </p>
+<blockquote>
+<p>假设我们定义了一个 ClassTest的类，并把它放到com.focus.jvm 包下，则 ClassTest类的完全限定名为com.focus.jvm.ClassTest，将JVM编译器将类编译成class文件后，此完全限定名在class文件中，是以二进制形式的完全限定名存储的，即它会把完全限定符的”.”换成”/“ ，即在class文件中存储的 ClassTest类的完全限定名称是”com/focus/jvm/ClassTest”。因为这种形式的完全限定名是放在了class二进制形式的字节码文件中，所以就称之为二进制形式的完全限定名。  </p>
+</blockquote>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.focus.jvm;  </span><br><span class="line"><span class="keyword">import</span>  java.util.Date;  </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ClassTest</span> </span>&#123;  </span><br><span class="line">    <span class="keyword">private</span> Date date1 =<span class="keyword">new</span> Date();  </span><br><span class="line">    <span class="keyword">private</span> Date date2;  </span><br><span class="line">    <span class="keyword">private</span> Date date3;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ClassTest</span><span class="params">()</span></span>&#123;  </span><br><span class="line">        date2  = <span class="keyword">new</span> Date();  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125; </span><br></pre></td></tr></table></div></figure>
+<p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="class%E5%B8%B8%E9%87%8F%E6%B1%A02.png" alt="class常量池2">
+      <br>由上图可以看到，在ClassTest.class文件的常量池中，共有3个CONSTANT_Class_info结构体，表示ClassTest中用到的Class信息。一个java/util/Date的CONSTANT_Class_info结构体，它在常量池中的位置是#2，存储的指针值为#19，它指向了常量池的第19个常量池项；一个com/focus/ClassTest的CONSTANT_Class_info结构体，它在常量池中的位置是#6，存储的指针值为#22，它指向了常量池的第22个常量池项；另外一个java/lang/Object的CONSTANT_Class_info结构体，它在常量池中的位置是#7，存储的指针值为#23，它指向了常量池的第23个常量池项。</p>
+<blockquote>
+<p>Java中规定所有的类都要继承java.lang.Object类，即所有类都是java.lang.Object的子类。JVM在编译类的时候，即使我们没有显示地继承Object，JVM编译器在编译的时候会自动帮我们加上去。所以对于某个类而言，其class文件中至少会有两个CONSTANT_Class_info常量池项，用来表示自己的类信息和其父类信息。如果类声明实现了某些接口，那么接口的信息也会生成对应的CONSTANT_Class_info常量池项。  </p>
+</blockquote>
+<p>如果在类中使用到了其他的类，只有真正使用到了相应的类，JDK编译器才会将类的信息组成CONSTANT_Class_info常量池项放置到常量池中。如下面的代码：</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.focus.jvm;  </span><br><span class="line"><span class="keyword">import</span>  java.util.Date;  </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ClassTest</span> </span>&#123;  </span><br><span class="line">     </span><br><span class="line">    <span class="keyword">private</span> Date date3;</span><br><span class="line"></span><br><span class="line">   </span><br><span class="line">&#125; </span><br></pre></td></tr></table></div></figure>
+<p>编译后结果<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="class%E5%B8%B8%E9%87%8F%E6%B1%A03.png" alt="class常量池3">
+      <br>在JDK将其编译成class文件时，常量池中并没有java.util.Date对应的CONSTANT_Class_info常量池项。它认为你只是声明了“Ljava/util/Date”类型的变量，并没有实际使用到Ljava/util/Date类。</p>
+
+        <h3 id="总结">
+          <a href="#总结" class="heading-link"><i class="fas fa-link"></i></a><a href="#总结" class="headerlink" title="总结"></a>总结</h3>
+      <blockquote>
+<ul>
+<li>对于某个类或接口而言，其自身、父类和继承或实现的接口的信息会被直接组装成CONSTANT_Class_info常量池项放置到常量池中；  </li>
+</ul>
+</blockquote>
+<blockquote>
+<ul>
+<li>类中或接口中使用到了其他的类，只有在类中实际使用到了该类时，该类的信息才会在常量池中有对应的CONSTANT_Class_info常量池项；</li>
+</ul>
+</blockquote>
+<blockquote>
+<ul>
+<li>类中或接口中仅仅定义某种类型的变量，JDK只会将变量的类型描述信息以UTF-8字符串组成CONSTANT_Utf8_info常量池项放置到常量池中。</li>
+</ul>
+</blockquote>
+
+        <h2 id="运行时常量池">
+          <a href="#运行时常量池" class="heading-link"><i class="fas fa-link"></i></a><a href="#运行时常量池" class="headerlink" title="运行时常量池"></a>运行时常量池</h2>
+      <p>运行时常量池是方法区的一部分，是一块内存区域。class文件常量池将在类加载后进入方法区的运行时常量池中存放。<strong>一个类加载到JVM中后对应一个运行时常量池</strong>，运行时常量池相对于class文件常量池来说具备动态性，<strong>即字面量可以动态的添加</strong>。Java语言并不要求常量一定只能在编译期产生，运行期间也可能产生新的常量（基本类型包装类和String），这些常量被放在运行时常量池中。class文件常量池只是一个静态存储结构，里面的引用都是符号引用。而运行时常量池可以在运行期间将符号引用解析为直接引用。可以说运行时常量池就是用来索引、查找字段和方法名称和描述符的。给定任意一个字段或方法的索引，最终可得到该字段或方法所属的类型信息和名称及描述符信息。</p>
+
+        <h3 id="基本类型">
+          <a href="#基本类型" class="heading-link"><i class="fas fa-link"></i></a><a href="#基本类型" class="headerlink" title="基本类型"></a>基本类型</h3>
+      <p>java中基本类型的包装类的大部分都实现了常量池技术，即Byte,Short,Integer,Long,Character,Boolean。这5种包装类默认创建了数值[-128，127]的相应类型的缓存数据，但是超出此范围仍然会去创建新的对象。两种浮点数类型的包装类Float,Double并没有实现缓存池技术。</p>
+
+        <h2 id="字符串常量池">
+          <a href="#字符串常量池" class="heading-link"><i class="fas fa-link"></i></a><a href="#字符串常量池" class="headerlink" title="字符串常量池"></a>字符串常量池</h2>
+      <p>字符串常量池是<strong>全局的</strong>，JVM中独此一份，因此也称为全局字符串常量池。运行时常量池中的字符串字面量若是成员的，则在类加载初始化阶段就使用到了字符串常量池；若是本地的，则在使用到的时候才会使用字符串常量池。其实，“使用常量池”对应的字节码是一个ldc指令，在给String类型的引用赋值的时候会先执行这个指令，看常量池中是否存在这个字符串对象的引用，若有就直接返回这个引用，若没有，就在堆里创建这个字符串对象并在字符串常量池中记录下这个引用。String类的intern()方法还可以在运行期间把字符串放到字符串常量池中。</p>
+<ul>
+<li>在 jdk1.6（含）之前也是方法区的一部分，并且其中存放的是字符串的实例；</li>
+<li>在 jdk1.7（含）之后是在堆内存之中，存储的是字符串对象的引用，字符串实例是在堆中；</li>
+<li>jdk1.8 已移除永久代，字符串常量池是在本地内存当中，存储的也只是引用</li>
+</ul>
+<blockquote>
+<ul>
+<li>JVM中除了字符串常量池，8种基本数据类型中除了两种浮点类型外，其它的6种基本数据类型的包装类都使用了缓冲池，但是Byte、Short、Integer、Long、Character这几个包装类只有对应值在[-128,127]时才会使用缓冲池，超出此范围仍会去创建新的对象。</li>
+</ul>
+</blockquote>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://focusss.github.io">cjwei</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://focusss.github.io/2018/10/13/class%E6%96%87%E4%BB%B6%E5%B8%B8%E9%87%8F%E6%B1%A0%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6%E5%B8%B8%E9%87%8F%E6%B1%A0%E3%80%81%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%B8%B8%E9%87%8F%E6%B1%A0/">https://focusss.github.io/2018/10/13/class%E6%96%87%E4%BB%B6%E5%B8%B8%E9%87%8F%E6%B1%A0%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6%E5%B8%B8%E9%87%8F%E6%B1%A0%E3%80%81%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%B8%B8%E9%87%8F%E6%B1%A0/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://focusss.github.io/tags/JVM/">JVM</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2018/10/16/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B-%E8%BE%85%E5%8A%A9%E7%B1%BB%EF%BC%9ACountDownLatch%E3%80%81CyclicBarrier%E5%92%8CSemaphore/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">Java并发编程-辅助类：CountDownLatch、CyclicBarrier和Semaphore</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2018/09/28/JVM%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6/"><span class="paginator-prev__text">JVM垃圾回收</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AE%80%E4%BB%8B"><span class="toc-number">1.</span> <span class="toc-text">
+          简介</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#class%E6%96%87%E4%BB%B6%E5%B8%B8%E9%87%8F%E6%B1%A0%EF%BC%88%E9%9D%99%E6%80%81%E5%B8%B8%E9%87%8F%E6%B1%A0%EF%BC%89"><span class="toc-number">2.</span> <span class="toc-text">
+          class文件常量池（静态常量池）</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B8%B8%E9%87%8F%E6%B1%A0%E7%BB%93%E6%9E%84"><span class="toc-number">2.1.</span> <span class="toc-text">
+          常量池结构</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9F%BA%E6%9C%AC%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E5%B8%B8%E9%87%8F%E5%9C%A8%E5%B8%B8%E9%87%8F%E6%B1%A0%E5%AD%98%E5%82%A8"><span class="toc-number">2.2.</span> <span class="toc-text">
+          基本数据类型常量在常量池存储</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%B1%BB%E6%96%87%E4%BB%B6%E4%B8%AD%E5%AE%9A%E4%B9%89%E7%9A%84%E7%B1%BB%E5%90%8D%E5%92%8C%E7%B1%BB%E4%B8%AD%E4%BD%BF%E7%94%A8%E5%88%B0%E7%9A%84%E7%B1%BB%E5%B8%B8%E9%87%8F%E5%9C%A8%E5%B8%B8%E9%87%8F%E6%B1%A0%E5%AD%98%E5%82%A8"><span class="toc-number">2.3.</span> <span class="toc-text">
+          类文件中定义的类名和类中使用到的类常量在常量池存储</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">2.4.</span> <span class="toc-text">
+          总结</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E6%97%B6%E5%B8%B8%E9%87%8F%E6%B1%A0"><span class="toc-number">3.</span> <span class="toc-text">
+          运行时常量池</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9F%BA%E6%9C%AC%E7%B1%BB%E5%9E%8B"><span class="toc-number">3.1.</span> <span class="toc-text">
+          基本类型</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%B8%B8%E9%87%8F%E6%B1%A0"><span class="toc-number">4.</span> <span class="toc-text">
+          字符串常量池</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/images/headImg.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">平安大赚 财丁兴旺</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">69</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">19</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">25</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>cjwei</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.4.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lazyload@2.0.0-rc.2/lazyload.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
