@@ -1,0 +1,449 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="当需要进行查询判断一条记录存不存在，存在则更新，不存在则新插入一条记录时，可以使用ON DUPLICATE KEY UPDATE进行操作">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL中ON DUPLICATE KEY UPDATE使用总结">
+<meta property="og:url" content="https://focusss.github.io/2022/01/22/MySQL%E4%B8%ADON-DUPLICATE-KEY-UPDATE%E4%BD%BF%E7%94%A8%E6%80%BB%E7%BB%93/index.html">
+<meta property="og:site_name" content="大 湾 区 码 仔&#39;s Blog">
+<meta property="og:description" content="当需要进行查询判断一条记录存不存在，存在则更新，不存在则新插入一条记录时，可以使用ON DUPLICATE KEY UPDATE进行操作">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://focusss.github.io/2022/01/22/MySQL%E4%B8%ADON-DUPLICATE-KEY-UPDATE%E4%BD%BF%E7%94%A8%E6%80%BB%E7%BB%93/%E6%AD%BB%E9%94%81%E7%8E%B0%E8%B1%A1.png">
+<meta property="article:published_time" content="2022-01-22T02:41:59.000Z">
+<meta property="article:modified_time" content="2022-01-22T07:25:47.871Z">
+<meta property="article:author" content="cjwei">
+<meta property="article:tag" content="MySQL">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://focusss.github.io/2022/01/22/MySQL%E4%B8%ADON-DUPLICATE-KEY-UPDATE%E4%BD%BF%E7%94%A8%E6%80%BB%E7%BB%93/%E6%AD%BB%E9%94%81%E7%8E%B0%E8%B1%A1.png"><title>MySQL中ON DUPLICATE KEY UPDATE使用总结 | 大 湾 区 码 仔's Blog</title><link ref="canonical" href="https://focusss.github.io/2022/01/22/MySQL%E4%B8%ADON-DUPLICATE-KEY-UPDATE%E4%BD%BF%E7%94%A8%E6%80%BB%E7%BB%93/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"carbon","highlight":"light","wordWrap":true},
+  reward: false,
+  fancybox: true,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: true,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">大 湾 区 码 仔's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">MySQL中ON DUPLICATE KEY UPDATE使用总结</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2022-01-22</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2022-01-22</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h3 id="场景">
+          <a href="#场景" class="heading-link"><i class="fas fa-link"></i></a><a href="#场景" class="headerlink" title="场景"></a>场景</h3>
+      <p>假设有一张如下的表，用来汇总每个店主每天的销售额:</p>
+<figure class="highlight sql"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> `shop_sale_amount_summary` (</span><br><span class="line">  `shop_sale_amount_summary_id` <span class="type">bigint</span>(<span class="number">20</span>) unsigned <span class="keyword">NOT</span> <span class="keyword">NULL</span> AUTO_INCREMENT COMMENT <span class="string">&#x27;主键&#x27;</span>,</span><br><span class="line">  `version` <span class="type">varchar</span>(<span class="number">50</span>) <span class="keyword">NOT</span> <span class="keyword">NULL</span> <span class="keyword">DEFAULT</span> <span class="string">&#x27;&#x27;</span> COMMENT <span class="string">&#x27;下单日期(年月日)&#x27;</span>,</span><br><span class="line">  `sale_amount` <span class="type">decimal</span>(<span class="number">20</span>,<span class="number">2</span>) <span class="keyword">NOT</span> <span class="keyword">NULL</span> <span class="keyword">DEFAULT</span> <span class="string">&#x27;0.00&#x27;</span> COMMENT <span class="string">&#x27;每日销售额&#x27;</span>,</span><br><span class="line">  `shop_id` <span class="type">bigint</span>(<span class="number">20</span>) <span class="keyword">NOT</span> <span class="keyword">NULL</span> <span class="keyword">DEFAULT</span> <span class="string">&#x27;0&#x27;</span> COMMENT <span class="string">&#x27;店主id&#x27;</span>,</span><br><span class="line">  `is_delete` tinyint(<span class="number">4</span>) <span class="keyword">NOT</span> <span class="keyword">NULL</span> <span class="keyword">DEFAULT</span> <span class="string">&#x27;0&#x27;</span> COMMENT <span class="string">&#x27;是否删除:0.未删除 1.删除&#x27;</span>,</span><br><span class="line">  `add_time` <span class="type">timestamp</span> <span class="keyword">NOT</span> <span class="keyword">NULL</span> <span class="keyword">DEFAULT</span> <span class="built_in">CURRENT_TIMESTAMP</span> COMMENT <span class="string">&#x27;创建时间&#x27;</span>,</span><br><span class="line">  `update_time` <span class="type">timestamp</span> <span class="keyword">NOT</span> <span class="keyword">NULL</span> <span class="keyword">DEFAULT</span> <span class="built_in">CURRENT_TIMESTAMP</span> <span class="keyword">ON</span> UPDATE <span class="built_in">CURRENT_TIMESTAMP</span> COMMENT <span class="string">&#x27;更新时间&#x27;</span>,</span><br><span class="line">  <span class="keyword">PRIMARY</span> KEY (`shop_sale_amount_summary_id`),</span><br><span class="line">  <span class="keyword">UNIQUE</span> KEY `uk_version_shop_id` (`version`, `shop_id`),</span><br><span class="line">) ENGINE<span class="operator">=</span>InnoDB AUTO_INCREMENT<span class="operator">=</span><span class="number">1</span>; </span><br></pre></td></tr></table></div></figure>
+<p>当一条销售额数据过来的时候，这时候就需要通过select查询判断一条记录存不存在，存在则update更新，不存在则insert新插入一条记录，这种方式容易出现并发问题，当然可以通过加分布式锁解决，但是处理数据效率不高。还有另外一种方式，通过直接insert一条记录，看看是否有异常<code>DuplicateKeyException</code>。若有该异常，则进行update，依赖于当前表唯一性索引<code>uk_version_shop_id</code>。接下来的方式，可以让你彻底解放双手，那就是使用MySQL的<code>INSERT ... ON DUPLICATE KEY UPDATE</code>语句，可以一步到位解决上面的问题。</p>
+
+        <h3 id="用法">
+          <a href="#用法" class="heading-link"><i class="fas fa-link"></i></a><a href="#用法" class="headerlink" title="用法"></a>用法</h3>
+      
+        <h4 id="语法格式">
+          <a href="#语法格式" class="heading-link"><i class="fas fa-link"></i></a><a href="#语法格式" class="headerlink" title="语法格式"></a>语法格式</h4>
+      <figure class="highlight sql"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> shop_sale_amount_summary ( version, shop_id, sale_amount ) <span class="keyword">VALUES</span> ( <span class="string">&#x27;20220122&#x27;</span>, <span class="number">123</span>, <span class="number">90.12</span> ) </span><br><span class="line"><span class="keyword">ON</span> DUPLICATE KEY UPDATE version <span class="operator">=</span> <span class="keyword">VALUES</span>( version ),</span><br><span class="line">						shop_id <span class="operator">=</span> <span class="keyword">VALUES</span>( shop_id ),</span><br><span class="line">						sale_amount <span class="operator">=</span> IF( sale_amount <span class="operator">+</span> <span class="keyword">VALUES</span> ( sale_amount ) <span class="operator">&gt;=</span> <span class="number">0</span>, sale_amount <span class="operator">+</span> <span class="keyword">VALUES</span> ( sale_amount ), sale_amount )</span><br><span class="line">           </span><br></pre></td></tr></table></div></figure>
+<p>当与表中现有记录的唯一索引或主键中发生冲突时，那么就会对该条记录进行更新，否则插入新的记录。<br>上面的SQL代表对shopId = 123，version=20220122的销售额进行累加。因为有了id自增，所以是基于唯一索引<code>uk_version_shop_id</code>判断记录唯一性。</p>
+<blockquote>
+<ul>
+<li>VALUES(col_name) : 代表取当前insert语句中的插入值，比如:VALUES( version )表示取值’20220122’，VALUES( shop_id )表示取值123</li>
+<li>IF(判断条件,值1,值2)： 当判断条件=true时，取值1，false时，取值2</li>
+</ul>
+</blockquote>
+
+        <h3 id="注意事项">
+          <a href="#注意事项" class="heading-link"><i class="fas fa-link"></i></a><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h3>
+      <ul>
+<li>因为该条语句是insert语句，不能带where条件</li>
+<li>如果是插入操作，受到影响行的值为1；如果更新操作，受到影响行的值为2；如果更新的数据和已有的数据一样（就相当于没变，所有值保持不变），受到影响的行的值为0</li>
+<li>使用的前提条件，要有主键索引（PRIMARY KEY）或唯一索引（UNIQUE KEY）</li>
+<li>会存在自增Id值跳跃比较大的问题，也会有自增id不连续问题。这是因为on duplicate key update，在update的时候，id也会自增1，但在上述的业务场景下，不影响使用</li>
+<li>在有可能并发事务执行相同的语句情况下不要使用该语句，可能导致产生death lock。而上述业务场景执行的前提，已经根据<code>uk_version_shop_id</code>做了分区串行处理，保证同一个uk_version_shop_id值的数据只会串行处理。</li>
+</ul>
+
+        <h3 id="弊端-死锁">
+          <a href="#弊端-死锁" class="heading-link"><i class="fas fa-link"></i></a><a href="#弊端-死锁" class="headerlink" title="弊端-死锁"></a>弊端-死锁</h3>
+      
+        <h4 id="原因">
+          <a href="#原因" class="heading-link"><i class="fas fa-link"></i></a><a href="#原因" class="headerlink" title="原因"></a>原因</h4>
+      <p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E6%AD%BB%E9%94%81%E7%8E%B0%E8%B1%A1.png">
+      </p>
+<p>更深入一层的原因是<code>lock_mode X locks gap before rec insert intention waiting</code>，事务1和事务2都互相持有相同的gap锁，都在等待对方释放gap锁。</p>
+<p>在MVCC中，当前读和快照读的区别:当前读每次需要加锁（可以使共享锁或者互斥锁）获取到最新的数据，而快照读是读取的是这个事务开始的时候那个快照，这个是通过undo log去进行实现的。在RR隔离级别下如果要读取那么就是当前读，那么其实就需要加上S锁。S锁是共享锁，X锁是互斥锁。一般来说X锁和S、X锁都互斥，S锁和S锁不互斥。</p>
+<p>使用下面命令，可以查看产生死锁的详细原因</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SHOW ENGINE INNODB STATUS</span><br></pre></td></tr></table></div></figure>
+<p>查找关键字<code>LATEST DETECTED DEADLOCK</code>，找到对应输出信息位置。</p>
+
+        <h4 id="解决方法">
+          <a href="#解决方法" class="heading-link"><i class="fas fa-link"></i></a><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h4>
+      <ul>
+<li><p>select… for update，不靠谱，也有可能死锁。<br>当并发事务执行都没select出记录，且where筛选条件落在同一个区间时，两个事务可获得同一区间的gap锁。此时再进行并发插入，其中一个会进入锁等待，待第二个session进行插入时，会出现互相等待，导致死锁。MySQL会根据事务权重选择一个事务进行回滚。</p>
+</li>
+<li><p>修改数据隔离级别为RC级别，RC隔离级别下会用快照读，从而不会加S锁，也不会有gap锁</p>
+</li>
+</ul>
+
+        <h3 id="参考资料">
+          <a href="#参考资料" class="heading-link"><i class="fas fa-link"></i></a><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3>
+      <ul>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://www.cnblogs.com/better-farther-world2099/articles/11737376.html">Mysql on duplicate key update用法及优缺点</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://bugs.mysql.com/bug.php?id=52020%EF%BC%8C">MySQL on duplicate key update bug报告</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://www.cnblogs.com/micrari/p/8029710.html">select for update引发死锁分析</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzA5Mjg2MDQ5NQ==&idx=1&mid=2452509340&scene=21&sn=c2cbe9fc3b9c820c38e5177642ba4999#wechat_redirect">记一次神奇的Mysql死锁排查</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://blog.csdn.net/li563868273/article/details/105213266">讲讲insert on duplicate key update 的死锁坑
+</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+</ul>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://focusss.github.io">cjwei</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://focusss.github.io/2022/01/22/MySQL%E4%B8%ADON-DUPLICATE-KEY-UPDATE%E4%BD%BF%E7%94%A8%E6%80%BB%E7%BB%93/">https://focusss.github.io/2022/01/22/MySQL%E4%B8%ADON-DUPLICATE-KEY-UPDATE%E4%BD%BF%E7%94%A8%E6%80%BB%E7%BB%93/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://focusss.github.io/tags/MySQL/">MySQL</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2022/01/22/%E5%90%8E%E7%AB%AF%E8%8E%B7%E5%8F%96%E4%B8%8D%E5%88%B0headers%E4%B8%AD%E7%9A%84%E5%80%BC/%E5%90%8E%E7%AB%AF%E8%8E%B7%E5%8F%96%E4%B8%8D%E5%88%B0headers%E4%B8%AD%E7%9A%84%E5%80%BC/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">后端获取不到headers中的值</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2022/01/22/idea%E5%B7%A5%E7%A8%8B%E6%9B%B4%E6%96%B0%E4%B8%8D%E4%BA%86%E6%9C%80%E6%96%B0jar%E5%8C%85/"><span class="paginator-prev__text">idea工程更新不了最新jar包</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9C%BA%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">
+          场景</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%94%A8%E6%B3%95"><span class="toc-number">2.</span> <span class="toc-text">
+          用法</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%AF%AD%E6%B3%95%E6%A0%BC%E5%BC%8F"><span class="toc-number">2.1.</span> <span class="toc-text">
+          语法格式</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9"><span class="toc-number">3.</span> <span class="toc-text">
+          注意事项</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BC%8A%E7%AB%AF-%E6%AD%BB%E9%94%81"><span class="toc-number">4.</span> <span class="toc-text">
+          弊端-死锁</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%8E%9F%E5%9B%A0"><span class="toc-number">4.1.</span> <span class="toc-text">
+          原因</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95"><span class="toc-number">4.2.</span> <span class="toc-text">
+          解决方法</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">5.</span> <span class="toc-text">
+          参考资料</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/images/headImg.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">平安大赚 财丁兴旺</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">74</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">21</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">29</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2022</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>cjwei</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.4.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lazyload@2.0.0-rc.2/lazyload.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
