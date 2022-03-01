@@ -1,0 +1,482 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="Redis提供的数据类型BitMap（位图），每个bit位对应0和1两个状态，可以代表用户签到状态">
+<meta property="og:type" content="article">
+<meta property="og:title" content="基于Redis Bitmap实现用户签到功能">
+<meta property="og:url" content="https://focusss.github.io/2022/02/08/%E5%9F%BA%E4%BA%8ERedis-Bitmap%E5%AE%9E%E7%8E%B0%E7%94%A8%E6%88%B7%E7%AD%BE%E5%88%B0%E5%8A%9F%E8%83%BD/index.html">
+<meta property="og:site_name" content="大 湾 区 码 仔&#39;s Blog">
+<meta property="og:description" content="Redis提供的数据类型BitMap（位图），每个bit位对应0和1两个状态，可以代表用户签到状态">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://focusss.github.io/2022/02/08/%E5%9F%BA%E4%BA%8ERedis-Bitmap%E5%AE%9E%E7%8E%B0%E7%94%A8%E6%88%B7%E7%AD%BE%E5%88%B0%E5%8A%9F%E8%83%BD/setbit.png">
+<meta property="article:published_time" content="2022-02-08T10:23:07.000Z">
+<meta property="article:modified_time" content="2022-03-01T15:12:45.023Z">
+<meta property="article:author" content="大湾区码仔驰名商标">
+<meta property="article:tag" content="Redis">
+<meta property="article:tag" content="签到">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://focusss.github.io/2022/02/08/%E5%9F%BA%E4%BA%8ERedis-Bitmap%E5%AE%9E%E7%8E%B0%E7%94%A8%E6%88%B7%E7%AD%BE%E5%88%B0%E5%8A%9F%E8%83%BD/setbit.png"><title>基于Redis Bitmap实现用户签到功能 | 大 湾 区 码 仔's Blog</title><link ref="canonical" href="https://focusss.github.io/2022/02/08/%E5%9F%BA%E4%BA%8ERedis-Bitmap%E5%AE%9E%E7%8E%B0%E7%94%A8%E6%88%B7%E7%AD%BE%E5%88%B0%E5%8A%9F%E8%83%BD/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"carbon","highlight":"light","wordWrap":true},
+  reward: false,
+  fancybox: true,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: true,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">大 湾 区 码 仔's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">基于Redis Bitmap实现用户签到功能</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2022-02-08</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2022-03-01</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h3 id="背景">
+          <a href="#背景" class="heading-link"><i class="fas fa-link"></i></a><a href="#背景" class="headerlink" title="背景"></a>背景</h3>
+      <p>在之前做过的需求里，有个养鱼活动，用户每天来签到，就可以领一定的饲料，拿来喂养鱼。连续签到的天数越多，每天能领取的饲料克数就越多。每7天为一个周期，一个周期内开始第一天签到，领取的饲料克数重新从100g开始算起，签到中断也是重新开始计算。</p>
+
+        <h3 id="技术实现原理">
+          <a href="#技术实现原理" class="heading-link"><i class="fas fa-link"></i></a><a href="#技术实现原理" class="headerlink" title="技术实现原理"></a>技术实现原理</h3>
+      <p>在高并发的场景下，用户签到的数据，如果直接使用数据库存储，数据库的压力会很大。另外，签到的数据比较简单，只需要记录用户ID、是否签到即可。在这里就考虑到使用Redis Bitmap来存储实现，key为<code>&#123;userId&#125;:&#123;yyyyMM&#125;</code>。Redis提供的数据类型BitMap（位图），每个bit位对应0和1两个状态，设置为1时，代表这一天已经签到了。虽然内部还是采用String类型存储，但Redis提供了一些指令用于直接操作BitMap，可以把它看作一个bit数组，数组的下标就是偏移量。</p>
+<p>位图不是真正的数据类型，它是定义在字符串类型中，一个字符串类型的值最多能存储512M字节的内容，最大位数为：<code>2^32b = (2^9) * (2^10) * (2^10) * (2^3)</code> 。</p>
+<p>它的优点是内存开销小，效率高且操作简单，很适合用于签到这类场景。缺点在于位计算和位表示数值的局限。如果要用位来做业务数据记录，就不要在意value的值。如果位图很大，建议拆分键。另外，bitmap设置时候时间复杂度<code>O(1)</code>、读取时候时间复杂度<code>O(n)</code>，操作是非常快的。因为读取时候时间复杂度<code>O(n)</code>，越大的串读的时间花销越多。</p>
+
+        <h3 id="API介绍">
+          <a href="#API介绍" class="heading-link"><i class="fas fa-link"></i></a><a href="#API介绍" class="headerlink" title="API介绍"></a>API介绍</h3>
+      
+        <h4 id="setbit">
+          <a href="#setbit" class="heading-link"><i class="fas fa-link"></i></a><a href="#setbit" class="headerlink" title="setbit"></a>setbit</h4>
+      <p>作用：设置某一位上的值<br>语法：<code>SETBIT key offset value </code>（offset位偏移量，从0开始）</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">setbit k1 <span class="number">1</span> <span class="number">1</span></span><br><span class="line">setbit k1 <span class="number">7</span> <span class="number">1</span></span><br></pre></td></tr></table></div></figure>
+<p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="setbit.png">
+       </p>
+
+        <h4 id="getbit">
+          <a href="#getbit" class="heading-link"><i class="fas fa-link"></i></a><a href="#getbit" class="headerlink" title="getbit"></a>getbit</h4>
+      <p>作用：获取某一位上的值<br>语法：<code>GETBIT key offset</code></p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">getbit k1 <span class="number">7</span></span><br></pre></td></tr></table></div></figure>
+
+
+        <h4 id="bitpos">
+          <a href="#bitpos" class="heading-link"><i class="fas fa-link"></i></a><a href="#bitpos" class="headerlink" title="bitpos"></a>bitpos</h4>
+      <p>作用：返回指定值0或者1在指定区间上首次出现的下标<br>语法：<code>BITPOS key bit [start] [end]</code>（字节索引，0表示第一个字节）</p>
+<p>不指定查找范围，表示从全部内容中查找：<code>BITPOS key bit</code></p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bitpos k1 <span class="number">1</span></span><br></pre></td></tr></table></div></figure>
+<p>指定查找范围:</p>
+<blockquote>
+<ul>
+<li>BITPOS key bit start：从start+1个字节开始查找，直到尾部</li>
+<li>BITPOS key bit start end：从start+1字节开始到end+1字节之间查找</li>
+</ul>
+</blockquote>
+
+        <h4 id="bitop">
+          <a href="#bitop" class="heading-link"><i class="fas fa-link"></i></a><a href="#bitop" class="headerlink" title="bitop"></a>bitop</h4>
+      <p>作用：位操作<br>语法：<code>BITOP operation destkey key [key ...]</code><br>对一个或多个保存二进制位的字符串<code>key</code>进行位操作，并将结果保存到<code>destkey</code>上。<code>operation</code>可以是<code>AND 、 OR 、 NOT 、 XOR</code>这四种操作中的任意一种。</p>
+<blockquote>
+<ul>
+<li>BITOP AND destkey key [key …]： 对一个或多个 key 求逻与，并将结果保存到 destkey</li>
+<li>BITOP OR destkey key [key …] ：对一个或多个 key 求逻辑或，并将结果保存到 destkey</li>
+<li>BITOP XOR destkey key [key …] ：对一个或多个 key 求逻辑异或，并将结果保存到 destkey</li>
+<li>BITOP NOT destkey key ： 对给定 key 求逻辑非，并将结果保存到 destkey</li>
+</ul>
+</blockquote>
+<p>除了<code>NOT</code>操作之外，其他操作都可以接受一个或多个<code>key</code>作为输入，当<code>BITOP</code>处理不同长度的字符串时，较短的那个字符串所缺少的部分会被看作 0，空的<code>key</code>也被看作是包含 0 的字符串序列。如果要使用<code>BITOP</code>，建议读取到客户端再进行位计算。</p>
+
+        <h4 id="BITFIELD">
+          <a href="#BITFIELD" class="heading-link"><i class="fas fa-link"></i></a><a href="#BITFIELD" class="headerlink" title="BITFIELD"></a>BITFIELD</h4>
+      <p>作用：可以在一次调用中同时对多个位范围进行操作。    </p>
+<p>以下是<code>BITFIELD</code>命令支持的子命令语法：</p>
+<blockquote>
+<ul>
+<li>GET <type> <offset> : 返回指定的二进制位范围。</offset></type></li>
+<li>SET <type> <offset> <value> : 对指定的二进制位范围进行设置，并返回它的旧值。</value></offset></type></li>
+<li>INCRBY <type> <offset> <increment> : 对指定的二进制位范围执行加法操作，并返回它的旧值。用户可以通过向 increment 参数传入负值来实现相应的减法操作。</increment></offset></type></li>
+</ul>
+</blockquote>
+<p>除了以上三个子命令之外， 还有一个子命令， 它可以改变之后执行的<code>INCRBY</code>子命令在发生溢出情况时的行为：</p>
+<blockquote>
+<ul>
+<li>OVERFLOW [WRAP|SAT|FAIL]</li>
+</ul>
+</blockquote>
+<p>当被设置的二进制位范围值为整数时， 用户可以在类型参数的前面添加<code>i</code>来表示有符号整数， 或者使用<code>u</code>来表示无符号整数。 比如说，我们可以使用<code>u8</code>来表示8位长的无符号整数， 也可以使用<code>i16</code>来表示16位长的有符号整数。<br><code>BITFIELD</code>命令最大支持64位长的有符号整数以及63位长的无符号整数， 其中无符号整数的63位长度限制是由于Redis协议目前还无法返回64位长的无符号整数而导致的。</p>
+<p>下面对位于偏移量 100 的 8 位长有符号整数执行加法操作， 并获取位于偏移量 0 上的 4 位长无符号整数：</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt; BITFIELD mykey INCRBY i8 <span class="number">100</span> <span class="number">1</span> GET u4 <span class="number">0</span></span><br><span class="line"><span class="number">1</span>) (integer) <span class="number">1</span></span><br><span class="line"><span class="number">2</span>) (integer) <span class="number">0</span></span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="其他应用场景">
+          <a href="#其他应用场景" class="heading-link"><i class="fas fa-link"></i></a><a href="#其他应用场景" class="headerlink" title="其他应用场景"></a>其他应用场景</h3>
+      
+        <h4 id="用户在线状态">
+          <a href="#用户在线状态" class="heading-link"><i class="fas fa-link"></i></a><a href="#用户在线状态" class="headerlink" title="用户在线状态"></a>用户在线状态</h4>
+      <p>只需要一个key，然后用户id为偏移量offset，如果在线就设置为1，不在线就设置为0。如果数据量过多的，可以按用户ID进行分片。</p>
+
+        <h4 id="统计活跃用户">
+          <a href="#统计活跃用户" class="heading-link"><i class="fas fa-link"></i></a><a href="#统计活跃用户" class="headerlink" title="统计活跃用户"></a>统计活跃用户</h4>
+      <p>使用时间天作为缓存的key，然后用户id为offset，如果当日活跃过就设置为1。之后通过<code>bitOp AND</code>进行二进制计算算出在某段时间内用户的活跃情况</p>
+
+        <h3 id="参考资料">
+          <a href="#参考资料" class="heading-link"><i class="fas fa-link"></i></a><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3>
+      <ul>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://www.cnblogs.com/liang24/p/14449835.html">Redis实战篇（二）基于Bitmap实现用户签到功能</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://blog.csdn.net/u011957758/article/details/74783347">一看就懂系列之 详解redis的bitmap在亿级项目中的应用</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+</ul>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://focusss.github.io">大湾区码仔驰名商标</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://focusss.github.io/2022/02/08/%E5%9F%BA%E4%BA%8ERedis-Bitmap%E5%AE%9E%E7%8E%B0%E7%94%A8%E6%88%B7%E7%AD%BE%E5%88%B0%E5%8A%9F%E8%83%BD/">https://focusss.github.io/2022/02/08/%E5%9F%BA%E4%BA%8ERedis-Bitmap%E5%AE%9E%E7%8E%B0%E7%94%A8%E6%88%B7%E7%AD%BE%E5%88%B0%E5%8A%9F%E8%83%BD/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://focusss.github.io/tags/Redis/">Redis</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://focusss.github.io/tags/%E7%AD%BE%E5%88%B0/">签到</a></span></div><nav class="post-paginator paginator"><div class="paginator-next"><a class="paginator-next__link" href="/2022/02/08/%E5%9F%BA%E4%BA%8ERedis-HyperLogLog%E5%AE%9E%E7%8E%B0UV%E7%BB%9F%E8%AE%A1%E5%8A%9F%E8%83%BD/"><span class="paginator-prev__text">基于Redis HyperLogLog实现UV统计功能</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">
+          背景</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8A%80%E6%9C%AF%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86"><span class="toc-number">2.</span> <span class="toc-text">
+          技术实现原理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#API%E4%BB%8B%E7%BB%8D"><span class="toc-number">3.</span> <span class="toc-text">
+          API介绍</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#setbit"><span class="toc-number">3.1.</span> <span class="toc-text">
+          setbit</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#getbit"><span class="toc-number">3.2.</span> <span class="toc-text">
+          getbit</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#bitpos"><span class="toc-number">3.3.</span> <span class="toc-text">
+          bitpos</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#bitop"><span class="toc-number">3.4.</span> <span class="toc-text">
+          bitop</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#BITFIELD"><span class="toc-number">3.5.</span> <span class="toc-text">
+          BITFIELD</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%B6%E4%BB%96%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="toc-number">4.</span> <span class="toc-text">
+          其他应用场景</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%94%A8%E6%88%B7%E5%9C%A8%E7%BA%BF%E7%8A%B6%E6%80%81"><span class="toc-number">4.1.</span> <span class="toc-text">
+          用户在线状态</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BB%9F%E8%AE%A1%E6%B4%BB%E8%B7%83%E7%94%A8%E6%88%B7"><span class="toc-number">4.2.</span> <span class="toc-text">
+          统计活跃用户</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">5.</span> <span class="toc-text">
+          参考资料</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/images/headImg.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">平安大赚 财丁兴旺</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">78</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">23</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">32</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2022</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>大湾区码仔驰名商标</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.4.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lazyload@2.0.0-rc.2/lazyload.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
