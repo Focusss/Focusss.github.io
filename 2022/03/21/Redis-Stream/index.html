@@ -1,0 +1,529 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="Redis Stream提供了消息的持久化和主备复制功能，可以让任何客户端访问任何时刻的数据，并且能记住每一个客户端的访问位置，还能保证消息不丢失">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis Stream">
+<meta property="og:url" content="https://focusss.github.io/2022/03/21/Redis-Stream/index.html">
+<meta property="og:site_name" content="大 湾 区 码 仔&#39;s Blog">
+<meta property="og:description" content="Redis Stream提供了消息的持久化和主备复制功能，可以让任何客户端访问任何时刻的数据，并且能记住每一个客户端的访问位置，还能保证消息不丢失">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://focusss.github.io/2022/03/21/Redis-Stream/%E7%BB%93%E6%9E%84.png">
+<meta property="article:published_time" content="2022-03-21T14:13:07.000Z">
+<meta property="article:modified_time" content="2022-03-21T14:25:32.289Z">
+<meta property="article:author" content="大湾区码仔驰名商标">
+<meta property="article:tag" content="Redis">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://focusss.github.io/2022/03/21/Redis-Stream/%E7%BB%93%E6%9E%84.png"><title>Redis Stream | 大 湾 区 码 仔's Blog</title><link ref="canonical" href="https://focusss.github.io/2022/03/21/Redis-Stream/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"carbon","highlight":"light","wordWrap":true},
+  reward: false,
+  fancybox: true,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: true,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">大 湾 区 码 仔's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">Redis Stream</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2022-03-21</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2022-03-21</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h3 id="简介">
+          <a href="#简介" class="heading-link"><i class="fas fa-link"></i></a><a href="#简介" class="headerlink" title="简介"></a>简介</h3>
+      <p>Redis 本身是有一个 Redis 发布订阅 (pub/sub) 来实现消息队列的功能，但它有个缺点就是消息无法持久化，如果出现网络断开、Redis 宕机等，消息就会被丢弃。而Redis 5.0版本增加了Redis Stream，提供了消息的持久化和主备复制功能，可以让任何客户端访问任何时刻的数据，并且能记住每一个客户端的访问位置，还能保证消息不丢失。</p>
+
+        <h3 id="逻辑结构">
+          <a href="#逻辑结构" class="heading-link"><i class="fas fa-link"></i></a><a href="#逻辑结构" class="headerlink" title="逻辑结构"></a>逻辑结构</h3>
+      <p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E7%BB%93%E6%9E%84.png">
+      </p>
+<p>每个 Stream 都有唯一的名称，它就是 Redis 的 key，在我们首次使用 xadd 指令追加消息时自动创建。每个消息都有一个唯一的 ID 和对应的内容。</p>
+<ul>
+<li><p><em>Consumer Group</em> ：消费组，使用<code>XGROUP CREATE</code>命令创建，一个消费组有多个消费者(Consumer)。每个消费组(Consumer Group)的状态都是独立的，相互不受影响。也就是说同一份Stream内部的消息会被每个消费组都消费到。同一个消费组 (Consumer Group) 可以挂接多个消费者 (Consumer)，这些消费者之间是竞争关系，任意一个消费者读取了消息都会使游标 last_delivered_id往前移动。</p>
+</li>
+<li><p><em>last_delivered_id</em> ：游标，每个消费组会有个游标 last_delivered_id，任意一个消费者读取了消息都会使游标 last_delivered_id 往前移动。</p>
+</li>
+<li><p><em>pending_ids</em> ：消费者(Consumer)的状态变量，作用是维护消费者的未确认的id。<code>pending_ids</code>记录了当前已经被客户端读取的消息，但是还没有ack。如果消费者收到了消息处理完了但是没有回复ack，就会导致<code>pending_ids</code>列表不断增长，如果有很多消费组的话，那么这个<code>pending_ids</code>占用的内存就会放大。</p>
+</li>
+</ul>
+
+        <h4 id="消息-ID">
+          <a href="#消息-ID" class="heading-link"><i class="fas fa-link"></i></a><a href="#消息-ID" class="headerlink" title="消息 ID"></a>消息 ID</h4>
+      <p>消息 ID 的形式是 timestampInMillis-sequence，例如 1527846880572-5，它表示当前的消息在毫米时间戳 1527846880572 时产生，并且是该毫秒内产生的第 5 条消息。消息 ID 可以由服务器自动生成，也可以由客户端自己指定，但是形式必须是整数-整数，而且必须是后面加入的消息的 ID 要大于前面的消息 ID。</p>
+<p>为了保证消息是有序的，由Redis生成的ID是单调递增有序的。由于ID中包含时间戳部分，为了避免服务器时间错误而带来的问题（例如服务器时间延后了），Redis的每个Stream类型数据都维护一个latest_generated_id属性，用于记录最后一个消息的ID。</p>
+<p>若发现当前时间戳退后，即小于latest_generated_id，则采用时间戳不变而序号递增的方案来作为新消息ID（这也是序号为什么使用int64的原因，保证有足够多的的序号），从而保证ID的单调递增性质。</p>
+
+        <h4 id="消息内容">
+          <a href="#消息内容" class="heading-link"><i class="fas fa-link"></i></a><a href="#消息内容" class="headerlink" title="消息内容"></a>消息内容</h4>
+      <p>消息内容就是键值对，形如 hash 结构的键值对。</p>
+
+        <h3 id="指令介绍">
+          <a href="#指令介绍" class="heading-link"><i class="fas fa-link"></i></a><a href="#指令介绍" class="headerlink" title="指令介绍"></a>指令介绍</h3>
+      
+        <h4 id="XADD">
+          <a href="#XADD" class="heading-link"><i class="fas fa-link"></i></a><a href="#XADD" class="headerlink" title="XADD"></a>XADD</h4>
+      <p>XADD，命令用于在某个stream（流数据）中追加消息，演示如下：</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; XADD memberMessage * user kang msg Hello</span><br><span class="line"><span class="string">&quot;1553439850328-0&quot;</span></span><br></pre></td></tr></table></div></figure>
+<p>其中语法格式为：</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">XADD key ID field string [field string ...]</span><br></pre></td></tr></table></div></figure>
+<p>需要提供key，消息ID方案，消息内容，其中消息内容为key-value型数据。 ID，最常使用<code>*</code>，表示由Redis生成消息ID，这也是强烈建议的方案。 field string [field string], 就是当前消息内容，由1个或多个key-value构成。</p>
+<p>另外在XADD的指令提供一个定长长度 maxlen，就可以将老的消息干掉，确保最多不超过指定长度。</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; xadd codehole maxlen <span class="number">3</span> * name xiaorui age <span class="number">1</span></span><br><span class="line"><span class="number">1527855160273</span>-<span class="number">0</span></span><br></pre></td></tr></table></div></figure>
+
+
+        <h4 id="XREAD">
+          <a href="#XREAD" class="heading-link"><i class="fas fa-link"></i></a><a href="#XREAD" class="headerlink" title="XREAD"></a>XREAD</h4>
+      <p>XREAD，从Stream中读取消息，演示如下：</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; XREAD streams memberMessage <span class="number">0</span></span><br><span class="line"><span class="number">1</span>) <span class="number">1</span>) <span class="string">&quot;memberMessage&quot;</span></span><br><span class="line">   <span class="number">2</span>) <span class="number">1</span>) <span class="number">1</span>) <span class="string">&quot;1553439850328-0&quot;</span></span><br><span class="line">         <span class="number">2</span>) <span class="number">1</span>) <span class="string">&quot;user&quot;</span></span><br><span class="line">            <span class="number">2</span>) <span class="string">&quot;kang&quot;</span></span><br><span class="line">            <span class="number">3</span>) <span class="string">&quot;msg&quot;</span></span><br><span class="line">            <span class="number">4</span>) <span class="string">&quot;Hello&quot;</span></span><br></pre></td></tr></table></div></figure>
+
+<p>上面的命令是从消息队列memberMessage中读取所有消息。XREAD支持很多参数，语法格式为：</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">XREAD [COUNT count] [BLOCK milliseconds] STREAMS key [key ...] ID [ID ...]</span><br></pre></td></tr></table></div></figure>
+<p>其中：</p>
+<ul>
+<li>[COUNT count]，用于限定获取的消息数量</li>
+<li>[BLOCK milliseconds]，用于设置XREAD为阻塞模式，默认为非阻塞模式<br>ID，用于设置由哪个消息ID开始读取。使用0表示从第一条消息开始。消息队列ID是单调递增的，所以通过设置起点，可以向后读取。在阻塞模式中，可以使用$，表示最新的消息ID。（在非阻塞模式下$无意义）。<br>XRED读消息时分为阻塞和非阻塞模式，使用BLOCK选项可以表示阻塞模式，需要设置阻塞时长。非阻塞模式下，读取完毕（即使没有任何消息）立即返回，而在阻塞模式下，若读取不到内容，则阻塞等待。</li>
+</ul>
+<p>一个典型的阻塞模式用法为：</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; XREAD block <span class="number">1000</span> streams memberMessage $</span><br><span class="line">(nil)</span><br><span class="line">(<span class="number">1.</span>07s)</span><br></pre></td></tr></table></div></figure>
+<p>我们使用Block模式，配合$作为ID，表示读取最新的消息，若没有消息，命令阻塞！等待过程中，其他客户端向队列追加消息，则会立即读取到。</p>
+<p>因此，典型的队列就是 XADD 配合 XREAD Block 完成。XADD负责生成消息，XREAD负责消费消息。</p>
+
+        <h4 id="XGROUP、XREADGROUP">
+          <a href="#XGROUP、XREADGROUP" class="heading-link"><i class="fas fa-link"></i></a><a href="#XGROUP、XREADGROUP" class="headerlink" title="XGROUP、XREADGROUP"></a>XGROUP、XREADGROUP</h4>
+      <ul>
+<li>XGROUP，用于管理消费者组，提供创建组，销毁组，更新组起始消息ID等操作</li>
+<li>XREADGROUP，分组消费消息操作</li>
+</ul>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">XREADGROUP GROUP mqGroup consumerA COUNT <span class="number">1</span> STREAMS mq &gt;</span><br></pre></td></tr></table></div></figure>
+<p>用于组mqGroup内消费者consumerA在队列mq中消费，参数&gt;表示未被组内消费的起始消息，参数count 1表示获取一条。语法与XREAD基本一致，不过是增加了组的概念。</p>
+<p>可以进行组内消费的基本原理是，STREAM类型会为每个组记录一个最后处理（交付）的消息ID（last_delivered_id），这样在组内消费时，就可以从这个值后面开始读取，保证不重复消费。<br>若某个消费者，消费了某条消息，但是并没有处理成功时（例如消费者进程宕机），这条消息可能会丢失，因为组内其他消费者不能再次消费到该消息了。</p>
+
+        <h4 id="XPENDING">
+          <a href="#XPENDING" class="heading-link"><i class="fas fa-link"></i></a><a href="#XPENDING" class="headerlink" title="XPENDING"></a>XPENDING</h4>
+      <p>为了解决组内消息读取但处理期间消费者崩溃带来的消息丢失问题，STREAM设计了Pending列表，用于记录读取但并未处理完毕的消息。命令XPENDIING用来获消费组或消费内消费者的未处理完毕的消息。</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; XPENDING mq mqGroup - + <span class="number">10</span> consumerA #在加上消费者参数获取具体某个消费者的Pending列表</span><br><span class="line"><span class="number">1</span>) <span class="number">1</span>) <span class="string">&quot;1553585533795-0&quot;</span></span><br><span class="line">   <span class="number">2</span>) <span class="string">&quot;consumerA&quot;</span></span><br><span class="line">   <span class="number">3</span>) (integer) <span class="number">1641083</span></span><br><span class="line">   <span class="number">4</span>) (integer) <span class="number">5</span></span><br></pre></td></tr></table></div></figure>
+
+<p>每个Pending的消息有4个属性：</p>
+<ul>
+<li>消息ID</li>
+<li>所属消费者</li>
+<li>IDLE，已读取时长</li>
+<li>delivery counter，消息被读取次数</li>
+</ul>
+<p>宕机的消费者再次上线后，可以读取该Pending列表，就可以继续处理该消息了，保证消息的有序和不丢失。不过此时 xreadgroup 的起始消息ID 不能为参数&gt;，而必须是任意有效的消息 ID，一般将参数设为 0-0，表示读取所有的PEL 消息以及自 last_delivered_id 之后的新消息。</p>
+
+        <h3 id="Stream-的高可用">
+          <a href="#Stream-的高可用" class="heading-link"><i class="fas fa-link"></i></a><a href="#Stream-的高可用" class="headerlink" title="Stream 的高可用"></a>Stream 的高可用</h3>
+      <p>Stream 的高可用是建立主从复制基础上的，它和其它数据结构的复制机制没有区别，也就是说在 Sentinel 和 Cluster 集群环境下 Stream 是可以支持高可用的。不过鉴于 Redis 的<br>指令复制是异步的，在 failover 发生时，Redis 可能会丢失极小部分数据，这点 Redis 的其它数据结构也是一样的。</p>
+
+        <h3 id="其他消息队列实现方式">
+          <a href="#其他消息队列实现方式" class="heading-link"><i class="fas fa-link"></i></a><a href="#其他消息队列实现方式" class="headerlink" title="其他消息队列实现方式"></a>其他消息队列实现方式</h3>
+      
+        <h4 id="基于异步消息队列List-lpush-brpop-rpush-blpop">
+          <a href="#基于异步消息队列List-lpush-brpop-rpush-blpop" class="heading-link"><i class="fas fa-link"></i></a><a href="#基于异步消息队列List-lpush-brpop-rpush-blpop" class="headerlink" title="基于异步消息队列List lpush-brpop(rpush-blpop)"></a>基于异步消息队列List lpush-brpop(rpush-blpop)</h4>
+      <p>使用rpush和lpush操作入队列，lpop和rpop操作出队列。</p>
+<p>List支持多个生产者和消费者并发进出消息，每个消费者拿到都是不同的列表元素。但是当队列为空时，lpop和rpop会一直空轮训，消耗资源；所以引入阻塞读blpop和brpop（b代表blocking），阻塞读在队列没有数据的时候进入休眠状态，一旦数据到来则立刻醒过来，消息延迟几乎为零。</p>
+
+        <h5 id="缺点">
+          <a href="#缺点" class="heading-link"><i class="fas fa-link"></i></a><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h5>
+      <ul>
+<li>如果线程一直阻塞在那里，Redis客户端的连接就成了闲置连接，闲置过久，服务器一般会主动断开连接，减少闲置资源占用，这个时候blpop和brpop或抛出异常，所以在编写客户端消费者的时候要小心，如果捕获到异常，还有重试</li>
+<li>做消费者确认ACK麻烦，不能保证消费者消费消息后是否成功处理的问题（宕机或处理异常等），通常需要维护一个Pending列表，保证消息处理确认</li>
+<li>不能重复消费，一旦消费就会被删除</li>
+<li>不支持分组消费</li>
+</ul>
+
+        <h4 id="PUB-SUB-订阅-发布模式">
+          <a href="#PUB-SUB-订阅-发布模式" class="heading-link"><i class="fas fa-link"></i></a><a href="#PUB-SUB-订阅-发布模式" class="headerlink" title="PUB/SUB-订阅/发布模式"></a>PUB/SUB-订阅/发布模式</h4>
+      <p>PUBLISH-向信道发送消息，此模式允许生产者只生产一次消息，由中间件负责将消息复制到多个消息队列，每个消息队列由对应的消费组消费。</p>
+
+        <h5 id="优点">
+          <a href="#优点" class="heading-link"><i class="fas fa-link"></i></a><a href="#优点" class="headerlink" title="优点"></a>优点</h5>
+      <p>典型的广播模式，一个消息可以发布到多个消费者。消息即时发送，消息不用等待消费者读取，消费者会自动接收到信道发布的消息。</p>
+
+        <h5 id="缺点-1">
+          <a href="#缺点-1" class="heading-link"><i class="fas fa-link"></i></a><a href="#缺点-1" class="headerlink" title="缺点"></a>缺点</h5>
+      <ul>
+<li>消息丢失，不能寻回</li>
+<li>不能保证每个消费者接收的时间是一致的</li>
+<li>若消费者客户端出现消息积压，到一定程度，会被强制断开，导致消息意外丢失。通常发生在消息的生产远大于消费速度时。可见，Pub/Sub模式不适合做消息存储，消息积压类的业务，而是擅长处理广播，即时通讯，即时反馈的业务。</li>
+</ul>
+
+        <h4 id="基于Sorted-Set的实现">
+          <a href="#基于Sorted-Set的实现" class="heading-link"><i class="fas fa-link"></i></a><a href="#基于Sorted-Set的实现" class="headerlink" title="基于Sorted-Set的实现"></a>基于Sorted-Set的实现</h4>
+      <p>有序集合的方案是在自己确定消息顺ID时比较常用，使用集合成员的Score来作为消息ID，保证顺序，还可以保证消息ID的单调递增。通常可以使用时间戳+序号的方案。确保了消息ID的单调递增，利用SortedSet的依据Score排序的特征，就可以制作一个有序的消息队列了。</p>
+
+        <h5 id="优点-1">
+          <a href="#优点-1" class="heading-link"><i class="fas fa-link"></i></a><a href="#优点-1" class="headerlink" title="优点"></a>优点</h5>
+      <p>就是可以自定义消息ID，在消息ID有意义时，比较重要。</p>
+
+        <h5 id="缺点-2">
+          <a href="#缺点-2" class="heading-link"><i class="fas fa-link"></i></a><a href="#缺点-2" class="headerlink" title="缺点"></a>缺点</h5>
+      <p>不允许重复消息（因为是集合），同时消息ID确定有错误会导致消息的顺序出错。</p>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://focusss.github.io">大湾区码仔驰名商标</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://focusss.github.io/2022/03/21/Redis-Stream/">https://focusss.github.io/2022/03/21/Redis-Stream/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://focusss.github.io/tags/Redis/">Redis</a></span></div><nav class="post-paginator paginator"><div class="paginator-next"><a class="paginator-next__link" href="/2022/03/20/Redis%E7%AE%A1%E9%81%93-Pipeline/"><span class="paginator-prev__text">Redis管道-Pipeline</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AE%80%E4%BB%8B"><span class="toc-number">1.</span> <span class="toc-text">
+          简介</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%80%BB%E8%BE%91%E7%BB%93%E6%9E%84"><span class="toc-number">2.</span> <span class="toc-text">
+          逻辑结构</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B6%88%E6%81%AF-ID"><span class="toc-number">2.1.</span> <span class="toc-text">
+          消息 ID</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B6%88%E6%81%AF%E5%86%85%E5%AE%B9"><span class="toc-number">2.2.</span> <span class="toc-text">
+          消息内容</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8C%87%E4%BB%A4%E4%BB%8B%E7%BB%8D"><span class="toc-number">3.</span> <span class="toc-text">
+          指令介绍</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#XADD"><span class="toc-number">3.1.</span> <span class="toc-text">
+          XADD</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#XREAD"><span class="toc-number">3.2.</span> <span class="toc-text">
+          XREAD</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#XGROUP%E3%80%81XREADGROUP"><span class="toc-number">3.3.</span> <span class="toc-text">
+          XGROUP、XREADGROUP</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#XPENDING"><span class="toc-number">3.4.</span> <span class="toc-text">
+          XPENDING</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Stream-%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8"><span class="toc-number">4.</span> <span class="toc-text">
+          Stream 的高可用</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%B6%E4%BB%96%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E5%AE%9E%E7%8E%B0%E6%96%B9%E5%BC%8F"><span class="toc-number">5.</span> <span class="toc-text">
+          其他消息队列实现方式</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%9F%BA%E4%BA%8E%E5%BC%82%E6%AD%A5%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97List-lpush-brpop-rpush-blpop"><span class="toc-number">5.1.</span> <span class="toc-text">
+          基于异步消息队列List lpush-brpop(rpush-blpop)</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E7%BC%BA%E7%82%B9"><span class="toc-number">5.1.1.</span> <span class="toc-text">
+          缺点</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#PUB-SUB-%E8%AE%A2%E9%98%85-%E5%8F%91%E5%B8%83%E6%A8%A1%E5%BC%8F"><span class="toc-number">5.2.</span> <span class="toc-text">
+          PUB&#x2F;SUB-订阅&#x2F;发布模式</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E4%BC%98%E7%82%B9"><span class="toc-number">5.2.1.</span> <span class="toc-text">
+          优点</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E7%BC%BA%E7%82%B9-1"><span class="toc-number">5.2.2.</span> <span class="toc-text">
+          缺点</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%9F%BA%E4%BA%8ESorted-Set%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="toc-number">5.3.</span> <span class="toc-text">
+          基于Sorted-Set的实现</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E4%BC%98%E7%82%B9-1"><span class="toc-number">5.3.1.</span> <span class="toc-text">
+          优点</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E7%BC%BA%E7%82%B9-2"><span class="toc-number">5.3.2.</span> <span class="toc-text">
+          缺点</span></a></li></ol></li></ol></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/images/headImg.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">平安大赚 财丁兴旺</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">81</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">23</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">33</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2022</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>大湾区码仔驰名商标</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.4.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lazyload@2.0.0-rc.2/lazyload.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
