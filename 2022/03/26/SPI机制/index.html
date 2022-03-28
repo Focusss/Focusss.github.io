@@ -1,0 +1,518 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="SPI，全称为 Service Provider Interface，是一种服务发现机制。它通过在ClassPath路径下的&#96;META-INF&#x2F;services&#96;文件夹查找文件，自动加载文件里所定义的类">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SPI机制">
+<meta property="og:url" content="https://focusss.github.io/2022/03/26/SPI%E6%9C%BA%E5%88%B6/index.html">
+<meta property="og:site_name" content="大 湾 区 码 仔&#39;s Blog">
+<meta property="og:description" content="SPI，全称为 Service Provider Interface，是一种服务发现机制。它通过在ClassPath路径下的&#96;META-INF&#x2F;services&#96;文件夹查找文件，自动加载文件里所定义的类">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://focusss.github.io/2022/03/26/SPI%E6%9C%BA%E5%88%B6/%E5%85%A8%E9%99%90%E5%AE%9A%E5%90%8D%E6%96%87%E4%BB%B6.png">
+<meta property="og:image" content="https://focusss.github.io/2022/03/26/SPI%E6%9C%BA%E5%88%B6/ServiceLoader.png">
+<meta property="og:image" content="https://focusss.github.io/2022/03/26/SPI%E6%9C%BA%E5%88%B6/JDBC.png">
+<meta property="og:image" content="https://focusss.github.io/2022/03/26/SPI%E6%9C%BA%E5%88%B6/Tomcat.png">
+<meta property="og:image" content="https://focusss.github.io/2022/03/26/SPI%E6%9C%BA%E5%88%B6/Tomcat1.png">
+<meta property="og:image" content="https://focusss.github.io/2022/03/26/SPI%E6%9C%BA%E5%88%B6/Tomcat2.png">
+<meta property="article:published_time" content="2022-03-26T09:36:39.000Z">
+<meta property="article:modified_time" content="2022-03-28T11:22:16.859Z">
+<meta property="article:author" content="大湾区码仔驰名商标">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="SPI">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://focusss.github.io/2022/03/26/SPI%E6%9C%BA%E5%88%B6/%E5%85%A8%E9%99%90%E5%AE%9A%E5%90%8D%E6%96%87%E4%BB%B6.png"><title>SPI机制 | 大 湾 区 码 仔's Blog</title><link ref="canonical" href="https://focusss.github.io/2022/03/26/SPI%E6%9C%BA%E5%88%B6/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"carbon","highlight":"light","wordWrap":true},
+  reward: false,
+  fancybox: true,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: true,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">大 湾 区 码 仔's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">SPI机制</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2022-03-26</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2022-03-28</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h3 id="SPI介绍">
+          <a href="#SPI介绍" class="heading-link"><i class="fas fa-link"></i></a><a href="#SPI介绍" class="headerlink" title="SPI介绍"></a>SPI介绍</h3>
+      <p>SPI，全称为 Service Provider Interface，是一种服务发现机制。它通过在ClassPath路径下的<code>META-INF/services</code>文件夹查找文件，自动加载文件里所定义的类。Java中SPI机制主要思想是将装配的控制权移到程序之外，其核心思想就是解耦。<br>这里面有三个核心概念：</p>
+<ul>
+<li>服务：即服务的抽象接口。</li>
+<li>服务提供者：即接口的具体实现类。</li>
+<li>服务加载器：serviceloader，通过服务的全路径名称找到服务提供者所在路径并加载到内存。</li>
+</ul>
+
+        <h3 id="SPI使用">
+          <a href="#SPI使用" class="heading-link"><i class="fas fa-link"></i></a><a href="#SPI使用" class="headerlink" title="SPI使用"></a>SPI使用</h3>
+      <p>使用SPI，可以简单的分为4步：</p>
+<ul>
+<li>定义接口/抽象类</li>
+<li>实现类</li>
+<li>在实现方的META-INF/services下，创建一个以接口的全限定名为名称的文件，内容是提供是该接口的实现类的全限定名</li>
+<li>使用ServiceLoader.load()方法来加载实现类</li>
+</ul>
+
+        <h4 id="举例说明">
+          <a href="#举例说明" class="heading-link"><i class="fas fa-link"></i></a><a href="#举例说明" class="headerlink" title="举例说明"></a>举例说明</h4>
+      
+        <h5 id="定义接口">
+          <a href="#定义接口" class="heading-link"><i class="fas fa-link"></i></a><a href="#定义接口" class="headerlink" title="定义接口"></a>定义接口</h5>
+      <figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">SPIService</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">execute</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="实现类">
+          <a href="#实现类" class="heading-link"><i class="fas fa-link"></i></a><a href="#实现类" class="headerlink" title="实现类"></a>实现类</h5>
+      <figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SpiImpl1</span> <span class="keyword">implements</span> <span class="title">SPIService</span></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">execute</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;SpiImpl1.execute()&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SpiImpl2</span> <span class="keyword">implements</span> <span class="title">SPIService</span></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">execute</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;SpiImpl2.execute()&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="创建一个以接口的全限定名为名称的文件">
+          <a href="#创建一个以接口的全限定名为名称的文件" class="heading-link"><i class="fas fa-link"></i></a><a href="#创建一个以接口的全限定名为名称的文件" class="headerlink" title="创建一个以接口的全限定名为名称的文件"></a>创建一个以接口的全限定名为名称的文件</h5>
+      <p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E5%85%A8%E9%99%90%E5%AE%9A%E5%90%8D%E6%96%87%E4%BB%B6.png">
+      <br>内容为实现类的全限定名</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">com.viewscenes.netsupervisor.spi.SpiImpl1</span><br><span class="line">com.viewscenes.netsupervisor.spi.SpiImpl2</span><br></pre></td></tr></table></div></figure>
+
+
+        <h5 id="ServiceLoader-load-加载实现类">
+          <a href="#ServiceLoader-load-加载实现类" class="heading-link"><i class="fas fa-link"></i></a><a href="#ServiceLoader-load-加载实现类" class="headerlink" title="ServiceLoader.load()加载实现类"></a>ServiceLoader.load()加载实现类</h5>
+      <p>ServiceLoader.load方法拿到实现类的实例，ServiceLoader.load包位于java.util.ServiceLoader。</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;    </span><br><span class="line">        ServiceLoader&lt;SPIService&gt; load = ServiceLoader.load(SPIService.class);</span><br><span class="line"></span><br><span class="line">        Iterator&lt;SPIService&gt; iterator = load.iterator();</span><br><span class="line">        <span class="keyword">while</span>(iterator.hasNext()) &#123;</span><br><span class="line">            SPIService ser = iterator.next();</span><br><span class="line">            ser.execute();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+
+        <h4 id="源码浅析（jdk-11-0-13）">
+          <a href="#源码浅析（jdk-11-0-13）" class="heading-link"><i class="fas fa-link"></i></a><a href="#源码浅析（jdk-11-0-13）" class="headerlink" title="源码浅析（jdk 11.0.13）"></a>源码浅析（jdk 11.0.13）</h4>
+      
+        <h5 id="构造ServiceLoader对象">
+          <a href="#构造ServiceLoader对象" class="heading-link"><i class="fas fa-link"></i></a><a href="#构造ServiceLoader对象" class="headerlink" title="构造ServiceLoader对象"></a>构造ServiceLoader对象</h5>
+      <p>静态方法<code>load(Class clazz)</code>不会立刻加载服务提供者类，它仅仅只是获取当前线程上下文类加载器cl，而Reflection.getCallerClass()可以得到调用者的类，然后用clazz和cl构造一个ServiceLoader实例loader。<br>ServiceLoader大致的类结构:</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">ServiceLoader</span>&lt;<span class="title">S</span>&gt; <span class="keyword">implements</span> <span class="title">Iterable</span>&lt;<span class="title">S</span>&gt;</span>&#123;</span><br><span class="line">    <span class="comment">// The class or interface representing the service being loaded</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Class&lt;S&gt; service;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// The class of the service type</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> String serviceName;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// The module layer used to locate providers; null when locating</span></span><br><span class="line">    <span class="comment">// providers using a class loader</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ModuleLayer layer;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// The class loader used to locate, load, and instantiate providers;</span></span><br><span class="line">    <span class="comment">// null when locating provider using a module layer</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ClassLoader loader;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// The access control context taken when the ServiceLoader is created</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> AccessControlContext acc;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// The lazy-lookup iterator for iterator operations</span></span><br><span class="line">    <span class="keyword">private</span> Iterator&lt;Provider&lt;S&gt;&gt; lookupIterator1;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> List&lt;S&gt; instantiatedProviders = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// The lazy-lookup iterator for stream operations</span></span><br><span class="line">    <span class="keyword">private</span> Iterator&lt;Provider&lt;S&gt;&gt; lookupIterator2;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> List&lt;Provider&lt;S&gt;&gt; loadedProviders = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">boolean</span> loadedAllProviders; <span class="comment">// true when all providers loaded</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// Incremented when reload is called</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> reloadCount;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//对应的例子中的静态方法</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> &lt;S&gt; <span class="function">ServiceLoader&lt;S&gt; <span class="title">load</span><span class="params">(Class&lt;S&gt; service)</span> </span>&#123;</span><br><span class="line">        ClassLoader cl = Thread.currentThread().getContextClassLoader();</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> ServiceLoader&lt;&gt;(Reflection.getCallerClass(), service, cl);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//对应的构造函数</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">ServiceLoader</span><span class="params">(Class&lt;?&gt; caller, Class&lt;S&gt; svc, ClassLoader cl)</span> </span>&#123;</span><br><span class="line">        Objects.requireNonNull(svc);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (VM.isBooted()) &#123;</span><br><span class="line">            checkCaller(caller, svc);</span><br><span class="line">            <span class="keyword">if</span> (cl == <span class="keyword">null</span>) &#123;</span><br><span class="line">                cl = ClassLoader.getSystemClassLoader();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line"></span><br><span class="line">            <span class="comment">// if we get here then it means that ServiceLoader is being used</span></span><br><span class="line">            <span class="comment">// before the VM initialization has completed. At this point then</span></span><br><span class="line">            <span class="comment">// only code in the java.base should be executing.</span></span><br><span class="line">            Module callerModule = caller.getModule();</span><br><span class="line">            Module base = Object.class.getModule();</span><br><span class="line">            Module svcModule = svc.getModule();</span><br><span class="line">            <span class="keyword">if</span> (callerModule != base || svcModule != base) &#123;</span><br><span class="line">                fail(svc, <span class="string">&quot;not accessible to &quot;</span> + callerModule + <span class="string">&quot; during VM init&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">// restricted to boot loader during startup</span></span><br><span class="line">            cl = <span class="keyword">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">this</span>.service = svc;</span><br><span class="line">        <span class="keyword">this</span>.serviceName = svc.getName();</span><br><span class="line">        <span class="keyword">this</span>.layer = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">this</span>.loader = cl;</span><br><span class="line">        <span class="keyword">this</span>.acc = (System.getSecurityManager() != <span class="keyword">null</span>)</span><br><span class="line">                ? AccessController.getContext()</span><br><span class="line">                : <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>构造过程中会先清理掉缓存，初始化相关参数。</p>
+<ul>
+<li>service : 表示正在加载的服务的类或接口</li>
+<li>serviceName : 服务类型</li>
+<li>layer : 类加载器的提供者，初始化时为null</li>
+<li>loader : 用于查找，加载和实例化提供程序的类加载器。</li>
+<li>acc : 创建ServiceLoader时采取的访问控制上下文</li>
+</ul>
+
+        <h5 id="查找实现类及加载实现类">
+          <a href="#查找实现类及加载实现类" class="heading-link"><i class="fas fa-link"></i></a><a href="#查找实现类及加载实现类" class="headerlink" title="查找实现类及加载实现类"></a>查找实现类及加载实现类</h5>
+      <p>当在迭代或者stream流时，会构建一个<code>LookupIterator</code>延迟加载迭代器，期间会初始化两个局部变量<code>ModuleServicesLookupIterator</code>和<code>LazyClassPathLookupIterator</code>，然后用<code>lookupIterator</code>读取<code>META-INF/services/</code>下以服务接口全限定名命名的配置文件，从中读取提供者全限定名交给<em>线程上下文类加载器</em>进行加载，最后在<code>lookupIterator</code>中实例化。</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> Iterator&lt;S&gt; <span class="title">iterator</span><span class="params">()</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// create lookup iterator if needed</span></span><br><span class="line">        <span class="keyword">if</span> (lookupIterator1 == <span class="keyword">null</span>) &#123;</span><br><span class="line">            lookupIterator1 = newLookupIterator();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> Iterator&lt;S&gt;() &#123;</span><br><span class="line"></span><br><span class="line">            <span class="comment">// record reload count</span></span><br><span class="line">            <span class="keyword">final</span> <span class="keyword">int</span> expectedReloadCount = ServiceLoader.<span class="keyword">this</span>.reloadCount;</span><br><span class="line"></span><br><span class="line">            <span class="comment">// index into the cached providers list</span></span><br><span class="line">            <span class="keyword">int</span> index;</span><br><span class="line"></span><br><span class="line">            <span class="comment">/**</span></span><br><span class="line"><span class="comment">             * Throws ConcurrentModificationException if the list of cached</span></span><br><span class="line"><span class="comment">             * providers has been cleared by reload.</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">checkReloadCount</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">if</span> (ServiceLoader.<span class="keyword">this</span>.reloadCount != expectedReloadCount)</span><br><span class="line">                    <span class="keyword">throw</span> <span class="keyword">new</span> ConcurrentModificationException();</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">hasNext</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                checkReloadCount();</span><br><span class="line">                <span class="keyword">if</span> (index &lt; instantiatedProviders.size())</span><br><span class="line">                    <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">                <span class="keyword">return</span> lookupIterator1.hasNext();</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> S <span class="title">next</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                checkReloadCount();</span><br><span class="line">                S next;</span><br><span class="line">                <span class="keyword">if</span> (index &lt; instantiatedProviders.size()) &#123;</span><br><span class="line">                    next = instantiatedProviders.get(index);</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    next = lookupIterator1.next().get();</span><br><span class="line">                    instantiatedProviders.add(next);</span><br><span class="line">                &#125;</span><br><span class="line">                index++;</span><br><span class="line">                <span class="keyword">return</span> next;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></div></figure>
+<p>我们可以看到，当我们调用iterator.hasNext和iterator.next方法的时候，实际上调用的都是newLookupIterator的相应方法。</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> Iterator&lt;Provider&lt;S&gt;&gt; newLookupIterator() &#123;</span><br><span class="line">        <span class="keyword">assert</span> layer == <span class="keyword">null</span> || loader == <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">if</span> (layer != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">new</span> LayerLookupIterator&lt;&gt;();</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            Iterator&lt;Provider&lt;S&gt;&gt; first = <span class="keyword">new</span> ModuleServicesLookupIterator&lt;&gt;();</span><br><span class="line">            Iterator&lt;Provider&lt;S&gt;&gt; second = <span class="keyword">new</span> LazyClassPathLookupIterator&lt;&gt;();</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">new</span> Iterator&lt;Provider&lt;S&gt;&gt;() &#123;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">hasNext</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                    <span class="keyword">return</span> (first.hasNext() || second.hasNext());</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="function"><span class="keyword">public</span> Provider&lt;S&gt; <span class="title">next</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                    <span class="keyword">if</span> (first.hasNext()) &#123;</span><br><span class="line">                        <span class="keyword">return</span> first.next();</span><br><span class="line">                    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (second.hasNext()) &#123;</span><br><span class="line">                        <span class="keyword">return</span> second.next();</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        <span class="keyword">throw</span> <span class="keyword">new</span> NoSuchElementException();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br></pre></td></tr></table></div></figure>
+<p>而newLookupIterator的next和hasNext调用的是LazyClassPathLookupIterator的方法</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">LazyClassPathLookupIterator</span>&lt;<span class="title">T</span>&gt; <span class="keyword">implements</span> <span class="title">Iterator</span>&lt;<span class="title">Provider</span>&lt;<span class="title">T</span>&gt;&gt;</span></span><br><span class="line"><span class="class">    </span>&#123;</span><br><span class="line">        <span class="keyword">static</span> <span class="keyword">final</span> String PREFIX = <span class="string">&quot;META-INF/services/&quot;</span>;</span><br><span class="line"></span><br><span class="line">        Set&lt;String&gt; providerNames = <span class="keyword">new</span> HashSet&lt;&gt;();  <span class="comment">// to avoid duplicates</span></span><br><span class="line">        <span class="comment">//存放所有实现类的全限定名</span></span><br><span class="line">        Enumeration&lt;URL&gt; configs;</span><br><span class="line">        <span class="comment">//当前类对象的迭代器</span></span><br><span class="line">        Iterator&lt;String&gt; pending;</span><br><span class="line">        <span class="comment">//当前迭代的实现类</span></span><br><span class="line">        Provider&lt;T&gt; nextProvider;</span><br><span class="line">        ServiceConfigurationError nextError;</span><br><span class="line"></span><br><span class="line">        LazyClassPathLookupIterator() &#123; &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         * Parse a single line from the given configuration file, adding the</span></span><br><span class="line"><span class="comment">         * name on the line to set of names if not already seen.</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">parseLine</span><span class="params">(URL u, BufferedReader r, <span class="keyword">int</span> lc, Set&lt;String&gt; names)</span></span></span><br><span class="line"><span class="function">            <span class="keyword">throws</span> IOException</span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            String ln = r.readLine();</span><br><span class="line">            <span class="keyword">if</span> (ln == <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">int</span> ci = ln.indexOf(<span class="string">&#x27;#&#x27;</span>);</span><br><span class="line">            <span class="keyword">if</span> (ci &gt;= <span class="number">0</span>) ln = ln.substring(<span class="number">0</span>, ci);</span><br><span class="line">            ln = ln.trim();</span><br><span class="line">            <span class="keyword">int</span> n = ln.length();</span><br><span class="line">            <span class="keyword">if</span> (n != <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="keyword">if</span> ((ln.indexOf(<span class="string">&#x27; &#x27;</span>) &gt;= <span class="number">0</span>) || (ln.indexOf(<span class="string">&#x27;\t&#x27;</span>) &gt;= <span class="number">0</span>))</span><br><span class="line">                    fail(service, u, lc, <span class="string">&quot;Illegal configuration-file syntax&quot;</span>);</span><br><span class="line">                <span class="keyword">int</span> cp = ln.codePointAt(<span class="number">0</span>);</span><br><span class="line">                <span class="keyword">if</span> (!Character.isJavaIdentifierStart(cp))</span><br><span class="line">                    fail(service, u, lc, <span class="string">&quot;Illegal provider-class name: &quot;</span> + ln);</span><br><span class="line">                <span class="keyword">int</span> start = Character.charCount(cp);</span><br><span class="line">                <span class="keyword">for</span> (<span class="keyword">int</span> i = start; i &lt; n; i += Character.charCount(cp)) &#123;</span><br><span class="line">                    cp = ln.codePointAt(i);</span><br><span class="line">                    <span class="keyword">if</span> (!Character.isJavaIdentifierPart(cp) &amp;&amp; (cp != <span class="string">&#x27;.&#x27;</span>))</span><br><span class="line">                        fail(service, u, lc, <span class="string">&quot;Illegal provider-class name: &quot;</span> + ln);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">if</span> (providerNames.add(ln)) &#123;</span><br><span class="line">                    names.add(ln);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> lc + <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         * Parse the content of the given URL as a provider-configuration file.</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="function"><span class="keyword">private</span> Iterator&lt;String&gt; <span class="title">parse</span><span class="params">(URL u)</span> </span>&#123;</span><br><span class="line">            Set&lt;String&gt; names = <span class="keyword">new</span> LinkedHashSet&lt;&gt;(); <span class="comment">// preserve insertion order</span></span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                URLConnection uc = u.openConnection();</span><br><span class="line">                uc.setUseCaches(<span class="keyword">false</span>);</span><br><span class="line">                <span class="keyword">try</span> (InputStream in = uc.getInputStream();</span><br><span class="line">                     BufferedReader r</span><br><span class="line">                         = <span class="keyword">new</span> BufferedReader(<span class="keyword">new</span> InputStreamReader(in, UTF_8.INSTANCE)))</span><br><span class="line">                &#123;</span><br><span class="line">                    <span class="keyword">int</span> lc = <span class="number">1</span>;</span><br><span class="line">                    <span class="keyword">while</span> ((lc = parseLine(u, r, lc, names)) &gt;= <span class="number">0</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">catch</span> (IOException x) &#123;</span><br><span class="line">                fail(service, <span class="string">&quot;Error accessing configuration file&quot;</span>, x);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> names.iterator();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         * Loads and returns the next provider class.</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">private</span> Class&lt;?&gt; nextProviderClass() &#123;</span><br><span class="line">            <span class="keyword">if</span> (configs == <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                	 <span class="comment">//META-INF/services/ 加上接口的全限定类名，就是文件服务类的文件</span></span><br><span class="line">                    <span class="comment">//META-INF/services/com.viewscenes.netsupervisor.spi.SPIService</span></span><br><span class="line">                    String fullName = PREFIX + service.getName();</span><br><span class="line">                    <span class="keyword">if</span> (loader == <span class="keyword">null</span>) &#123;</span><br><span class="line">                    	<span class="comment">//将文件路径转成URL对象</span></span><br><span class="line">                        configs = ClassLoader.getSystemResources(fullName);</span><br><span class="line">                    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (loader == ClassLoaders.platformClassLoader()) &#123;</span><br><span class="line">                        <span class="comment">// The platform classloader doesn&#x27;t have a class path,</span></span><br><span class="line">                        <span class="comment">// but the boot loader might.</span></span><br><span class="line">                        <span class="keyword">if</span> (BootLoader.hasClassPath()) &#123;</span><br><span class="line">                            configs = BootLoader.findResources(fullName);</span><br><span class="line">                        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                            configs = Collections.emptyEnumeration();</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    	<span class="comment">//将文件路径转成URL对象</span></span><br><span class="line">                        configs = loader.getResources(fullName);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">catch</span> (IOException x) &#123;</span><br><span class="line">                    fail(service, <span class="string">&quot;Error locating configuration files&quot;</span>, x);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">while</span> ((pending == <span class="keyword">null</span>) || !pending.hasNext()) &#123;</span><br><span class="line">                <span class="keyword">if</span> (!configs.hasMoreElements()) &#123;</span><br><span class="line">                    <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">//解析URL文件对象，读取内容，最后返回</span></span><br><span class="line">                pending = parse(configs.nextElement());</span><br><span class="line">            &#125;</span><br><span class="line">            String cn = pending.next();</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">            	<span class="comment">//加载类对象</span></span><br><span class="line">                <span class="keyword">return</span> Class.forName(cn, <span class="keyword">false</span>, loader);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (ClassNotFoundException x) &#123;</span><br><span class="line">                fail(service, <span class="string">&quot;Provider &quot;</span> + cn + <span class="string">&quot; not found&quot;</span>);</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">@SuppressWarnings(&quot;unchecked&quot;)</span></span><br><span class="line">        <span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">hasNextService</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">while</span> (nextProvider == <span class="keyword">null</span> &amp;&amp; nextError == <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                	<span class="comment">//拿到刚加载的类对象</span></span><br><span class="line">                    Class&lt;?&gt; clazz = nextProviderClass();</span><br><span class="line">                    <span class="keyword">if</span> (clazz == <span class="keyword">null</span>)</span><br><span class="line">                        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">if</span> (clazz.getModule().isNamed()) &#123;</span><br><span class="line">                        <span class="comment">// ignore class if in named module</span></span><br><span class="line">                        <span class="keyword">continue</span>;</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                    <span class="comment">//实例化对象	</span></span><br><span class="line">                    <span class="keyword">if</span> (service.isAssignableFrom(clazz)) &#123;</span><br><span class="line">                        Class&lt;? extends S&gt; type = (Class&lt;? extends S&gt;) clazz;</span><br><span class="line">                        Constructor&lt;? extends S&gt; ctor</span><br><span class="line">                            = (Constructor&lt;? extends S&gt;)getConstructor(clazz);</span><br><span class="line">                        ProviderImpl&lt;S&gt; p = <span class="keyword">new</span> ProviderImpl&lt;S&gt;(service, type, ctor, acc);</span><br><span class="line">                        nextProvider = (ProviderImpl&lt;T&gt;) p;</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        fail(service, clazz.getName() + <span class="string">&quot; not a subtype&quot;</span>);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">catch</span> (ServiceConfigurationError e) &#123;</span><br><span class="line">                    nextError = e;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">private</span> Provider&lt;T&gt; <span class="title">nextService</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">if</span> (!hasNextService())</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> NoSuchElementException();</span><br><span class="line"></span><br><span class="line">            Provider&lt;T&gt; provider = nextProvider;</span><br><span class="line">            <span class="keyword">if</span> (provider != <span class="keyword">null</span>) &#123;</span><br><span class="line">                nextProvider = <span class="keyword">null</span>;</span><br><span class="line">                <span class="keyword">return</span> provider;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                ServiceConfigurationError e = nextError;</span><br><span class="line">                <span class="keyword">assert</span> e != <span class="keyword">null</span>;</span><br><span class="line">                nextError = <span class="keyword">null</span>;</span><br><span class="line">                <span class="keyword">throw</span> e;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">hasNext</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">if</span> (acc == <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">return</span> hasNextService();</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                PrivilegedAction&lt;Boolean&gt; action = <span class="keyword">new</span> PrivilegedAction&lt;&gt;() &#123;</span><br><span class="line">                    <span class="function"><span class="keyword">public</span> Boolean <span class="title">run</span><span class="params">()</span> </span>&#123; <span class="keyword">return</span> hasNextService(); &#125;</span><br><span class="line">                &#125;;</span><br><span class="line">                <span class="keyword">return</span> AccessController.doPrivileged(action, acc);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> Provider&lt;T&gt; <span class="title">next</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">if</span> (acc == <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">return</span> nextService();</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                PrivilegedAction&lt;Provider&lt;T&gt;&gt; action = <span class="keyword">new</span> PrivilegedAction&lt;&gt;() &#123;</span><br><span class="line">                    <span class="function"><span class="keyword">public</span> Provider&lt;T&gt; <span class="title">run</span><span class="params">()</span> </span>&#123; <span class="keyword">return</span> nextService(); &#125;</span><br><span class="line">                &#125;;</span><br><span class="line">                <span class="keyword">return</span> AccessController.doPrivileged(action, acc);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="源码浅析小结">
+          <a href="#源码浅析小结" class="heading-link"><i class="fas fa-link"></i></a><a href="#源码浅析小结" class="headerlink" title="源码浅析小结"></a>源码浅析小结</h5>
+      <p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="ServiceLoader.png">
+      <br>迭代过程会涉及到以下几个变量：</p>
+<blockquote>
+<ul>
+<li>Enumeration<URL> configs：存放所有实现类的全限定名</URL></li>
+<li>Iterator<String> pending：当前类对象的迭代器</String></li>
+<li>Provider<T> nextProvider：当前迭代的实现类</T></li>
+</ul>
+</blockquote>
+<p>在hasNextService中会调用nextProviderClass返回当前遍历的实现类Class对象，并实例化赋值给nextProvider；而在nextService()中则直接返回nextProvider对象实例。<br>nextProviderClass方法的作用是获取配置文件中所有的全限定名称实现类URL到configs，并返回当前遍历实现类Class对象</p>
+
+        <h3 id="SPI应用">
+          <a href="#SPI应用" class="heading-link"><i class="fas fa-link"></i></a><a href="#SPI应用" class="headerlink" title="SPI应用"></a>SPI应用</h3>
+      
+        <h4 id="JDBC">
+          <a href="#JDBC" class="heading-link"><i class="fas fa-link"></i></a><a href="#JDBC" class="headerlink" title="JDBC"></a>JDBC</h4>
+      <figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Class.forName(<span class="string">&quot;com.mysql.jdbc.Driver&quot;</span>);</span><br><span class="line">Connection connection = DriverManager.getConnection(<span class="string">&quot;jdbc://xxxx&quot;</span>, <span class="string">&quot;root&quot;</span>, <span class="string">&quot;xxx&quot;</span>);</span><br></pre></td></tr></table></div></figure>
+<p>这里为什么放mysql驱动可以获取到mysql的连接，放oracle的驱动就能获取到oracle的连接？<br>DriverManager 第100行如下：</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Load the initial JDBC drivers by checking the System property</span></span><br><span class="line"><span class="comment">     * jdbc.properties and then use the &#123;<span class="doctag">@code</span> ServiceLoader&#125; mechanism</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">static</span> &#123;</span><br><span class="line">        loadInitialDrivers();</span><br><span class="line">        println(<span class="string">&quot;JDBC DriverManager initialized&quot;</span>);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></div></figure>
+<p>可以看到，DriverManger被初始化的时候，会执行loadInitialDrivers()方法。</p>
+<p>DriverManager 第586行：</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ServiceLoader&lt;Driver&gt; loadedDrivers = ServiceLoader.load(Driver.class);</span><br><span class="line">Iterator&lt;Driver&gt; driversIterator = loadedDrivers.iterator();</span><br></pre></td></tr></table></div></figure>
+<p>可以看到使用到了SPI方法，<code>ServiceLoader.load()</code>和上面我们写的demo一样，加载Driver这个接口的实现类。那Driver的实现类肯定是在mysql的驱动包内放着<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="JDBC.png">
+      <br>像JDBC这种内置于java核心库的SPI，则使用了线程上下文类加载器，实际上是java给自己开的后门，能够不遵守类加载器的双亲委派原则。</p>
+
+        <h4 id="Tomcat">
+          <a href="#Tomcat" class="heading-link"><i class="fas fa-link"></i></a><a href="#Tomcat" class="headerlink" title="Tomcat"></a>Tomcat</h4>
+      <p>以前使用SpringMVC开发项目的时候，会将项目打包，然后放到tomcat容器中运行。<br>那么你打开spring-web项目的源码，会发现spring-web下有spi的配置：<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="Tomcat.png">
+      <br>再看下Tomcat源码<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="Tomcat1.png">
+      <br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="Tomcat2.png">
+      <br>可以看到Tomcat的源码里确实是去<code>META-INF/services</code>下找需要加载的类。SpringMVC配置了ServletContainerInitializer，在项目部署到Tomcat后，Tomcat回调该方法，SpringMVC完成父子容器的加载。</p>
+
+        <h4 id="Spring-Boot">
+          <a href="#Spring-Boot" class="heading-link"><i class="fas fa-link"></i></a><a href="#Spring-Boot" class="headerlink" title="Spring Boot"></a>Spring Boot</h4>
+      <p>在Spring Boot中也应用SPI这种可插件化思想。当你使用@SpringBootApplication注解时，会开始自动配置，而启动配置则会去扫描META-INF/spring.factories下的配置类。</p>
+
+        <h3 id="参考资料">
+          <a href="#参考资料" class="heading-link"><i class="fas fa-link"></i></a><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3>
+      <ul>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://www.jianshu.com/p/3a3edbcd8f24">深入理解SPI机制</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/376511078">一文读懂什么是SPI机制</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+</ul>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://focusss.github.io">大湾区码仔驰名商标</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://focusss.github.io/2022/03/26/SPI%E6%9C%BA%E5%88%B6/">https://focusss.github.io/2022/03/26/SPI%E6%9C%BA%E5%88%B6/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://focusss.github.io/tags/Java/">Java</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://focusss.github.io/tags/SPI/">SPI</a></span></div><nav class="post-paginator paginator"><div class="paginator-next"><a class="paginator-next__link" href="/2022/03/26/Spring-Boot%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B%E5%8F%8A%E8%87%AA%E5%8A%A8%E8%A3%85%E9%85%8D%E5%8E%9F%E7%90%86/"><span class="paginator-prev__text">Spring Boot启动过程及自动装配原理</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#SPI%E4%BB%8B%E7%BB%8D"><span class="toc-number">1.</span> <span class="toc-text">
+          SPI介绍</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#SPI%E4%BD%BF%E7%94%A8"><span class="toc-number">2.</span> <span class="toc-text">
+          SPI使用</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%BE%E4%BE%8B%E8%AF%B4%E6%98%8E"><span class="toc-number">2.1.</span> <span class="toc-text">
+          举例说明</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%AE%9A%E4%B9%89%E6%8E%A5%E5%8F%A3"><span class="toc-number">2.1.1.</span> <span class="toc-text">
+          定义接口</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0%E7%B1%BB"><span class="toc-number">2.1.2.</span> <span class="toc-text">
+          实现类</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA%E4%BB%A5%E6%8E%A5%E5%8F%A3%E7%9A%84%E5%85%A8%E9%99%90%E5%AE%9A%E5%90%8D%E4%B8%BA%E5%90%8D%E7%A7%B0%E7%9A%84%E6%96%87%E4%BB%B6"><span class="toc-number">2.1.3.</span> <span class="toc-text">
+          创建一个以接口的全限定名为名称的文件</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#ServiceLoader-load-%E5%8A%A0%E8%BD%BD%E5%AE%9E%E7%8E%B0%E7%B1%BB"><span class="toc-number">2.1.4.</span> <span class="toc-text">
+          ServiceLoader.load()加载实现类</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%BA%90%E7%A0%81%E6%B5%85%E6%9E%90%EF%BC%88jdk-11-0-13%EF%BC%89"><span class="toc-number">2.2.</span> <span class="toc-text">
+          源码浅析（jdk 11.0.13）</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%9E%84%E9%80%A0ServiceLoader%E5%AF%B9%E8%B1%A1"><span class="toc-number">2.2.1.</span> <span class="toc-text">
+          构造ServiceLoader对象</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%9F%A5%E6%89%BE%E5%AE%9E%E7%8E%B0%E7%B1%BB%E5%8F%8A%E5%8A%A0%E8%BD%BD%E5%AE%9E%E7%8E%B0%E7%B1%BB"><span class="toc-number">2.2.2.</span> <span class="toc-text">
+          查找实现类及加载实现类</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%BA%90%E7%A0%81%E6%B5%85%E6%9E%90%E5%B0%8F%E7%BB%93"><span class="toc-number">2.2.3.</span> <span class="toc-text">
+          源码浅析小结</span></a></li></ol></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#SPI%E5%BA%94%E7%94%A8"><span class="toc-number">3.</span> <span class="toc-text">
+          SPI应用</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#JDBC"><span class="toc-number">3.1.</span> <span class="toc-text">
+          JDBC</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Tomcat"><span class="toc-number">3.2.</span> <span class="toc-text">
+          Tomcat</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Spring-Boot"><span class="toc-number">3.3.</span> <span class="toc-text">
+          Spring Boot</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">4.</span> <span class="toc-text">
+          参考资料</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/images/headImg.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">平安大赚 财丁兴旺</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">86</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">24</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">34</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2022</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>大湾区码仔驰名商标</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.4.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lazyload@2.0.0-rc.2/lazyload.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
