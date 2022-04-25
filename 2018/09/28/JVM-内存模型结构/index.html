@@ -5,22 +5,22 @@
 <meta property="og:site_name" content="大 湾 区 码 仔&#39;s Blog">
 <meta property="og:description" content="JVM是一种用于计算设备的规范，它是一个虚构出来的机器，是通过在实际的计算机上仿真模拟各种功能实现的。JVM是JRE的一部分，屏蔽了与具体操作系统平台相关的信息，使Java程序只需生成在Java虚拟机上运行的目标代码（字节码），就可以在多种平台上不加修改地运行。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM%E5%8E%9F%E7%90%86.png">
-<meta property="og:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM%E4%BD%93%E7%B3%BB.png">
-<meta property="og:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84.png">
-<meta property="og:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/%E6%93%8D%E4%BD%9C%E6%95%B0%E6%A0%88.png">
-<meta property="og:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/%E5%A0%86%E5%86%85%E5%AD%98.png">
-<meta property="og:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/TLAB.png">
-<meta property="og:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/survivor.png">
-<meta property="og:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM%E5%86%85%E5%AD%98%E6%BA%A2%E5%87%BA%E6%B1%87%E6%80%BB.png">
-<meta property="og:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM%E5%8F%A5%E6%9F%84%E8%AE%BF%E9%97%AE.png">
-<meta property="og:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM%E7%9B%B4%E6%8E%A5%E6%8C%87%E9%92%88%E8%AE%BF%E9%97%AE.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM%E5%8E%9F%E7%90%86.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM%E4%BD%93%E7%B3%BB.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/%E6%93%8D%E4%BD%9C%E6%95%B0%E6%A0%88.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/%E5%A0%86%E5%86%85%E5%AD%98.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/TLAB.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/survivor.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM%E5%86%85%E5%AD%98%E6%BA%A2%E5%87%BA%E6%B1%87%E6%80%BB.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM%E5%8F%A5%E6%9F%84%E8%AE%BF%E9%97%AE.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM%E7%9B%B4%E6%8E%A5%E6%8C%87%E9%92%88%E8%AE%BF%E9%97%AE.png">
 <meta property="article:published_time" content="2018-09-28T10:49:34.000Z">
-<meta property="article:modified_time" content="2021-12-11T17:21:23.436Z">
+<meta property="article:modified_time" content="2022-04-25T10:47:39.075Z">
 <meta property="article:author" content="大湾区码仔驰名商标">
 <meta property="article:tag" content="JVM">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM%E5%8E%9F%E7%90%86.png"><title>JVM-内存模型结构 | 大 湾 区 码 仔's Blog</title><link ref="canonical" href="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+<meta name="twitter:image" content="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM%E5%8E%9F%E7%90%86.png"><title>JVM-内存模型结构 | 大 湾 区 码 仔's Blog</title><link ref="canonical" href="https://focusss.github.io/2018/09/28/JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
 var CONFIG = {
   root: '/',
   algolia: undefined,
@@ -44,7 +44,7 @@ var CONFIG = {
   sourcePath: {"js":"js","css":"css","images":"images"},
 };
 
-window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">大 湾 区 码 仔's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">JVM-内存模型结构</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2018-09-28</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-12-12</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">大 湾 区 码 仔's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">JVM-内存模型结构</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2018-09-28</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2022-04-25</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
         <h2 id="JVM简介">
           <a href="#JVM简介" class="heading-link"><i class="fas fa-link"></i></a><a href="#JVM简介" class="headerlink" title="JVM简介"></a>JVM简介</h2>
       
@@ -62,7 +62,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
       <ul>
 <li>JVM是Java的核心和基础，在Java编译器和os平台之间的虚拟处理器，可在上面执行字节码程序。</li>
 <li>Java编译器只面向JVM，生成JVM能理解的字节码文件。Java源文件经编译成字节码程序，通过JVM将每条指令翻译成不同的机器码，通过特定平台运行。<br>
-        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM%E5%8E%9F%E7%90%86.png" alt="JVM原理">
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="JVM%E5%8E%9F%E7%90%86.png" alt="JVM原理">
         </li>
 </ul>
 
@@ -71,7 +71,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
       <p>1、 JVM实例对应了一个独立运行的Java程序，它是进程级别的。 </p>
 <blockquote>
 <ul>
-<li><strong>启动：</strong>启动一个Java程序时，一个JVM实例就产生了，任何一个拥有public static void<br>main(String[] args)函数的class都可以作为JVM实例运行的起点。</li>
+<li><strong>启动：</strong>启动一个Java程序时，一个JVM实例就产生了，任何一个拥有<code>public static void main(String[] args)</code>函数的class都可以作为JVM实例运行的起点。</li>
 <li><strong>运行：</strong>main()作为该程序初始线程的起点，任何其他线程均由该线程启动。JVM内部有两种线程：<strong>守护线程和非守护线程</strong>。main()属于非守护线程，守护线程通常由JVM自己使用，Java程序也可以表明自己创建的线程是守护线程。 </li>
 <li><strong>消亡：</strong>当程序中的所有非守护线程都终止时，JVM才退出；若安全管理器允许，程序也可以使用Runtime类或者System.exit()来退出。  </li>
 </ul>
@@ -81,7 +81,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
         <h3 id="架构">
           <a href="#架构" class="heading-link"><i class="fas fa-link"></i></a><a href="#架构" class="headerlink" title="架构"></a>架构</h3>
       <p>JVM架构图如下：<br>
-        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM%E4%BD%93%E7%B3%BB.png" alt="JVM体系">
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="JVM%E4%BD%93%E7%B3%BB.png" alt="JVM体系">
        </p>
 <p>JVM分为三个主要子系统：</p>
 <ul>
@@ -153,7 +153,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
           <a href="#内存结构划分" class="heading-link"><i class="fas fa-link"></i></a><a href="#内存结构划分" class="headerlink" title="内存结构划分"></a>内存结构划分</h2>
       <p>Java程序在运行时，需要在内存中的分配空间。为了提高运算效率，就需要对数据进行了不同空间的划分，因为每一片区域都有特定的处理数据方式和内存管理方式。  </p>
 <p>JVM内存结构指的是JVM架构中的运行时数据区，整个JVM内存结构图如下表示：<br>
-        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84.png" alt="内存模型结构">
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84.png" alt="内存模型结构">
       </p>
 
         <h3 id="各结构的作用">
@@ -174,7 +174,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
 <p><strong>局部变量表用于保存函数的参数以及局部变量，即方法运行期间所需要的数据</strong>。局部变量表中的变量只在当前函数调用中有效，当函数调用结束，随着函数栈帧的弹出销毁，局部变量表也会随之销毁。局部变量表可保存有编译期可知的各种基本数据类型（boolean、byte、char、short、int、float、long、double）、对象引用（reference类型，它不等同于对象本身，根据不同的虚拟机实现，它可能是一个指向对象起始地址的引用指针，也可能指向一个代表对象的句柄或者其他与此对象相关的位置）和returnAddress 类型（指向了一条字节码指令的地址）。其中64 位长度的long 和double 类型的数据会占用2 个局部变量空间（Slot），其余的数据类型只占用1 个。局部变量表所需的内存空间在编译期间完成分配，当进入一个方法时，这个方法需要在帧中分配多大的局部变量空间是完全确定的，在方法运行期间不会改变局部变量表的大小。  </p>
 <p>由于局部变量表在栈帧之中，因此，如果函数的参数和局部变量很多，会使得局部变量表膨胀，从而每一次函数调用就会占用更多的栈空间，最终导致函数的嵌套调用次数减少。在相同的栈容量下，局部变量少的函数可以支持更深的函数调用。通过jclasslib工具可以查看函数的局部变量表。局部变量表中的变量也是垃圾回收根节点，只要被局部变量表中直接或者间接引用的对象都是不会被回收的。  </p>
 <p>操作数栈用于计算时，临时数据的存储区域。操作数栈的长度由编译期间确定，操作数栈初始时为空，每一个操作数栈的成员(Entry)可以保存JVM定义的任意数据类型的值。long和double占用2个栈深单位，其它数据类型占用一个栈深单位。可以通过入栈和出栈来访问操作数栈。其访问过程如下图：<br>
-        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/%E6%93%8D%E4%BD%9C%E6%95%B0%E6%A0%88.png" alt="操作数栈">
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E6%93%8D%E4%BD%9C%E6%95%B0%E6%A0%88.png" alt="操作数栈">
       <br>上述表示两个数100和98相加的过程。</p>
 <figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LocalvarGC</span> </span>&#123;</span><br><span class="line">　　<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">localvarGc1</span><span class="params">()</span></span>&#123;</span><br><span class="line">　　　　<span class="keyword">byte</span>[] a = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">6</span>*<span class="number">1024</span>*<span class="number">1024</span>];<span class="comment">//6M</span></span><br><span class="line">　　　　System.gc();</span><br><span class="line">　　&#125;</span><br><span class="line">　</span><br><span class="line">　　<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">localvarGc2</span><span class="params">()</span></span>&#123;</span><br><span class="line">　　　　localvarGc1();</span><br><span class="line">　　　　System.gc();</span><br><span class="line">　　&#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
 
@@ -211,14 +211,14 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
           <a href="#堆" class="heading-link"><i class="fas fa-link"></i></a><a href="#堆" class="headerlink" title="堆"></a>堆</h4>
       <p>Java 堆（Java Heap）是Java虚拟机所管理的内存中最大的一块。Java 堆是被所有线程共享的一块内存区域，在虚拟机启动时创建，并且是<strong>完全自动化管理</strong>的。Java堆可以处于物理上不连续的内存空间中，只要逻辑上是连续的即可。如果在堆中没有内存完成对象实例的分配，并且堆无法再扩展时，将抛出OutOfMemoryError异常，抛出的错误信息是“Java.lang.OutOfMemoryError:Java heap space”。可以通过-Xmx和-Xms来控制堆内存的大小，发生堆上OOM的可能是存在内存泄露，也可能是堆大小分配不合理。  </p>
 <p>从内存回收的角度看，由于现在垃圾收集器基本都是采用的分代收集算法，所以Java 堆中还可以细分为：新生代和老年代；再细致一点新生代可以分为Eden 空间、From Survivor 空间、To Survivor 空间等。如果从内存分配的角度看，线程共享的Java 堆中可能划分出多个线程私有的分配缓冲区（Thread Local Allocation Buffer，TLAB）。<br>
-        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/%E5%A0%86%E5%86%85%E5%AD%98.png" alt="堆内存">
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="%E5%A0%86%E5%86%85%E5%AD%98.png" alt="堆内存">
       </p>
 
         <h5 id="新生代Eden空间">
           <a href="#新生代Eden空间" class="heading-link"><i class="fas fa-link"></i></a><a href="#新生代Eden空间" class="headerlink" title="新生代Eden空间"></a>新生代Eden空间</h5>
       <p>在新生代的Eden空间，对象会优先分配在该空间，同时JVM可以为每个线程分配一个私有的缓存区域，称为TLAB（Thread Local Allocation Buffer），避免多线程同时分内存时需要使用加锁等机制而影响分配速度。<strong>TLAB在堆的Eden空间上工作</strong>，内存中Eden的结构大体为：</p>
 <p>
-        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/TLAB.png" alt="TLAB">
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="TLAB.png" alt="TLAB">
        </p>
 <p>TLAB的管理主要是依靠三个指针：<strong>start、end、top</strong>。start与end标记了Eden中被该TLAB管理的区域空间，该区域空间不会被其他线程分配内存所使用。top是指分配指针，开始时指向start的位置，随着内存分配的进行，慢慢向end靠近，当到达end位置时触发TLAB refill。TLAB缺省情况下仅占有整个Eden空间的1%，当然可以通过选项-XX:TLABWasteTargetPercent设置TLAB空间所占用Eden空间的百分比大小。  </p>
 
@@ -226,7 +226,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
           <a href="#新生代Survivor空间" class="heading-link"><i class="fas fa-link"></i></a><a href="#新生代Survivor空间" class="headerlink" title="新生代Survivor空间"></a>新生代Survivor空间</h5>
       <p>当Eden空间足够大时，大部分新建对象会被分配在Eden区，有些大对象会被直接分配在老年代空间。<br>当Eden空间不足时，会发生一次Minor GC，未被引用的对象会被回收，Eden中仍存活的对象会被移动到From Survivor（<em>避免直接进入老年代导致过早触发Full GC</em>）。Survivor中的对象每经过一次Minor GC，对象的age会加1，默认age超过15依然存活的对象会被移入老年代空间。<br>当发生Minor GC时，如果Survivor空间不足以保存Eden区中存活的对象，那么该对象会被直接移入老年代；如果Survivor中同age的对象占用空间的总和达到或超过其中一个Survivor的一半，那么所有同age对象都会被移入老年代。<br>通常情况下，只有其中一个Survivor空间是存在对象的，另一个Survivor是空的。当再次发生GC时，Eden中的对象被复制到标记为To的空的Surivivor中，原来From中依然存活的未到达年龄的对象也会复制到To，此时To被标记为From，原来的From置空并被标记为To，轮换是为了避免Surivivor中因没有连续空间（<em>避免内存碎片的产生</em>）而导致对象被直接移入老年代。</p>
 <p>
-        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/survivor.png" alt="survivor">
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="survivor.png" alt="survivor">
       </p>
 
         <h5 id="老年代">
@@ -249,7 +249,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
       <p>直接内存（Direct Memory）并不是虚拟机运行时数据区的一部分，也不是Java虚拟机规范中定义的内存区域，但是这部分内存也被频繁地使用，而且也可能导致OutOfMemoryError异常。</p>
 <p>Java中的NIO类可以使用Native函数库，直接分配堆外内存，然后通过一个存储在Java堆里面的DirectoryByteBuffer对象作为这块内存的引用进行操作，这样能避免在Java堆和Native堆中来回复制数据，在一些场景中显著提高性能。通常访问直接内存的速度会优于Java堆。因此出于性能的考虑，读写频繁的场合可能会考虑使用直接内存。</p>
 <p>从上面可以知道，本机直接内存的分配不会受到Java堆大小的限制。但还是会受到本机总内存（RAM及SWAP区或者分页文件）的大小及处理器寻址空间的限制。在配置虚拟机参数时，一般会根据实际内存设置-Xmx等参数信息，但会经常忽略直接内存，使得各个内存区域的总和大于物理内存限制，从而导致动态扩展时出现OutOfMemoryError异常。<br>
-        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM%E5%86%85%E5%AD%98%E6%BA%A2%E5%87%BA%E6%B1%87%E6%80%BB.png" alt="JVM内存溢出汇总">
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="JVM%E5%86%85%E5%AD%98%E6%BA%A2%E5%87%BA%E6%B1%87%E6%80%BB.png" alt="JVM内存溢出汇总">
       </p>
 
         <h3 id="对象创建过程">
@@ -260,13 +260,13 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
         <h4 id="句柄访问方式">
           <a href="#句柄访问方式" class="heading-link"><i class="fas fa-link"></i></a><a href="#句柄访问方式" class="headerlink" title="句柄访问方式"></a>句柄访问方式</h4>
       <p>Java堆中将会划分出一块内存作为句柄池，reference中存储的就是对象的句柄地址，而句柄中包含了对象实例数据和类型数据各自的具体地址信息。<br>
-        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM%E5%8F%A5%E6%9F%84%E8%AE%BF%E9%97%AE.png" alt="句柄访问">
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="JVM%E5%8F%A5%E6%9F%84%E8%AE%BF%E9%97%AE.png" alt="句柄访问">
         </p>
 
         <h4 id="直接指针访问方式">
           <a href="#直接指针访问方式" class="heading-link"><i class="fas fa-link"></i></a><a href="#直接指针访问方式" class="headerlink" title="直接指针访问方式"></a>直接指针访问方式</h4>
       <p>Java 堆对象的布局中就必须考虑如何放置访问类型数据的相关信息，reference中直接存储的就是对象地址。<br>
-        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="JVM-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/JVM%E7%9B%B4%E6%8E%A5%E6%8C%87%E9%92%88%E8%AE%BF%E9%97%AE.png" alt="句柄访问">
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="JVM%E7%9B%B4%E6%8E%A5%E6%8C%87%E9%92%88%E8%AE%BF%E9%97%AE.png" alt="句柄访问">
        </p>
 
         <h4 id="区别">

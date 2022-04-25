@@ -5,12 +5,18 @@
 <meta property="og:site_name" content="大 湾 区 码 仔&#39;s Blog">
 <meta property="og:description" content="全称Concurrent Mark Sweep，以牺牲吞吐量为代价来获得最短停顿时间的垃圾收集器，适用于对响应时间的侧重性大于吞吐量的场景">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://focusss.github.io/2018/09/18/JVM-CMS%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/initialmark.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/18/JVM-CMS%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/concurrentmark.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/18/JVM-CMS%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/concurrentpreclean1.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/18/JVM-CMS%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/concurrentpreclean2.png">
+<meta property="og:image" content="https://focusss.github.io/2018/09/18/JVM-CMS%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/concurrentsweep.png">
 <meta property="article:published_time" content="2018-09-18T02:04:11.000Z">
-<meta property="article:modified_time" content="2021-12-11T17:13:37.176Z">
+<meta property="article:modified_time" content="2022-04-25T04:24:06.707Z">
 <meta property="article:author" content="大湾区码仔驰名商标">
 <meta property="article:tag" content="JVM">
 <meta property="article:tag" content="CMS">
-<meta name="twitter:card" content="summary"><title>JVM-CMS垃圾收集器 | 大 湾 区 码 仔's Blog</title><link ref="canonical" href="https://focusss.github.io/2018/09/18/JVM-CMS%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://focusss.github.io/2018/09/18/JVM-CMS%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/initialmark.png"><title>JVM-CMS垃圾收集器 | 大 湾 区 码 仔's Blog</title><link ref="canonical" href="https://focusss.github.io/2018/09/18/JVM-CMS%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
 var CONFIG = {
   root: '/',
   algolia: undefined,
@@ -34,7 +40,7 @@ var CONFIG = {
   sourcePath: {"js":"js","css":"css","images":"images"},
 };
 
-window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">大 湾 区 码 仔's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">JVM-CMS垃圾收集器</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2018-09-18</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-12-12</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">大 湾 区 码 仔's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">JVM-CMS垃圾收集器</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2018-09-18</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2022-04-25</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
         <h2 id="简介">
           <a href="#简介" class="heading-link"><i class="fas fa-link"></i></a><a href="#简介" class="headerlink" title="简介"></a>简介</h2>
       <p>全称<code>Concurrent Mark Sweep</code>，以牺牲吞吐量为代价来获得最短停顿时间的垃圾收集器，适用于对<strong>响应时间的侧重性大于吞吐量</strong>的场景。CMS仅针对老年代（Old Generation）的回收，减少full gc发生的几率。默认情况下在老年代使用了68%及以上的内存的时候就开始进行CMS。并发标记和并发清除阶段的GC线程是和用户线程并发执行，默认GC线程数为物理CPU核心数的1/4。在使用CMS垃圾收集器的情况下，对于年轻代的回收，是用并行垃圾收集器(ParNew GC)去完成的。</p>
@@ -48,17 +54,26 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
 <p>整个过程需要标记的对象有：</p>
 <ul>
 <li>老年代中所有的<code>GC Roots</code>所指的直接对象</li>
-<li>被活着年轻代中的对象引用老年代的对象（引用的对象指老年代中的对象）<br>![Initial Mark](initial mark.png)  </li>
+<li>被活着年轻代中的对象引用老年代的对象（引用的对象指老年代中的对象） </li>
 </ul>
+<p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="initialmark.png" alt="Initial Mark">
+        </p>
 <p>因为标记的对象比较少，所以<strong>暂停时间会比较短</strong>。</p>
 
         <h3 id="并发标记-Concurrent-Mark">
           <a href="#并发标记-Concurrent-Mark" class="heading-link"><i class="fas fa-link"></i></a><a href="#并发标记-Concurrent-Mark" class="headerlink" title="并发标记(Concurrent Mark)"></a>并发标记(Concurrent Mark)</h3>
-      <p>在初始标记阶段中所标记的节点往下检索,标记出所有老年代中存活的对象。该过程会<strong>和应用程序线程并发地执行，不会发生停顿</strong>。注意此时会有部分对象的引用被改变。<br>![Concurrent Mark](concurrent mark.png)</p>
+      <p>在初始标记阶段中所标记的节点往下检索,标记出所有老年代中存活的对象。该过程会<strong>和应用程序线程并发地执行，不会发生停顿</strong>。注意此时会有部分对象的引用被改变。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="concurrentmark.png" alt="Concurrent Mark">
+      </p>
 
         <h3 id="并发预清理-Concurrent-Preclean">
           <a href="#并发预清理-Concurrent-Preclean" class="heading-link"><i class="fas fa-link"></i></a><a href="#并发预清理-Concurrent-Preclean" class="headerlink" title="并发预清理(Concurrent Preclean)"></a>并发预清理(Concurrent Preclean)</h3>
-      <p>也是一个并发阶段，<strong>会和应用程序线程并发地执行</strong>。前一个阶段在并行运行的时候，一些对象的引用已经发生了变化，当这些引用发生变化的时候，JVM会标记堆的这个区域为<code>Dirty Card</code>(包含被标记但是改变了的对象，被认为”dirty”)，这就是 <code>Card Marking</code>。<br>![Concurrent Mark1](concurrent preclean1.png)<br>在<code>pre-clean</code>阶段，那些能够从<code>dirty card</code>对象到达的对象也会被标记，这个标记做完之后，<code>dirty card</code>标记就会被清除了<br>![Concurrent Mark2](concurrent preclean2.png)</p>
+      <p>也是一个并发阶段，<strong>会和应用程序线程并发地执行</strong>。前一个阶段在并行运行的时候，一些对象的引用已经发生了变化，当这些引用发生变化的时候，JVM会标记堆的这个区域为<code>Dirty Card</code>(包含被标记但是改变了的对象，被认为“dirty”)，这就是 <code>Card Marking</code>。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="concurrentpreclean1.png" alt="Concurrent Mark1">
+      <br>在<code>pre-clean</code>阶段，那些能够从<code>dirty card</code>对象到达的对象也会被标记，这个标记做完之后，<code>dirty card</code>标记就会被清除了<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="concurrentpreclean2.png" alt="Concurrent Mark2">
+      </p>
 
         <h3 id="可中止的并发预清理（Concurrent-Abortable-Preclean）">
           <a href="#可中止的并发预清理（Concurrent-Abortable-Preclean）" class="heading-link"><i class="fas fa-link"></i></a><a href="#可中止的并发预清理（Concurrent-Abortable-Preclean）" class="headerlink" title="可中止的并发预清理（Concurrent Abortable Preclean）"></a>可中止的并发预清理（Concurrent Abortable Preclean）</h3>
@@ -66,11 +81,13 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
 
         <h3 id="重新标记-Final-Remark">
           <a href="#重新标记-Final-Remark" class="heading-link"><i class="fas fa-link"></i></a><a href="#重新标记-Final-Remark" class="headerlink" title="重新标记(Final Remark)"></a>重新标记(Final Remark)</h3>
-      <p>这个阶段是<strong>CMS中第二个并且是最后一个STW的阶段</strong>。该阶段的任务是完成标记整个年老代的所有的存活对象,包括重新标记并发标记阶段遗漏的对象（在并发标记阶段结束后对象状态的更新导致），所以<strong>STW时间会比第一阶段的长</strong>。<br>通过以上5个阶段的标记，老年代所有存活的对象已经被标记并且现在要通过Garbage Collector采用清扫的方式回收那些不能用的对象了。</p>
+      <p>这个阶段是<strong>CMS中第二个并且是最后一个STW的阶段</strong>。该阶段的任务是完成标记整个老年代的所有的存活对象,包括重新标记并发标记阶段遗漏的对象（在并发标记阶段结束后对象状态的更新导致），所以<strong>STW时间会比第一阶段的长</strong>。<br>通过以上5个阶段的标记，老年代所有存活的对象已经被标记并且现在要通过Garbage Collector采用清扫的方式回收那些不能用的对象了。</p>
 
         <h3 id="并发清理-Concurrent-Sweep">
           <a href="#并发清理-Concurrent-Sweep" class="heading-link"><i class="fas fa-link"></i></a><a href="#并发清理-Concurrent-Sweep" class="headerlink" title="并发清理(Concurrent Sweep)"></a>并发清理(Concurrent Sweep)</h3>
-      <p><strong>和应用程序线程同时进行</strong>，不需要STW。这个阶段的目的就是移除那些不用的对象，回收他们占用的空间并且为将来使用。<br>![Concurrent Sweep](concurrent sweep.png)</p>
+      <p><strong>和应用程序线程同时进行</strong>，不需要STW。这个阶段的目的就是移除那些不用的对象，回收他们占用的空间并且为将来使用。<br>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="concurrentsweep.png" alt="Concurrent Sweep">
+      </p>
 
         <h3 id="并发标记重置（concurrent-reset）">
           <a href="#并发标记重置（concurrent-reset）" class="heading-link"><i class="fas fa-link"></i></a><a href="#并发标记重置（concurrent-reset）" class="headerlink" title="并发标记重置（concurrent reset）"></a>并发标记重置（concurrent reset）</h3>
@@ -84,7 +101,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
 <li>年轻代的并行收集线程数默认是(cpu &lt;= 8) ? cpu : 3 + ((cpu * 5) / 8)，如果你希望降低这个线程数，可以通过<code>-XX:ParallelGCThreads= N </code>来调整。</li>
 <li><code>-XX:CMSInitiatingOccupancyFraction</code>,设置第一次启动CMS的阈值，默认是68%</li>
 <li>CMS收集器默认不会对永久代进行垃圾回收（在1.7中是默认关闭，但是在1.8中是默认打开的），为了避免Perm区满引起的full gc，建议开启CMS回收Perm区选项：<br><code>+CMSPermGenSweepingEnabled -XX:+CMSClassUnloadingEnabled</code></li>
-<li><code>-XX:+CMSScavengeBeforeRemark</code>,强制remark之前开始一次minor GC，可以减少remark的等待时间，因为老生代的对象有的会依赖于新生代的对象，当增加了这个命令时会在remark之前执行一次minor GC的操作，从而可以减少老生代到新生代的可到达对象数。默认为false。</li>
+<li><code>-XX:+CMSScavengeBeforeRemark</code>,强制remark之前开始一次minor GC，可以减少remark的等待时间，因为老年代的对象有的会依赖于新生代的对象，当增加了这个命令时会在remark之前执行一次minor GC的操作，从而可以减少老生代到新生代的可到达对象数。默认为false。</li>
 <li><code>-XX：UseCompactAtFullCollection</code>来启动整理堆碎片，启动这个功能后，默认每次执行Full GC的时候会进行整理（也可以通过<code>-XX：CMSFullGCsBeforeCompaction=n</code>来制定多少次Full GC之后来执行整理），<strong>整理碎片会stop-the-world</strong>。</li>
 </ul>
 
@@ -117,8 +134,8 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
           <a href="#Full-GC" class="heading-link"><i class="fas fa-link"></i></a><a href="#Full-GC" class="headerlink" title="Full GC"></a>Full GC</h2>
       <p>CMS 进行垃圾回收时可能会发生<strong>Full GC</strong>的情况:</p>
 <ul>
-<li><strong>prommotion failed</strong><br>原因：存活区（surivivor）空间不足，对象进入老年代，而此时老年代没有空间容纳对象，将导致一次 Full GC<br>解决方式：调整<code>-XX:SurvivorRatio</code>参数，这个参数是Eden区和Survivor区的大小比值，默认是32，即32：1。调小这个参数增大survivor区空间，让对象尽量在survitor区呆长一点，减少进入年老代的对象。</li>
-<li><strong>concurrent mode failed</strong><br>原因：CMS 回收速度慢，CMS 完成前，老年代已被占满，将导致一次 Full GC<br>解决方式：调小<code>-XX:CMSInitiatingOccupancyFraction</code>参数的值，让CMS更早更频繁的触发，降低年老代被占满的可能。</li>
+<li><strong>prommotion failed</strong><br>原因：存活区（surivivor）空间不足，对象进入老年代，而此时老年代没有空间容纳对象，将导致一次 Full GC<br>解决方式：调整<code>-XX:SurvivorRatio</code>参数，这个参数是Eden区和Survivor区的大小比值，默认是8:1:1。调小这个参数增大survivor区空间，让对象尽量在survivor区呆长一点，减少进入老年代的对象。</li>
+<li><strong>concurrent mode failed</strong><br>原因：CMS 回收速度慢，CMS 完成前，老年代已被占满，将导致一次 Full GC<br>解决方式：调小<code>-XX:CMSInitiatingOccupancyFraction</code>参数的值，让CMS更早更频繁的触发，降低老年代被占满的可能。</li>
 </ul>
 </div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://focusss.github.io">大湾区码仔驰名商标</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://focusss.github.io/2018/09/18/JVM-CMS%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/">https://focusss.github.io/2018/09/18/JVM-CMS%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://focusss.github.io/tags/JVM/">JVM</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://focusss.github.io/tags/CMS/">CMS</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2018/09/19/JVM-G1%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">JVM-G1垃圾收集器</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2018/09/17/zookeeper%E7%9A%84watcher%E4%B9%90%E8%A7%82%E9%94%81%E5%AE%9E%E7%8E%B0/"><span class="paginator-prev__text">zookeeper的watcher乐观锁实现</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AE%80%E4%BB%8B"><span class="toc-number">1.</span> <span class="toc-text">
           简介</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B7%A5%E4%BD%9C%E5%91%A8%E6%9C%9F"><span class="toc-number">2.</span> <span class="toc-text">
