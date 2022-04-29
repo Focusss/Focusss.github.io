@@ -15,7 +15,7 @@
 <meta property="og:image" content="https://focusss.github.io/2019/03/08/Java%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E6%89%8B%E6%AE%B5/iotopprintf.png">
 <meta property="og:image" content="https://focusss.github.io/2019/03/08/Java%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E6%89%8B%E6%AE%B5/iotop-jstack.png">
 <meta property="article:published_time" content="2019-03-08T03:40:00.000Z">
-<meta property="article:modified_time" content="2021-12-11T16:45:46.519Z">
+<meta property="article:modified_time" content="2022-04-27T09:47:49.709Z">
 <meta property="article:author" content="大湾区码仔驰名商标">
 <meta property="article:tag" content="Java">
 <meta property="article:tag" content="故障排查">
@@ -44,7 +44,7 @@ var CONFIG = {
   sourcePath: {"js":"js","css":"css","images":"images"},
 };
 
-window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">大 湾 区 码 仔's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">Java线上故障排查手段</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2019-03-08</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-12-12</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">大 湾 区 码 仔's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">Java线上故障排查手段</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2019-03-08</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2022-04-27</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
         <h3 id="高CPU负载">
           <a href="#高CPU负载" class="heading-link"><i class="fas fa-link"></i></a><a href="#高CPU负载" class="headerlink" title="高CPU负载"></a>高CPU负载</h3>
       <p>1、找出最消耗CPU的进程号<pid>，执行以下命令</pid></p>
@@ -74,17 +74,22 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
 <blockquote>
 <p><strong>参数介绍</strong><br>prio：线程的优先级<br>tid：线程id<br>nid:操作系统映射的线程id</p>
 </blockquote>
-<p>5、 分析线程状态<br><strong>jstack日志中的线程状态有：</strong></p>
+<p>5、 分析线程状态<br><b>jstack日志中的线程状态有：</b></p>
 <ul>
-<li>RUNNABLE: 线程正在执行中，占用了资源，比如处理某个请求/进行计算/文件操作等</li>
-<li>BLOCKED:线程处于阻塞状态，等待某种资源(可理解为等待资源超时的线程)；<br>具体状态有：<pre><code>      - &quot;waiting to lock &lt;xxx&gt;&quot;：即等待给xxx上锁，**grep stack文件找locked &lt;xxx&gt;** 查找获得锁的线程；
-      - &quot;waiting for monitor entry&quot;：线程通过synchronized(obj)&#123;……&#125;申请进入了临界区，但该obj对应的monitor被其他线程拥有，从而处于等待。
+<li><p>RUNNABLE: 线程正在执行中，占用了资源，比如处理某个请求/进行计算/文件操作等</p>
+</li>
+<li><p>BLOCKED:线程处于阻塞状态，等待某种资源(可理解为等待资源超时的线程)；<br>具体状态有：</p>
+<pre><code>      1、 &quot;waiting to lock &lt;xxx&gt;&quot;：即等待给xxx上锁，&lt;b&gt;grep stack文件找locked &lt;xxx&gt;&lt;/b&gt; 查找获得锁的线程；
+
+      2、 &quot;waiting for monitor entry&quot;：线程通过synchronized(obj)&#123;……&#125;申请进入了临界区，但该obj对应的monitor被其他线程拥有，从而处于等待。
 </code></pre>
 </li>
-<li>WAITING(parking)/TIMED_WAITING:等待状态，若指定了时间，到达指定的时间后自动退出等待状态，parking指线程处于挂起中；具体状态有：<pre><code>      - &quot;waiting on condition&quot;需与堆栈中的&quot;parking to wait for  &lt;xxx&gt; (at java.util.concurrent.SynchronousQueue$TransferStack)&quot;结合来看。（1）、此线程是在等待某个条件的发生，来把自己唤醒；（2）、SynchronousQueue不是一个队列，其是线程之间移交信息的机制，当我们把一个元素放入到 SynchronousQueue 中时必须有另一个线程正在等待接受移交的任务，因此这就是本线程在等待的条件。
+<li><p>WAITING(parking)/TIMED_WAITING:等待状态，若指定了时间，到达指定的时间后自动退出等待状态，parking指线程处于挂起中；具体状态有：</p>
+<pre><code>      - &quot;waiting on condition&quot;需与堆栈中的&quot;parking to wait for  &lt;xxx&gt; (at java.util.concurrent.SynchronousQueue$TransferStack)&quot;结合来看。（1）、此线程是在等待某个条件的发生，来把自己唤醒；（2）、SynchronousQueue不是一个队列，其是线程之间移交信息的机制，当我们把一个元素放入到 SynchronousQueue 中时必须有另一个线程正在等待接受移交的任务，因此这就是本线程在等待的条件。
 </code></pre>
 </li>
-<li>Deadlock:死锁，资源相互占用。</li>
+<li><p>Deadlock:死锁，资源相互占用。</p>
+</li>
 </ul>
 <p><strong>对上述各种状态的具体描述如下：</strong></p>
 <ul>
@@ -103,9 +108,16 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
 <p><strong>Monitor</strong><br>在多线程的 JAVA程序中，实现线程之间的同步，就要说说 Monitor。 Monitor是Java中用以实现线程之间的互斥与协作的主要手段，它可以看成是对象或者Class的锁。每一个对象都有，也仅有一个 monitor。下 面这个图，描述了线程和 Monitor之间关系，以 及线程的状态转换图：<br>
         <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="thread.bmp" alt="thread">
       </p>
-<p>进入区(Entry Set):表示线程通过synchronized要求获取对象的锁。如果对象未被锁住,则迚入拥有者;否则在进入区等待。一旦对象锁被其他线程释放,立即参与竞争。<br>拥有者(The Owner):表示某一线程成功竞争到对象锁。<br>等待区(Wait Set):表示线程通过对象的wait方法,释放对象的锁,并在等待区等待被唤醒。<br>从图中可以看出，一个 Monitor在某个时刻，只能被一个线程拥有，该线程就是 “Active Thread”，而其它线程都是 “Waiting Thread”，分别在两个队列 “ Entry Set”和 “Wait Set”里面等候。在 “Entry Set”中等待的线程状态是 “Waiting for monitor entry”，而在“Wait Set”中等待的线程状态是 “in Object.wait()”。 先看 “Entry Set”里面的线程。我们称被 synchronized保护起来的代码段为临界区。当一个线程申请进入临界区时，它就进入了 “Entry Set”队列。</p>
 <blockquote>
-<p>locked &lt;地址&gt; 目标：使用synchronized申请对象锁成功,监视器的拥有者。<br>waiting to lock &lt;地址&gt; 目标：使用synchronized申请对象锁未成功,在迚入区等待。<br>waiting on &lt;地址&gt; 目标：使用synchronized申请对象锁成功后,释放锁幵在等待区等待。<br>parking to wait for &lt;地址&gt; 目标</p>
+<ul>
+<li>进入区(Entry Set)：表示线程通过synchronized要求获取对象的锁。如果对象未被锁住，则进入拥有者;否则在进入区等待。一旦对象锁被其他线程释放，立即参与竞争。</li>
+<li>拥有者(The Owner)：表示某一线程成功竞争到对象锁。</li>
+<li>等待区(Wait Set)：表示线程通过对象的wait方法，释放对象的锁，并在等待区等待被唤醒。</li>
+</ul>
+</blockquote>
+<p>从图中可以看出，一个 Monitor在某个时刻，只能被一个线程拥有，该线程就是 “Active Thread”，而其它线程都是 “Waiting Thread”，分别在两个队列 “ Entry Set”和 “Wait Set”里面等候。在 “Entry Set”中等待的线程状态是 “Waiting for monitor entry”，而在“Wait Set”中等待的线程状态是 “in Object.wait()”。 先看 “Entry Set”里面的线程。我们称被 synchronized保护起来的代码段为临界区。当一个线程申请进入临界区时，它就进入了 “Entry Set”队列。</p>
+<blockquote>
+<p>locked &lt;地址&gt; 目标：使用synchronized申请对象锁成功，监视器的拥有者。<br>waiting to lock &lt;地址&gt; 目标：使用synchronized申请对象锁未成功，在进入区等待。<br>waiting on &lt;地址&gt; 目标：使用synchronized申请对象锁成功后，释放锁在等待区等待。</p>
 </blockquote>
 
         <h3 id="高CPU-IO-Wait">
@@ -149,7 +161,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
 <figure class="highlight plaintext"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -histo:live 25585 | more</span><br></pre></td></tr></table></div></figure>
 
 <p>第四种方式：<br>1、用jps或ps查看程序的进程ID，如25585<br>2、利用下面命令，生成堆内存转储文件dump20190318.hprof，结合MAT工具，找出最消耗内存的对象</p>
-<figure class="highlight plaintext"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -dump:live,format=b,file=/home/dump20190318.hprof 25585</span><br></pre></td></tr></table></div></figure>
+<figure class="highlight plaintext"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -dump:live，format=b，file=/home/dump20190318.hprof 25585</span><br></pre></td></tr></table></div></figure>
 
 
         <h3 id="参考资料">
