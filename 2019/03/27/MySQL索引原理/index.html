@@ -14,9 +14,10 @@
 <meta property="og:image" content="https://focusss.github.io/2019/03/27/MySQL%E7%B4%A2%E5%BC%95%E5%8E%9F%E7%90%86/%E7%B4%A2%E5%BC%95%E8%8C%83%E5%9B%B4%E6%9F%A5%E6%89%BE.png">
 <meta property="og:image" content="https://focusss.github.io/2019/03/27/MySQL%E7%B4%A2%E5%BC%95%E5%8E%9F%E7%90%86/%E7%B4%A2%E5%BC%95%E5%85%A8%E8%A1%A8%E6%9F%A5%E6%89%BE.png">
 <meta property="og:image" content="https://focusss.github.io/2019/03/27/MySQL%E7%B4%A2%E5%BC%95%E5%8E%9F%E7%90%86/%E4%BA%8C%E7%BA%A7%E7%B4%A2%E5%BC%95%E6%9F%A5%E6%89%BE.png">
+<meta property="og:image" content="https://focusss.github.io/2019/03/27/MySQL%E7%B4%A2%E5%BC%95%E5%8E%9F%E7%90%86/innodb%E8%87%AA%E5%A2%9E%E4%B8%BB%E9%94%AE1.png">
 <meta property="og:image" content="https://focusss.github.io/2019/03/27/MySQL%E7%B4%A2%E5%BC%95%E5%8E%9F%E7%90%86/innodb%E8%87%AA%E5%A2%9E%E4%B8%BB%E9%94%AE2.png">
 <meta property="article:published_time" content="2019-03-27T12:52:26.000Z">
-<meta property="article:modified_time" content="2021-12-11T11:32:13.319Z">
+<meta property="article:modified_time" content="2022-04-29T14:20:05.879Z">
 <meta property="article:author" content="大湾区码仔驰名商标">
 <meta property="article:tag" content="MySQL">
 <meta name="twitter:card" content="summary">
@@ -44,7 +45,7 @@ var CONFIG = {
   sourcePath: {"js":"js","css":"css","images":"images"},
 };
 
-window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">大 湾 区 码 仔's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">MySQL索引原理</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2019-03-27</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-12-11</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">大 湾 区 码 仔's Blog</div><div class="header-banner-info__subtitle"></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">MySQL索引原理</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2019-03-27</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2022-04-29</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
         <h3 id="索引概念">
           <a href="#索引概念" class="heading-link"><i class="fas fa-link"></i></a><a href="#索引概念" class="headerlink" title="索引概念"></a>索引概念</h3>
       <p>索引（Index）是帮助MySQL高效获取数据的数据结构。索引是对表中一列或多列的值进行排序的一种存储结构。<br>索引也是表的组成部分，建立太多的索引将会影响更新和插入的速度，因为它需要同样更新每个索引项结构。</p>
@@ -57,7 +58,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
         <h3 id="创建索引的优势：">
           <a href="#创建索引的优势：" class="heading-link"><i class="fas fa-link"></i></a><a href="#创建索引的优势：" class="headerlink" title="创建索引的优势："></a>创建索引的优势：</h3>
       <ol>
-<li>提高数据的检索速度，降低数据库IO成本：使用索引的意义就是通过缩小表中需要查询的记录的数目从而加快搜索的速度。</li>
+<li>提高数据的检索速度，降低数据库IO成本：使用索引的意义就是通过缩小需要查询的记录的数目从而加快搜索的速度。</li>
 <li>降低数据排序的成本，降低CPU消耗：索引之所以查的快，是因为先将数据排好序，若该字段正好需要排序，则真好降低了排序的成本。</li>
 </ol>
 
@@ -102,7 +103,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
 
         <h4 id="MyISAM索引实现-非聚集">
           <a href="#MyISAM索引实现-非聚集" class="heading-link"><i class="fas fa-link"></i></a><a href="#MyISAM索引实现-非聚集" class="headerlink" title="MyISAM索引实现(非聚集)"></a>MyISAM索引实现(非聚集)</h4>
-      <p>原理：采用非聚集索引，索引文件(.myi)和数据(.myd)文件分离，索引文件仅保存数据记录的指针地址。叶子节点data域存储指向数据记录的指针地址。</p>
+      <p>原理：采用非聚集索引，索引文件(.myi)和数据文件(.myd)分离。索引文件仅保存数据记录的指针地址，叶子节点data域存储指向数据记录的指针地址。</p>
 <p>MyISAM索引按照B+Tree搜索，如果指定的Key存在，则取出其data域的值，然后以data域值-数据指针地址去读取相应数据记录。<br>辅助索引和主索引在结构上没有任何区别，只是主索引要求key是唯一的，而辅助索引的key可以重复。如下图在col1上建立主索引，在col2上建立辅助索引。</p>
 <p>
         <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="MyISAM%E7%B4%A2%E5%BC%95.png">
@@ -112,7 +113,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
           <a href="#InnoDB索引实现-聚集" class="heading-link"><i class="fas fa-link"></i></a><a href="#InnoDB索引实现-聚集" class="headerlink" title="InnoDB索引实现(聚集)"></a>InnoDB索引实现(聚集)</h4>
       <p>原理：采用聚集索引，数据和索引文件为一个idb文件，表数据文件本身就是主索引，相邻的索引临近存储。 </p>
 <p>叶节点data域保存了完整的数据记录（除主键id外其他列data）。 </p>
-<p>采用InnoDB引擎创建的表产生2个文件：frm -表定义、 ibd: innoDB数据&amp;索引文件</p>
+<p>采用InnoDB引擎创建的表产生2个文件：frm -表定义、 idb: innoDB数据&amp;索引文件</p>
 <p>
         <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="innodb%E7%B4%A2%E5%BC%951.png">
       <br>在InnoDB中，表数据文件本身就是按B+Tree组织的一个索引结构，这棵树的叶节点data域保存了完整的数据记录。这个索引的key是数据表的主键，因此InnoDB表数据文件本身就是主索引。</p>
@@ -124,7 +125,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
 
         <h4 id="与MyISAM索引的不同">
           <a href="#与MyISAM索引的不同" class="heading-link"><i class="fas fa-link"></i></a><a href="#与MyISAM索引的不同" class="headerlink" title="与MyISAM索引的不同"></a>与MyISAM索引的不同</h4>
-      <p>1、InnoDB的数据文件本身就是索引文件<br>2、InnoDB的辅助索引data域存储相应记录主键的值而不是地址</p>
+      <p>1、InnoDB的数据文件本身就是索引文件<br>2、InnoDB的辅助索引data域存储相应记录主键的值而不是数据记录的指针地址</p>
 
         <h3 id="索引查询实例流程">
           <a href="#索引查询实例流程" class="heading-link"><i class="fas fa-link"></i></a><a href="#索引查询实例流程" class="headerlink" title="索引查询实例流程"></a>索引查询实例流程</h3>
@@ -183,7 +184,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
 <p>在最左匹配原则中，有如下说明：</p>
 <blockquote>
 <ul>
-<li>最左前缀匹配原则，非常重要的原则，mysql会一直向右匹配直到遇到范围查询(&gt;、&lt;、between、like)就停止匹配，比如a = 1 and b = 2 and c &gt; 3 and d = 4 如果建立(a,b,c,d)顺序的索引，d是用不到索引的，如果建立(a,b,d,c)的索引则都可以用到，a,b,d的顺序可以任意调整（按照索引列来检索匹配）。</li>
+<li>最左前缀匹配原则，非常重要的原则，mysql会一直向右匹配直到遇到范围查询(&gt;、&lt;、between、like)就停止匹配，比如a = 1 and b = 2 and c &gt; 3 and d = 4 。如果建立(a,b,c,d)顺序的索引，d是用不到索引的，如果建立(a,b,d,c)的索引则都可以用到，a,b,d的顺序可以任意调整（按照索引列来检索匹配）。</li>
 <li>=和in可以乱序，比如a = 1 and b = 2 and c = 3 建立(a,b,c)索引可以任意顺序，mysql的查询优化器会帮你优化成索引可以识别的形式</li>
 </ul>
 </blockquote>
@@ -191,10 +192,10 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
         <h3 id="索引失效（or、like-、类型转换、函数、表达式）">
           <a href="#索引失效（or、like-、类型转换、函数、表达式）" class="heading-link"><i class="fas fa-link"></i></a><a href="#索引失效（or、like-、类型转换、函数、表达式）" class="headerlink" title="索引失效（or、like%、类型转换、函数、表达式）"></a>索引失效（or、like%、类型转换、函数、表达式）</h3>
       <ol>
-<li>如果条件中有or，即使其中有条件带索引也不会使用(这也是为什么尽量少用or的原因)要想使用or，又想让索引生效，只能将or条件中的每个列都加上索引</li>
+<li>如果条件中有or，即使其中有条件带索引也不会使用(这也是为什么尽量少用or的原因)。要想使用or，又想让索引生效，只能将or条件中的每个列都加上索引</li>
 </ol>
 <ol start="2">
-<li><p>mysql会按照联合索引从左往右进行匹配，直到遇到范围查询，如：&gt;,&lt;,between,like等就停止匹配，<br>a = 1 and b =2 and  c &gt; 3 and d = 4，如果建立（a,b,c,d）顺序的索引，d是不会使用索引的。<br>但如果联合索引是（a,b,d,c）的话，则a b d c都可以使用到索引，只是最终c是一个范围值。</p>
+<li><p>mysql会按照联合索引从左往右进行匹配，直到遇到范围查询，如：&gt;、&lt;、between、like等就停止匹配，<code>a = 1 and b =2 and  c &gt; 3 and d = 4</code>，如果建立（a,b,c,d）顺序的索引，d是不会使用索引的。但如果联合索引是（a,b,d,c）的话，则a b d c都可以使用到索引，只是最终c是一个范围值。</p>
 </li>
 <li><p>like查询以%开头</p>
 </li>
@@ -218,15 +219,22 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
 
         <h3 id="索引创建的几个原则">
           <a href="#索引创建的几个原则" class="heading-link"><i class="fas fa-link"></i></a><a href="#索引创建的几个原则" class="headerlink" title="索引创建的几个原则"></a>索引创建的几个原则</h3>
-      <p>1、适合索引的列是出现在WHERE 子句中的列<br>2、使用惟一索引<br>  具有多个重复值的列，其索引效果最差，比如性别全是男的记录，对于MyISAM引擎来说，因为这时查找的时间就是T扫描整个索引表+T扫描整个表，那么耗时肯定过大了。对于InnoDB引擎来说，默认是有主键索引的，性别就相当于辅助索引了，这时每找到一个辅助索引节点就要去主键索引，也是相当于遍历辅助索引链表+整颗主键索引树。<br>3、使用短索引<br>    如果对串列进行索引，应该指定一个前缀长度，只要有可能就应该这样做。例如，如果有一个CHAR(200) 列，如果在前10 个或20 个字符内，多数值是惟一的，那么就不要对整个列进行索引。对前10 个或20 个字符进行索引能够节省大量索引空间，也可能会使查询更快。较小的索引涉及的磁盘I/O 较少，较短的值比较起来更快。更为重要的是，对于较短的键值，索引高速缓存中的块能容纳更多的键值，因此，MySQL也可以在内存中容纳更多的值。这增加 了找到行而不用读取索引中较多块的可能性<br>4、不要过度索引<br>   每个额外的索引都要占用额外的磁盘空间，并降低写操作的性能。在修改表的内容时，索引必须进行更新，有时可能需要重构，因此，索引越多，所花的时间越长。<br>5、考虑在列上进行的比较类型<br>    索引可用于“ &lt;”、“ &lt; = ”、“ = ”、“ &gt; =”、“ &gt; ”和BETWEEN 运算。<br>6、尽量选择区分度高的列作为索引，区分度的公式是 <code>COUNT(DISTINCT col) / COUNT(*)</code>，表示字段不重复的比率，比率越大我们扫描的记录数就越少。</p>
+      <ul>
+<li>适合索引的列是出现在WHERE子句中的列</li>
+<li>使用唯一索引<br>具有多个重复值的列，其索引效果最差，比如性别全是男的记录，对于MyISAM引擎来说，因为这时查找的时间就是T扫描整个索引表+T扫描整个表，那么耗时肯定过大了。对于InnoDB引擎来说，默认是有主键索引的，性别就相当于辅助索引了，这时每找到一个辅助索引节点就要去主键索引，也是相当于遍历辅助索引链表+整颗主键索引树。</li>
+<li>使用短索引<br>  如果对串列进行索引，应该指定一个前缀长度，只要有可能就应该这样做。例如，如果有一个CHAR(200) 列，如果在前10 个或20 个字符内，多数值是唯一的，那么就不要对整个列进行索引。对前10 个或20 个字符进行索引能够节省大量索引空间，也可能会使查询更快。较小的索引涉及的磁盘I/O 较少，较短的值比较起来更快。更为重要的是，对于较短的键值，索引高速缓存中的块能容纳更多的键值，因此，MySQL也可以在内存中容纳更多的值。这增加 了找到行而不用读取索引中较多块的可能性</li>
+<li>不要过度索引<br> 每个额外的索引都要占用额外的磁盘空间，并降低写操作的性能。在修改表的内容时，索引必须进行更新，有时可能需要重构，因此，索引越多，所花的时间越长。</li>
+<li>考虑在列上进行的比较类型<br>  索引可用于“ &lt;”、“ &lt; = ”、“ = ”、“ &gt; =”、“ &gt; ”和BETWEEN 运算。</li>
+<li>尽量选择区分度高的列作为索引，区分度的公式是 <code>COUNT(DISTINCT col) / COUNT(*)</code>，表示字段不重复的比率，比率越大我们扫描的记录数就越少。</li>
+</ul>
 
         <h3 id="什么时候不创建索引">
           <a href="#什么时候不创建索引" class="heading-link"><i class="fas fa-link"></i></a><a href="#什么时候不创建索引" class="headerlink" title="什么时候不创建索引"></a>什么时候不创建索引</h3>
       <p>1、表记录太少<br>如果一个表只有5条记录，采用索引去访问记录的话，那首先需访问索引表，再通过索引表访问数据表，一般索引表与数据表不在同一个数据块，这种情况下至少要往返读取数据块两次。而不用索引的情况下ORACLE会将所有的数据一次读出，处理速度显然会比用索引快。</p>
 <p>2、唯一性太差的字段<br>如状态字段、类型字段。那些只存储固定几个值的字段，例如用户登录状态、消息的status等。<br>这个涉及到了索引扫描的特性。例如：通过索引查找键值为A和B的某些数据，通过A找到某条相符合的数据，这条数据在X页上面，然后继续扫描，又发现符合A的数据出现在了Y页上面，那么存储引擎就会丢弃X页面的数据，然后存储Y页面上的数据，一直到查找完所有对应A的数据，然后查找B字段，发现X页面上面又有对应B字段的数据，那么他就会再次扫描X页面，等于X页面就会被扫描2次甚至多次。以此类推，所以同一个数据页可能会被多次重复的读取，丢弃，在读取，这无疑给存储引擎极大地增加了IO的负担。</p>
-<p>select * from tb where gender=’男’这种不仅需要扫描这个索引  而且去取有‘男’的数据块基本覆盖了整个表所涉及的数据块</p>
-<p>3、唯一性太差的字段</p>
-<p>当你为这个字段创建索引时候，当你再次更新这个字段数据时，数据库会自动更新他的索引，所以当这个字段更新太频繁地时候那么就是不断的更新索引。<br>如果一个字段同一个时间段内被更新多次，那么不能为他建立索引。</p>
+<figure class="highlight sql"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> tb <span class="keyword">where</span> gender<span class="operator">=</span><span class="string">&#x27;男&#x27;</span></span><br></pre></td></tr></table></div></figure>
+<p>这种不仅需要扫描这个索引  而且要去取有‘男’的数据块基本覆盖了整个表所涉及的数据块。</p>
+<p>3、更新频繁的字段<br>当你为这个字段创建索引时候，当你再次更新这个字段数据时，数据库会自动更新它的索引，所以当这个字段更新太频繁的时候，那么就是不断的更新索引。如果一个字段同一个时间段内被更新多次，那么不能为他建立索引。</p>
 
         <h3 id="思考">
           <a href="#思考" class="heading-link"><i class="fas fa-link"></i></a><a href="#思考" class="headerlink" title="思考"></a>思考</h3>
@@ -238,7 +246,9 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
         <h4 id="为什么InnoDB表必须有主键，并且推荐使用整型的自增主键？">
           <a href="#为什么InnoDB表必须有主键，并且推荐使用整型的自增主键？" class="heading-link"><i class="fas fa-link"></i></a><a href="#为什么InnoDB表必须有主键，并且推荐使用整型的自增主键？" class="headerlink" title="为什么InnoDB表必须有主键，并且推荐使用整型的自增主键？"></a>为什么InnoDB表必须有主键，并且推荐使用整型的自增主键？</h4>
       <p>InnoDB使用聚集索引，数据记录本身被存于主索引（一颗B+Tree）的叶子节点上。这就要求同一个叶子节点内（大小为一个内存页或磁盘页）的各条数据记录按主键顺序存放，因此每当有一条新的记录插入时，MySQL会根据其主键将其插入适当的节点和位置，如果页面达到装载因子（InnoDB默认为15/16），则开辟一个新的页（节点）。</p>
-<p>![](innodb自增主键 1.png)<br>如果表使用自增主键，那么每次插入新的记录，<strong>记录就会顺序添加到当前索引节点的后续位置，当一页写满，就会自动开辟一个新的页。由于每次插入时也不需要移动已有数据，因此效率很高，也不会增加很多开销在维护索引上</strong>。</p>
+<p>
+        <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="innodb%E8%87%AA%E5%A2%9E%E4%B8%BB%E9%94%AE1.png">
+      <br>如果表使用自增主键，那么每次插入新的记录，<strong>记录就会顺序添加到当前索引节点的后续位置，当一页写满，就会自动开辟一个新的页。由于每次插入时也不需要移动已有数据，因此效率很高，也不会增加很多开销在维护索引上</strong>。</p>
 <p>如果使用非自增主键（如果身份证号或学号等），由于每次插入主键的值近似于随机，因此每次新纪录都要被插到现有索引页得中间某个位置：<br>
         <img class="lazyload lazyload-gif" src="/images/loading.svg" data-src="innodb%E8%87%AA%E5%A2%9E%E4%B8%BB%E9%94%AE2.png">
       </p>
@@ -259,14 +269,6 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
           <a href="#主索引和辅助索引" class="heading-link"><i class="fas fa-link"></i></a><a href="#主索引和辅助索引" class="headerlink" title="主索引和辅助索引"></a>主索引和辅助索引</h4>
       <p>一个主文件仅有一个主索引，但可以有多个辅助索引</p>
 
-        <h4 id="为什么MyISAM会比Innodb的查询速度快">
-          <a href="#为什么MyISAM会比Innodb的查询速度快" class="heading-link"><i class="fas fa-link"></i></a><a href="#为什么MyISAM会比Innodb的查询速度快" class="headerlink" title="为什么MyISAM会比Innodb的查询速度快"></a>为什么MyISAM会比Innodb的查询速度快</h4>
-      <p>INNODB在做SELECT的时候，要维护的东西比MYISAM引擎多很多:<br>1）数据块，INNODB要缓存，MYISAM只缓存索引块，  这中间还有换进换出的减少；
- </p>
-<p>2）innodb寻址要映射到块，再到行，MYISAM记录的直接是文件的OFFSET，定位比INNODB要快</p>
-<p>3）INNODB还需要维护MVCC一致；虽然你的场景没有，但他还是需要去检查和维护<br>MVCC (Multi-Version Concurrency Control)多版本并发控制 </p>
-<p>注释：<br>InnoDB：通过为每一行记录添加两个额外的隐藏的值来实现MVCC，这两个值一个记录这行数据何时被创建，另外一个记录这行数据何时过期（或者被删除）。但是InnoDB并不存储这些事件发生时的实际时间，相反它只存储这些事件发生时的系统版本号。这是一个随着事务的创建而不断增长的数字。每个事务在事务开始时会记录它自己的系统版本号。每个查询必须去检查每行数据的版本号与事务的版本号是否相同。让我们来看看当隔离级别是REPEATABLEREAD时这种策略是如何应用到特定的操作的：<br>　　SELECT InnoDB必须每行数据来保证它符合两个条件：<br>　　1、InnoDB必须找到一个行的版本，它至少要和事务的版本一样老(也即它的版本号不大于事务的版本号)。这保证了不管是事务开始之前，或者事务创建时，或者修改了这行数据的时候，这行数据是存在的。<br>　　2、这行数据的删除版本必须是未定义的或者比事务版本要大。这可以保证在事务开始之前这行数据没有被删除</p>
-
         <h4 id="myisam-和-innodb中count-查询快慢原理">
           <a href="#myisam-和-innodb中count-查询快慢原理" class="heading-link"><i class="fas fa-link"></i></a><a href="#myisam-和-innodb中count-查询快慢原理" class="headerlink" title="myisam 和 innodb中count(*)查询快慢原理"></a>myisam 和 innodb中count(*)查询快慢原理</h4>
       <p>在myisam中count(*)查询,myisam引擎很容易获得总行数的统计。查询速度变得更快。因为myisam存储引擎已经存储了表的总行数。每次新增加一行,这个计数器就加1。也就是说，把表的总数缓存在索引中了。</p>
@@ -276,7 +278,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
 
         <h4 id="哪些列比较适合做索引">
           <a href="#哪些列比较适合做索引" class="heading-link"><i class="fas fa-link"></i></a><a href="#哪些列比较适合做索引" class="headerlink" title="哪些列比较适合做索引"></a>哪些列比较适合做索引</h4>
-      <p>用于索引的最好的备选数据列是那些出现在WHERE子句、join子句、ORDER BY或GROUP BY子句中的列。仅仅出现在SELECT关键字后面的输出数据列列表中的数据列不是很好的备选列</p>
+      <p>用于索引的最好的备选数据列是那些出现在WHERE子句、JOIN子句、ORDER BY或GROUP BY子句中的列，仅仅出现在SELECT关键字后面的输出数据列列表中的数据列不是很好的备选列。</p>
 <p>在mysql中执行查询时，只能使用一个索引，如果我们在lname,fname,age上分别建索引,执行查询时，只能使用一个索引，mysql会选择一个最严格(获得结果集记录数最少)的索引。</p>
 
         <h3 id="参考资料">
@@ -318,9 +320,8 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.4.0"></he
           为什么InnoDB表必须有主键，并且推荐使用整型的自增主键？</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9D%9E%E4%B8%BB%E9%94%AE%E7%B4%A2%E5%BC%95%E7%BB%93%E6%9E%84%E5%8F%B6%E5%AD%90%E8%8A%82%E7%82%B9%E5%AD%98%E5%82%A8%E7%9A%84%E6%98%AF%E4%B8%BB%E9%94%AE%E5%80%BC%EF%BC%9F"><span class="toc-number">12.3.</span> <span class="toc-text">
           为什么非主键索引结构叶子节点存储的是主键值？</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E7%94%A8MyISAM%EF%BC%8C%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E7%94%A8Innodb"><span class="toc-number">12.4.</span> <span class="toc-text">
           什么时候用MyISAM，什么时候用Innodb?</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%BB%E7%B4%A2%E5%BC%95%E5%92%8C%E8%BE%85%E5%8A%A9%E7%B4%A2%E5%BC%95"><span class="toc-number">12.5.</span> <span class="toc-text">
-          主索引和辅助索引</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88MyISAM%E4%BC%9A%E6%AF%94Innodb%E7%9A%84%E6%9F%A5%E8%AF%A2%E9%80%9F%E5%BA%A6%E5%BF%AB"><span class="toc-number">12.6.</span> <span class="toc-text">
-          为什么MyISAM会比Innodb的查询速度快</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#myisam-%E5%92%8C-innodb%E4%B8%ADcount-%E6%9F%A5%E8%AF%A2%E5%BF%AB%E6%85%A2%E5%8E%9F%E7%90%86"><span class="toc-number">12.7.</span> <span class="toc-text">
-          myisam 和 innodb中count(*)查询快慢原理</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%93%AA%E4%BA%9B%E5%88%97%E6%AF%94%E8%BE%83%E9%80%82%E5%90%88%E5%81%9A%E7%B4%A2%E5%BC%95"><span class="toc-number">12.8.</span> <span class="toc-text">
+          主索引和辅助索引</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#myisam-%E5%92%8C-innodb%E4%B8%ADcount-%E6%9F%A5%E8%AF%A2%E5%BF%AB%E6%85%A2%E5%8E%9F%E7%90%86"><span class="toc-number">12.6.</span> <span class="toc-text">
+          myisam 和 innodb中count(*)查询快慢原理</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%93%AA%E4%BA%9B%E5%88%97%E6%AF%94%E8%BE%83%E9%80%82%E5%90%88%E5%81%9A%E7%B4%A2%E5%BC%95"><span class="toc-number">12.7.</span> <span class="toc-text">
           哪些列比较适合做索引</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">13.</span> <span class="toc-text">
           参考资料</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/images/headImg.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">平安大赚 财丁兴旺</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">88</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">26</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">36</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2022</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>大湾区码仔驰名商标</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.4.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/lazyload@2.0.0-rc.2/lazyload.min.js"></script><script>function initSearch() {
   var isXML = true;
